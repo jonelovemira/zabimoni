@@ -1,0 +1,4 @@
+06 2 */1 * * /home/jone/flask_project/monitor-0.3.7/generate_report.py 1
+51 1 */1 * * /home/jone/flask_project/monitor-0.3.7/generate_report.py 2
+32 3 */1 * * /home/jone/flask_project/monitor-0.3.7/generate_report.py 3
+54 7 */1 * * /home/jone/flask_project/monitor-0.3.7/generate_report.py 4

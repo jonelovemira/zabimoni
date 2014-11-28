@@ -1,0 +1,6 @@
+
+[{{server_name}} Server]
+	{{server_address}}
+
+[{{server_name}} Running information]
+	{{running_status}}

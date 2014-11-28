@@ -1,0 +1,142 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<script type="text/javascript">
+$(document).ready(function(){
+    $("#myTab a").click(function(e){
+        e.preventDefault();
+        $(this).tab('show');
+    });
+    $('a[delete=1]').click(function()
+    {
+    	info = $(this).attr("info");
+    	if (confirm('You want to delete ' + info)) {
+    		href = $(this).attr("href")
+    		window.location.href=href;
+    	};
+    	
+    });
+});
+</script>
+
+<ul class="nav nav-tabs" id="myTab">
+  <li role="presentation" class="active"><a href="#area">Area</a></li>
+  <li role="presentation"><a href="#service">Service</a></li>
+  <li role="presentation"><a href="#host">Host</a></li>
+  <li role="presentation"><a href="#itemtype">itemtype</a></li>
+</ul>
+
+<div class="tab-content">
+	<div id="area" class="tab-pane fade in active">
+		<div class="panel panel-default">
+		  <!-- Default panel contents -->
+		  	<table class="table table-striped">
+					<thead>
+						<th>#</th>
+						<th>Area Name</th>
+						<th>Delete</th>
+						<!-- <th>Hosts</th> -->
+						<!-- <th>Aws Fee Service</th> -->
+					</thead>
+					<tbody>
+						{% for a in area %}
+						<tr>
+							<td>{{a.areaid}}</td>
+							<td>{{a.areaname}}</td>
+							<!-- <td>{{a.services.all()}}</td> -->
+							<!-- <td>{{a.hosts.all()}}</td> -->
+							<td><a href="/item/area/delete/{{a.areaid}}" info="area:{{a.areaname}}" delete="1">delete</a></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+			</table>
+		</div>
+	</div>
+	<div id="service" class="tab-pane fade">
+		<div class="panel panel-default">
+		  <!-- Default panel contents -->
+		  	<table class="table table-striped">
+					<thead>
+						<th>#</th>
+						<th>Service Name</th>
+						<th>Delete</th>
+						<!-- <th>Hosts</th> -->
+					</thead>
+					<tbody>
+						{% for s in service %}
+						<tr>
+							<td>{{s.serviceid}}</td>
+							<td>{{s.servicename}}</td>
+							<td><a href="/item/service/delete/{{s.serviceid}}" info="service:{{s.servicename}}" delete="1">delete</a></td>
+							<!-- <td>{{s.hosts.all()}}</td> -->
+						</tr>
+						{% endfor %}
+					</tbody>
+			</table>
+		</div>
+	</div>
+	<div id="host" class="tab-pane fade">
+		<div class="panel panel-default">
+		  <!-- Default panel contents -->
+		  	<table class="table table-striped">
+					<thead>
+						<th>#</th>
+						<th>Host Name</th>
+						<!-- <th>Monitor Items</th> -->
+						<th>Belongs to Area</th>
+						<th>Belongs to Service</th>
+						<th>Delete</th>
+					</thead>
+					<tbody>
+						{% for h in host %}
+						<tr>
+							<td>{{h.hostid}}</td>
+							<td>{{h.hostname}}</td>
+							<!-- <td>{{h.items.all()}}</td> -->
+							<td>{{h.area.areaname}}</td>
+							<td>{{h.service.servicename}}</td>
+							<td><a href="/item/host/delete/{{h.hostid}}" info="host:{{h.hostname}}" delete="1">delete</a></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+			</table>
+		</div>
+	</div>
+	<div id="itemtype" class="tab-pane fade">
+		<div class="panel panel-default">
+		  <!-- Default panel contents -->
+		  	<table class="table table-striped">
+					<thead>
+						<th>#</th>
+						<th>Name</th>
+						<th>Unit</th>
+						<th>DataType</th>
+						<th>DisplayType</th>
+						<th>Delete</th>
+					</thead>
+					<tbody>
+						{% for it in itemtype %}
+						<tr>
+							<td>{{it.itemtypeid}}</td>
+							<td>{{it.itemtypename}}</td>
+							<td>{{it.itemunit}}</td>
+							<td>{{it.zabbixvaluetype}}</td>
+							<td>{{it.itemdatatype.itemdatatypename}}</td>
+							<td><a href="/item/itemtype/delete/{{it.itemtypeid}}" info="key:{{it.itemtypename}}" delete="1">delete</a></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+
+
+
+
+<a href='{{url_for("item.area")}}'>Add Area</a>
+<a href='{{url_for("item.service")}}'>Add Service</a>
+<a href='{{url_for("item.host")}}'>Add Host</a>
+<a href='{{url_for("item.itemtype")}}'>Add Key</a>
+{% endblock %}

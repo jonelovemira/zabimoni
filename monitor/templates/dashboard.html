@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block body %}
+<!-- <h2>dashboard</h2> -->
+<!-- <a href = '{{url_for("auth.config")}}'>auth</a> -->
+<!-- <a href = '{{url_for("chart.mainboard")}}'>chart</a> -->
+<!-- <a href = '{{url_for("item.mainboard")}}'>item</a> -->
+
+<div class="container marketing">
+	<div class="row">
+		<div class="col-lg-4">
+			<img class="img-circle" src="{{ url_for('static',filename='img/user.png')}}" alt="Generic placeholder image" style="width:140px; height:140px">
+			<h2>User Configuration</h2>
+			<p>During this part you can add,delete or change an user' fields of different kind of roles.Different role has different authority</p>
+			<p><a class="btn btn-default" href="{{url_for('auth.config')}}" role="button">View details</a></p>
+		</div>
+		<div class="col-lg-4">
+			<img class="img-circle" src="{{ url_for('static',filename='img/chart.png')}}" alt="Generic placeholder image" style="width:140px; height:140px">
+			<h2>Chart</h2>
+			<p>Checkout two kinds of catogaries of displaying monitoring data which is fetched by zabbix or sended via interface.</p>
+			<p><a class="btn btn-default" href="{{url_for('chart.mainboard')}}" role="button">View details</a></p>
+		</div>
+		<div class="col-lg-4">
+			<img class="img-circle" src="{{ url_for('static',filename='img/item.png')}}" alt="Generic placeholder image" style="width:140px; height:140px">
+			<h2>Item</h2>
+			<p>It is all about item configuration.You can either make changes for monitoring host or monitoring items</p>
+			<p><a class="btn btn-default" href="{{url_for('item.mainboard')}}" role="button">View details</a></p>
+		</div>
+	</div>
+</div>
+{% endblock %}

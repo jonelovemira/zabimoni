@@ -1,0 +1,339 @@
+<!doctype html>
+<html>
+<head>
+    {% if title %}
+    <title>{{ title }} - Monitor</title>
+    {% else %}
+    <title>Monitor</title>
+    {% endif %}
+    <link href="{{url_for('static',filename='css/style.css')}}" rel="stylesheet"></link>
+    <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet" ></link>
+    <link href="{{url_for('static',filename='css/bootstrap-theme.min.css')}}" rel="stylesheet" ></link>
+    <link href="{{url_for('static',filename='css/carousel.css')}}" rel="stylesheet" ></link>
+    <script type="text/javascript" src="{{url_for('static',filename='js/jquery-2.1.1.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap.min.js')}}"></script>
+    <script src="{{url_for('static',filename='js/highstock.js')}}"></script>
+    <script src="{{url_for('static',filename='js/modules/exporting.js')}}"></script>
+
+<script src="{{url_for('static',filename='js/create_chart.js')}}"></script>
+<script src="{{url_for('static',filename='js/save_load_refresh.js')}}"></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    
+</head>
+<body>
+
+
+<div class="navbar navbar-default navbar-static-top page" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{{ url_for('index') }}">Monitor</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li><a href="{{url_for('auth.config')}}">Auth </a></li>
+                    <li><a href="{{url_for('chart.mainboard')}}">Chart </a></li>
+                    <li><a href="{{url_for('item.mainboard')}}">Item </a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if g.user.is_authenticated() %}
+                    <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    {% else %}
+                    <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+</div>
+
+
+
+
+
+
+
+<script type="text/javascript">
+$(function () {
+
+    var series_info;
+    var last_value;
+    var is_init_empty;
+    var time_frequency;
+    var check_result;
+    var current_window_index;
+    var callbacks;
+    var max_display_count;
+    var mychart = [];
+    var si = [];
+    var is_load_indexes;
+
+
+    init_local();
+    load_indexes();
+    load_first();
+
+
+    ///////////////////////////////////////////////////////////////////
+    ///************initiate local variable********************
+
+    function init_local()
+    {
+        series_info = [];
+        last_value=[];
+        is_init_empty=[];
+        time_frequency = 60;
+        check_result = {};
+        current_window_index = -1;
+        max_display_count = 300;
+        mychart = [];
+        last_update_time = [];
+
+        for (var i = 8; i >= 0; i--) {
+            var arr = [];
+            series_info.push(arr);
+            last_value.push(arr.concat());
+            is_init_empty.push(arr.concat());
+            last_update_time.push(arr.concat());
+            var tmp;
+            mychart.push(tmp);
+          
+        };
+        si = [];
+        si.push(tmp);
+        callbacks = $.Callbacks();
+        is_load_indexes = 0;
+    }
+    function init_clear(si)
+    {
+        for (var i = 8; i >= 0; i--) {
+            sortId = i ;
+            $('div[class=windowContainer]').empty();
+            if (mychart[sortId] != undefined) {
+                mychart[sortId].destroy();
+                mychart[sortId] = null;
+            };
+            if (si[0] != undefined) {
+                clearInterval(si[0]);
+            };
+            if (si.length > 1) {
+                si[1] = null;
+            };
+        };
+        init_local();
+        si = [];
+        var tmp;
+        si.push(tmp);
+    }
+    function load_first()
+    {
+        p = $('button[class="btn btn-sm btn-default savedListItemButton"]').first();
+        if (p != undefined) {
+            pageid = p.attr("indexId");
+            pagename = p.attr("name");
+            load_saved_in_page(pageid,pagename);
+        };
+    }
+    ///**********end of initiate***************
+    //////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////
+    // normal function
+    function create_new_series(series_info,sortId,check_result,type,item_list,series_name)
+    {
+            // console.log("create_new_series",series_info);
+            var series_info_item = {};
+            series_info_item['area_list'] = check_result['area'];
+            series_info_item['service_list'] = check_result['service'];
+            series_info_item['host_list'] = check_result['host'];
+            series_info_item['aws_list'] = check_result['aws'];
+            series_info_item['series_type'] = type;
+            series_info_item['series_item_list'] = item_list;
+            series_info_item['series_name'] = series_name;
+            series_info[sortId].push(series_info_item);
+    }
+
+    function refresh_page()
+    {
+        $('div[container="col-lg-4 page"]').empty();
+        for (var i = 0; i < 9; i++) {
+            var htm_tag = "<button class='btn btn-primary btn-lg center-block page' sortId='" + i + "'>Add chart</button>";
+            $('div[container="col-lg-4 page"][sortId="' + i + '"]').append(htm_tag);
+        };
+    }
+
+    function load_saved_in_page(pageid,pagename)
+    {
+        if (pageid == undefined) {
+            return;
+        };
+        init_clear(si);
+        refresh_page();
+        // console.log("savedListItemButton",si);
+        $.getJSON('/chart/load/pageinfo',{pageid:pageid},function(data)
+        {
+            series_info = data['window_data'];
+            var sortIds = data['sortids'];
+            var sortId_next = {};
+            for (var i = 0; i < sortIds.length-1; i++) {
+              sortId_next[sortIds[i]] = sortIds[i+1];
+            }
+            sortId_next[sortIds[sortIds.length-1]] = -1;
+            var foo = function (value) 
+            {
+                if (-1==value) {
+                        class_name = 'col-lg-4 page';
+                        sortId = sortIds[0];
+                        si.push(foo);
+                        create_chart(class_name,sortId,series_info,pagename + ' ' + (sortId+1),is_init_empty,time_frequency,callbacks,max_display_count,mychart,si,last_update_time);
+                }
+                else
+                {
+                    if (sortId_next[value] != -1) {
+                      class_name = 'col-lg-4 page';
+                      sortId = sortId_next[value];
+                      si[1]=foo;
+                      create_chart(class_name,sortId,series_info,pagename + ' ' + (sortId+1),is_init_empty,time_frequency,callbacks,max_display_count,mychart,si,last_update_time);
+                    }
+                    else
+                    {
+                        callbacks.remove(foo);
+                        si[1] = null;
+                    }
+                }
+
+            }      
+
+            callbacks.add(foo);
+                // console.log("parent : ", callbacks.has(foo));
+            callbacks.fire(-1);
+        });
+    }
+    //////////////////////////////////////////////////////////////////
+
+
+    //////////////////////////////////////////////////////////////////
+    ///********register of click callbacks
+    
+
+
+    $(document).on('click','button.itemtype',function()
+    {
+            // console.log("item_type");
+        var value = $(this).attr('value');
+        var name = $(this).attr('name');
+        var itemtypeid = $(this).attr('itemtypeid');
+        var display_name = generate_display_name(name,check_result);
+        value = value.split('@');
+        create_new_series(series_info,current_window_index,check_result,itemtypeid,value,display_name);
+        $(this).attr("disabled","disabled");
+    });
+
+
+    
+    $(document).on('click','button.addchart',function()
+    {
+        $('#myModal').modal('hide');
+        sortId = current_window_index;
+        class_name = 'col-lg-4 page';
+        create_chart(class_name,sortId,series_info, (current_window_index - '0') + 1 ,is_init_empty,time_frequency,callbacks,max_display_count,mychart,si,last_update_time);
+    });
+
+    $(document).on('click','button.saveButton',function()
+    {
+        var pagename = $("input[id='savetext']").val();
+        if (0 == pagename.length) {
+            alert("Saved page name cannot be empty");
+        }
+        else
+        {
+            $('#forsaving').modal({
+                keyboard: false
+            });
+            $('#forsaving').modal('show');
+            save_page_chart(pagename,series_info);
+        }
+    });
+
+    $(document).on('click','button.clear',function()
+    {
+        init_clear(si);
+        refresh_page();
+    });
+
+    $(document).on('click','button.savedListItemButton',function()
+    {
+        var pageid = $(this).attr("indexId");
+        var pagename = $(this).attr("name");
+        load_saved_in_page(pageid,pagename);
+    });
+
+    $(document).on('click','button.center-block.page',function()
+    {
+        current_window_index = $(this).attr("sortId");
+        $('button.itemtype').removeAttr("disabled");
+        // console.log()
+        $('#myModal').modal({
+            keyboard: false
+        });
+        $('#myModal').modal('show');
+        // console.log(current_window_index);
+    });
+    
+    
+    ///************end of register********
+    //////////////////////////////////////////////////////////////////
+
+})
+</script>
+
+
+<div class="jumbotron">
+{% include 'chart/save.html' %}
+<div class="form-inline" udf="savedlist" style="padding-bottom:10px;">
+    <label>History Saved:</label>
+    {% for p in pages%}
+        <button class="btn btn-sm btn-default savedListItemButton" indexId="{{p.pageid}}" name="{{p.pagename}}">{{p.pagename}}</button>
+    {% endfor %}
+</div>
+<div class="maintable">
+{% include 'chart/pagetable.html' %}
+</div>
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog page">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="myModalLabel">Choos monitor items</h4>
+      </div>
+      <div class="modal-body">
+        {% include 'chart/index.html'%}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary addchart">Add a chart</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade bs-example-modal-sm" tabindex="-1" id="forsaving" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+        <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="myModalLabel">Choos monitor items</h4>
+              </div>
+              <div class="modal-body">
+                saving chart ...
+              </div>
+        </div>
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

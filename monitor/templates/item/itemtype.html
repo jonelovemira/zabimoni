@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+{% block body %}
+<script type="text/javascript">
+$(document).ready(function() {
+	$('div[udfcheckbox=1]').hide();
+	$('div[kinds=3]').show();
+	$('input[name=kinds]').click(function()
+	{
+		value = $(this).val();
+		$('div[udfcheckbox=1]').hide();
+		$('div[kinds=' + value + ']').show();
+	});
+	// function a()
+	// {
+	// 	$('div[udfcheckbox=1]').hide();
+	// }
+	// a();
+});
+</script>
+
+<form id="fieldIconsForm" class="form-horizontal" method="POST" action="">
+
+	<div class="form-group">
+		<label class="col-sm-3 control-label" >Kinds</label>
+		<div class="col-sm-5">
+			<label class="radio-inline">
+	  			<input type="radio" name="kinds" value="1"> For All
+			</label>
+			<label class="radio-inline">
+	  			<input type="radio" name="kinds"  value="2"> For Area
+			</label>
+			<label class="radio-inline">
+	  			<input type="radio" name="kinds"  value="3" checked> For Service
+			</label>
+			<label class="radio-inline">
+	  			<input type="radio" name="kinds"  value="4"> For Host
+			</label>
+		</div>
+	</div>
+
+	<div class="form-group showOnkinds" udfcheckbox="1" kinds="2">
+		<label class="col-sm-3 control-label" for="InputEmailSubject">Detail</label>
+
+		<div class="col-sm-5">
+          <select class="form-control" id="ScaleType" name="indexid2">
+          	{% for a in areas%}
+          		<option value="{{a.areaid}}">{{a.areaname}}</option>
+			{% endfor %}
+          </select>
+        </div>
+	</div>
+
+	<div class="form-group showOnkinds" udfcheckbox="1" kinds="3">
+		<label class="col-sm-3 control-label" for="InputEmailSubject">Detail</label>
+		<div class="col-sm-5">
+          <select class="form-control" id="ScaleType" name="indexid3">
+          	{% for s in services%}
+          		<option value="{{s.serviceid}}">{{s.servicename}}</option>
+			{% endfor %}
+          </select>
+        </div>
+	</div>
+
+	<div class="form-group showOnkinds" udfcheckbox="1" kinds="4">
+		<label class="col-sm-3 control-label" for="InputEmailSubject">Detail</label>
+		<div class="col-sm-5">
+          <select class="form-control" id="ScaleType" name="indexid4">
+          	{% for h in hosts%}
+          		<option value="{{h.hostid}}">{{h.hostname}}</option>
+			{% endfor %}
+          </select>
+        </div>
+	</div>
+
+	<div class="form-group">
+        <label class="col-sm-3 control-label" for="itemkey">Monitor key name</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" id="itemky" placeholder="key name" name="key">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >Item type</label>
+        <div class="col-sm-5">
+            <select class="form-control" id="ScaleType" name="itemdatatypeid">
+            	{% for idt in idts %}
+	            	{% if idt.itemdatatypename == 'Application data'%}
+	            		<option value="{{idt.itemdatatypeid}}" selected>{{idt.itemdatatypename}}</option>
+	            	{% else %}
+	            		<option value="{{idt.itemdatatypeid}}">{{idt.itemdatatypename}}</option>
+	            	{% endif %}
+            	{% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >Data Type</label>
+        <div class="col-sm-5">
+        	<input type="text" class="form-control" placeholder="unit name" name="unitname">
+        </div>
+    </div>
+
+   	<div class="form-group">
+        <label class="col-sm-3 control-label" >Data Type</label>
+        <div class="col-sm-6">
+        	<label class="radio-inline">
+	  			<input type="radio" name="datatype"  value="0" checked>FLOAT
+			</label>
+			<label class="radio-inline">
+	  			<input type="radio" name="datatype"  value="1"> CHARACTER
+			</label>
+			<label class="radio-inline">
+	  			<input type="radio" name="datatype"  value="2" > LOG
+			</label>
+			<label class="radio-inline">
+	  			<input type="radio" name="datatype"  value="3">UNSIGNED
+			</label>
+			<label class="radio-inline">
+	  			<input type="radio" name="datatype"  value="4"> TEXT
+			</label>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-5 col-sm-offset-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

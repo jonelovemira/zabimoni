@@ -1,0 +1,110 @@
+{% extends "layout.html" %}
+{% block body %}
+
+
+
+<script type="text/javascript">
+$(document).ready(function()
+{
+  $('#fieldIconsForm').bootstrapValidator({
+          feedbackIcons: {
+              valid: 'glyphicon glyphicon-ok',
+              invalid: 'glyphicon glyphicon-remove',
+              validating: 'glyphicon glyphicon-refresh'
+          },
+          fields: {
+              username: {
+                  feedbackIcons: 'false',
+                  validators: {
+                      notEmpty: {
+                          message: 'The report name is required and cannot be empty'
+                      }
+                  }
+              },
+              password: {
+                  feedbackIcons: 'false',
+                  validators: {
+                      notEmpty: {
+                          message: 'You should choose at least one item'
+                      },
+                      identical: {
+                          field: 'confirmpassword',
+                          message: 'The password and its confirm are not the same'
+                      }
+                  }
+              },
+              confirmpassword:{
+                  feedbackIcons: 'false',
+                  validators: {
+                      notEmpty: {
+                          message: 'You should choose at least one item'
+                      },
+                      identical: {
+                          field: 'password',
+                          message: 'The password and its confirm are not the same'
+                      }
+                  }
+              }
+          }
+      });
+});
+</script>
+
+<form id="fieldIconsForm" class="form-horizontal" method="POST" action="">
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >User Name</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control"  placeholder="User Name" name="username">
+        </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-3 control-label" >Password</label>
+      <div class="col-sm-5">
+        <input type="password" class="form-control" name="password" placeholder="password">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-3 control-label" >Confirm Password</label>
+        <div class="col-sm-5">
+            <input type="password" class="form-control" name="confirmpassword" placeholder="Confirm Password">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >User Type</label>
+        <div class="col-sm-5">
+            <select class="form-control"  name="usertype">
+                <option value="1">Admin</option>
+                <option value="2" selected>Normal</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >Login Permission</label>
+        <div class="col-sm-5">
+            <select class="form-control"  name="loginpermission">
+                <option value="0">Not Allowed</option>
+                <option value="1" selected>Allowed</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-3 control-label" >Email address</label>
+        <div class="col-sm-5">
+            <input type="email" class="form-control" name="emailaddress" placeholder="example@test.com">
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <div class="col-sm-5 col-sm-offset-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

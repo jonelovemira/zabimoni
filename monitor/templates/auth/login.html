@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+    {% if title %}
+    <title>{{ title }} - Monitor</title>
+    {% else %}
+    <title>Monitor</title>
+    {% endif %}
+    <link href="{{url_for('static',filename='css/style.css')}}" rel="stylesheet"></link>
+    <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet" media="screen"></link>
+    <script type="text/javascript" src="{{url_for('static',filename='js/jquery-2.1.1.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap.min.js')}}"></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    
+</head>
+<body>
+  <div class='container'>
+    
+  
+    {% include 'flash.html' %}
+
+    <form class="form-signin" role="form" method="POST">
+        <h2 class="form-signin-heading">Please sign in</h2>
+        <input type="text" class="form-control" placeholder="username" required="" autofocus="" name="username">
+        <input type="password" class="form-control" placeholder="Password" required="" name="password">
+        <div class="checkbox">
+          <label>
+            <input type="checkbox" value="remember-me"> Remember me
+          </label>
+        </div>
+        <button class="btn btn-lg btn-primary btn-block" type="submit">Sign in</button>
+      </form>
+
+
+    </div>
+</body> 
+</html>
+
+

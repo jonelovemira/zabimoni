@@ -1,0 +1,459 @@
+////////
+
+{% for key, value in areaelb.iteritems() %}
+    <div class="form-group hidden">
+        <label class="col-sm-3 control-label">ELB name</label>
+        <div class="col-sm-5">
+            <select class="form-control" name="elbname">
+                {% for t1 in value %}
+                <option value="{{t1}}">{{t1}}</option>
+                {% endfor %}
+            </select>            
+        </div>
+    </div>
+{% endfor %}
+
+//////
+
+/////
+
+<div for-save="page">
+<label float="left">History saved:</label>
+
+</div>
+<div class="row saveditem"></div>
+
+//////
+
+
+///////////////////////////
+
+class Reportimg(db.Model):
+  reportimgid = db.Column(db.Integer,primary_key=True)
+  reportimgname = db.Column(db.String(80))
+  report_id = db.Column(db.Integer,db.ForeignKey('report.reportid'))
+  daytime = db.Column(db.String(80))
+  emailschedule_id = db.Column(db.Integer,db.ForeignKey('emailschedule.emailscheduleid'))
+
+  def __init__(self,reportimgname,daytime,report,es):
+    self.reportimgname = reportimgname
+    self.daytime = daytime
+    self.report = report
+    self.es = es
+
+  def __repr__(self):
+    return '<Reportimg %r>' % reportimgname
+
+//////////////////////
+//////////////
+from report.html
+
+
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
+
+<script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
+
+
+$('#datetimepickersince').datetimepicker({
+                     useSeconds:true,
+                     autoclose:true
+                });
+                $('#datetimepickertill').datetimepicker({
+                     useSeconds:true,
+                     autoclose:true
+                });
+
+<div class="form-group">
+        <label class="col-sm-3 control-label" for="exampleInputTimeSince1" >Time Since</label>
+        <div class="col-sm-5">
+          <div class='input-group date' id='datetimepickersince'>
+            <input type='text' class="form-control" date-date-format="DD-MM-YYYY" name="timesince"/>
+            <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+          </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="exampleInputTimeTill1">Time Till</label>
+        <div class="col-sm-5">
+          <div class='input-group date' id='datetimepickertill'>
+            <input type='text' class="form-control" name="timetill"/>
+            <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+          </div>
+        </div>
+    </div>
+//////////////////
+
+
+
+
+
+
+
+
+//////////////////////////////////////////
+delete from login form
+
+{% macro render_field(field, placeholder=None) %}
+{% if field.errors %}
+<div>
+{% elif field.flags.error %}
+<div>
+{% else %}
+<div>
+{% endif %}
+    {% set css_class = 'form-control ' + kwargs.pop('class', '') %}
+    {{ field(class=css_class, placeholder=placeholder, **kwargs) }}
+</div>
+{% endmacro %}
+
+
+     <form class="form-signin" method="POST" role="form">
+      <h2 class="form-signin-heading">Please sign in</h2>
+      {{ form.csrf_token }}
+      {{ render_field(form.name, placeholder="Your username",
+                                  autofocus="") }}
+      {% for error in form.errors.name %}
+      <span style="color: red;">[{{ error }}]</span>
+      {% endfor %}
+      {{ render_field(form.password, placeholder="Password") }}
+      {% for error in form.errors.password %}<span style="color: red;">[{{ error }}]</span>
+      {% endfor %}
+      <div>
+      <label class="checkbox">
+        <input type="checkbox" class="checkbox" name="remember" value="1">Remember Me</label>
+      </div>
+      <button class="btn-primary btn-lg btn-block2" type="submit" name="submit">Sign in</button>
+    </form>  
+/////////////////////////////////////////
+
+
+
+///////////////////////////////////
+<dl class=hideForm>
+    {% include 'chart/index.html' %}
+  <p><button class=genNewWindow>Add a window</button></p>
+</dl>
+
+<table border="1" class="pageTable">
+    <tr>
+        <td><div class="tdRowCol" sortId="0"><center><button class="addWindow" indexId="0">Add a window</button><center></div></td>
+        <td><div class="tdRowCol" sortId="1"><center><button class="addWindow" indexId="1">Add a window</button></center></div></td>
+        <td><div class="tdRowCol" sortId="2"><center><button class="addWindow" indexId="2">Add a window</button></center></div></td>
+    </tr>
+    <tr><td><div class="tdRowCol" sortId="3"><center><button class="addWindow" indexId="3">Add a window</button></center></div></td>
+        <td><div class="tdRowCol" sortId="4"><center><button class="addWindow" indexId="4">Add a window</button></center></div></td>
+        <td><div class="tdRowCol" sortId="5"><center><button class="addWindow" indexId="5">Add a window</button></center></div></td>
+    </tr>
+    <tr><td><div class="tdRowCol" sortId="6" ><center><button class="addWindow" indexId="6">Add a window</button></center></div></td>
+        <td><div class="tdRowCol" sortId="7" ><center><button class="addWindow" indexId="7">Add a window</button></center></div></td>
+        <td><div class="tdRowCol" sortId="8" ><center><button class="addWindow" indexId="8">Add a window</button></center></div></td>
+    </tr>
+</table>
+//////////////////////////////
+
+
+
+
+
+
+
+
+
+  //////////////////layout.html////////////
+  <div class="navbar navbar-default navbar-static-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{{ url_for('index') }}">Monitor</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li class="dropdown">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">Auth <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a href="{{ url_for('auth.add') }}">Add</a></li>
+                            <li><a href="#">new liust</a></li>
+                            <li><a href="#">new liust</a></li>
+                            <li><a href="#">new liust</a></li>
+                            <li><a href="#">new liust</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  ///////////////////////////
+  //in chart/window.html
+  <form action="" method="post" name="index">
+      {{ indexform.hidden_tag() }}
+      <table>
+        <tr>
+          <td>Area:{{indexform.area}} Service:{{indexform.service}} Host:{{indexform.host}} AWS:{{indexform.aws}} 
+          <input type="submit" value="save index"></input>
+          </td>
+        </tr>
+      </table>
+  </form>
+  ////////////////////////
+
+  ////////////////////////////
+  ////in chart/window.html
+  <form action="" method="post" name="checkbox">
+    {{checkboxform.hidden_tag()}}
+    <table>
+      <tr>
+        <td>{{checkboxform.areabox}} {{checkboxform.servicebox}} {{checkboxform.hostbox}} {{checkboxform.awsbox}}
+          <input type="submit" name="btn" value="checkbox"></td></tr>
+    </table>
+  </form>
+
+  <table>
+    {% for itemtype in itemresult %}
+    <button >{{itemtype}}</button>
+    {% endfor %}
+  </table>
+  ///////
+
+
+  ////////////////////////
+  ////zabbix.py backup
+  from sqlalchemy import create_engine, MetaData, Table,select
+from sqlalchemy import Column,Integer, String, Text ,DateTime, Float,BigInteger
+from sqlalchemy.orm import mapper, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import func,union
+# from monitor import db
+
+def zabbix_history(engine,itemid_list,ground):
+
+    engine = create_engine('mysql://root:root@localhost/zabbix')
+    Base = declarative_base(engine)
+
+
+
+
+    class Zabbixhistory(Base):
+      __tablename__ = 'history'
+      itemid = Column('itemid',Integer,primary_key=True)
+      clock = Column('clock',BigInteger,primary_key=True)
+      value = Column('value',Float)
+      ns = Column('ns',Integer)
+      
+      def __repr__(self):
+        return "<zabbix history itemid - %s value - %s at %s>" % (self.itemid,self.value,self.clock)
+
+
+    class Zabbixhistoryuint(Base):
+      __tablename__ = 'history_uint'
+      itemid = Column('itemid',Integer,primary_key=True)
+      clock = Column('clock',BigInteger,primary_key=True)
+      value = Column('value',Float)
+      ns = Column('ns',Integer)
+
+      def __repr__(self):
+        return "<zabbix history_uint itemid - %s value - %s at %s>" % (self.itemid,self.value,self.clock)
+
+    #----------------------------------------------------------------------
+    # def loadSession():
+    #     """"""  
+    #     metadata = MetaData(engine)
+    #     Session = sessionmaker(bind=engine)
+    #     session = Session()
+    #     return session
+
+    def gen_history_select_object(item,ground):
+        s1 = select(    [Zabbixhistory.itemid,\
+                        func.count(Zabbixhistory.itemid).label('count'),\
+                        func.avg(Zabbixhistory.value).label('avg'),\
+                        func.max(Zabbixhistory.value).label('max'),\
+                        func.min(Zabbixhistory.value).label('min'),\
+                        func.floor((Zabbixhistory.clock)/ground).label('minute') ]). \
+            where(Zabbixhistory.itemid == item). \
+            group_by('minute') 
+
+        return s1
+
+    def gen_history_uint_select_object(item,ground):
+        s1 = select(    [Zabbixhistoryuint.itemid,\
+                        func.count(Zabbixhistoryuint.itemid).label('count'),\
+                        func.avg(Zabbixhistoryuint.value).label('avg'),\
+                        func.max(Zabbixhistoryuint.value).label('max'),\
+                        func.min(Zabbixhistoryuint.value).label('min'),\
+                        func.floor((Zabbixhistoryuint.clock)/ground).label('minute') ]). \
+            where(Zabbixhistoryuint.itemid == item). \
+            group_by('minute') 
+
+        return s1
+
+    def get_itemlist_history(itemid_list,ground):
+
+        s = []
+
+        for item in itemid_list:
+            tmp_s = gen_history_select_object(item,ground)
+            s.append(tmp_s)
+
+        u = union(*s).alias('Newtable')
+
+        session = loadSession()
+
+        res = session.query(func.sum(u.c.count).label('count'),\
+                      func.avg(u.c.avg).label('avg'),\
+                      func.max(u.c.max).label('max'),\
+                      func.min(u.c.min).label('min'),\
+                      u.c.minute).group_by(u.c.minute).all()
+        return res
+
+    def loadSession():
+        metadata = Base.metadata
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        return session
+
+
+    def get_itemlist_history_uint(itemid_list,ground):
+
+        s = []
+
+        for item in itemid_list:
+            tmp_s = gen_history_uint_select_object(item,ground)
+            s.append(tmp_s)
+
+        u = union(*s).alias('Newtable')
+
+        session = loadSession()
+
+        res = session.query(func.sum(u.c.count).label('count'),\
+                      func.avg(u.c.avg).label('avg'),\
+                      func.max(u.c.max).label('max'),\
+                      func.min(u.c.min).label('min'),\
+                      u.c.minute).group_by(u.c.minute).all()
+        return res
+
+    def get_history(itemid_list,ground):
+
+        return get_itemlist_history(itemid_list,ground) + get_itemlist_history_uint(itemid_list,ground)
+
+    return get_history(itemid_list,ground)
+
+
+engine = create_engine('mysql://root:root@localhost/zabbix')
+Base = declarative_base(engine)
+
+class Zabbixhosts(Base):
+    __tablename__ = 'hosts'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return "<zabbix host name - %s hostid - %s>" % (self.name,self.hostid)
+
+
+class Zabbixitems(Base):
+    __tablename__ = 'items'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return "<zabbix item name - %s itemid - %s>" % (self.name,self.itemid)
+
+class Zabbixhostgroup(Base):
+    __tablename__ = 'groups'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return "<zabbix group name - %s groupid - %s>" % (self.name,self.groupid)
+
+class Zabbixinterface(Base):
+    __tablename__ = 'interface'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return "<zabbix interface hostid - %s ip - %s>" % (self.hostid,self.ip)
+
+class Zabbixapplication(Base):
+    __tablename__ = 'applications'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return '<zabbix applications applicationid %s name - %s>' % (self.applicationid,self.name)
+
+class Zabbixitemapplication(Base):
+    __tablename__ = 'items_applications'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return '<zabbix items_applications itemappid %s>' % (self.itemappid)
+
+def loadSession():
+    metadata = Base.metadata
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    return session
+
+
+
+# if __name__ == "__main__":
+#     session = loadSession()
+#     res = session.query(Zabbixitemapplication).all()
+#     # print res[1].title
+#     for row in res:
+#         print row
+
+
+# def zabbix_hosts(engine):
+#     engine = engine #create_engine('mysql://root:root@localhost/zabbix')
+#     Base = declarative_base(engine) 
+
+
+
+
+# if __name__ == "__main__":
+#     engine = create_engine('mysql://root:root@localhost/zabbix')
+#     itemlist = ['28373','28375']
+#     ground = 60
+#     print zabbix(engine,itemlist,ground)
+////////////////////////////////////////////////////
+
+
+
+
+
+
+/////////////////////////////////////////////
+///////from window.html
+
+
+<form action="" method="post" name="save window">
+      {{saveform.hidden_tag()}}
+      <table>
+          <tr>
+              <td>Your saved window name:</td>
+              <td>{{ saveform.savedWindowName(size=24) }}
+                {% for error in saveform.errors.savedWindowName %}
+              <br><span style="color: red;">[{{ error }}]</span>
+              {% endfor %}
+              </td>
+              <td><input type="submit" name="btn" value="save"></td>
+          </tr>
+      </table>
+  </form>
+
+
+  ////////////////////////////////////////////
+
+
+
+  //////////////////////////////////
+  ///////////delete from window.html
+    <button class=submitIndexButton>submit</button>
+    /////////////////////////////////

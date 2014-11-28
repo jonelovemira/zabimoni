@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+
+	<script type="text/javascript" src="{{url_for('static',filename='js/jquery-2.1.1.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap.min.js')}}"></script>
+	<link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet" media="screen"></link>
+	<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
+	<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='test/bootstrap-datetimepicker.css')}}">
+	<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrapValidator.css')}}"></link>
+
+	<script type="text/javascript" src="{{url_for('static',filename='test/moment.js')}}"></script>
+	<script type="text/javascript" src="{{url_for('static',filename='test/bootstrap-datetimepicker.js')}}"></script>
+	<script type="text/javascript" src="{{url_for('static',filename='js/bootstrapValidator.js')}}"></script>
+</head>
+<body>
+
+
+
+{% for attach in attach_info %}
+    <p>[ {{attach.title}} ] </p>
+    <p>[ {{attach.discription}} ] </p>
+{% endfor %}
+
+
+
+</body>
+</html>

@@ -1,0 +1,31 @@
+{% extends 'layout.html' %}
+{% block body %}
+<script type="text/javascript">
+	$(function()
+	{
+		$(".post").click(function()
+		{
+			arr = {};
+			arr1 = [];
+			arr1.push(1);
+			arr1.push(2);
+			arr1.push(3);
+			arr2 = "1234";
+			arr['1'] = arr1;
+			arr['2'] = arr2;
+
+			var option = {  
+               url: '/chart/post/',  
+               type: 'POST',  
+               data: JSON.stringify({'arr':arr}),  
+               dataType: 'json', 
+               contentType : 'application/json', 
+               success: function (result) { console.log(result); }  
+           	};  
+			$.ajax(option); 
+		});
+	});
+</script>
+
+<button class="post">Post</button>
+{% endblock %}

@@ -1,0 +1,134 @@
+.form-signin	{max-width: 240px;padding: 15px;margin: 0 auto}
+
+.form-control	{width: 100%;}
+
+.btn-primary	{color: #fff; background-color: #428BCA;border-color: #357EBD}
+.btn-block2		{width: 100%;}
+.btn-lg			{padding: 10px,16px;font-size: 18px;line-height: 1.33;border-radius: 6px}
+
+
+.tdRowCol    { min-width: 600px; height: 400px; margin: auto;}
+
+.addWindow		{display:block;;min-width: 50px; height: 30px;}
+
+.hideForm		{display:None;background: #CEE5F5}
+
+.nav-pills li.active button {color: #fff;background-color:#428bca;}
+
+.index-header {
+				padding-bottom: 9px;
+				margin: 0px 0 0px;
+				border-bottom: 1px solid #fff;
+}
+/*.row.save	{
+			float:right;
+}*/
+.savedlist	{
+			margin: 0 0 10px;
+}
+
+.chooseresult	{
+				min-height: 40px;
+				padding-bottom: 9px;
+				margin: 0px 0 20px;
+				border-top: 1px solid #eee;
+				border-bottom: 1px solid #eee;
+}
+
+.chooseditem{
+			margin: 10px;
+}
+
+.navbar.navbar-default.navbar-static-top.page
+{
+				margin-bottom: 0px;
+}
+
+.col-lg-4.page{
+				padding: 0;
+				min-width: 600px; min-height: 400px;
+				border: 1px solid #aaa;
+}
+
+
+.savedListItemButton
+{
+	margin-left: 10px;
+}
+/*.btn.btn-primary.btn-lg.page
+{
+	margin-top: 25%;
+				display: block;
+				margin: 27% auto;
+}*/
+
+.chartinwindow button 
+{
+	 margin-top:15%
+}
+
+.chartinpage button
+{
+	margin-top: 25%;
+}
+
+
+/*.btn.btn-sm.btn-info.saveheader
+{
+	margin-right: 1px;
+}*/
+
+/*.btn.btn-sm.saveheader button input		{
+				margin-right: 0px;
+}*/
+
+.form-control.savetext	{
+				max-width: 200px;
+}
+
+.btn.btn-sm.btn-default.itemtype
+{
+				margin: 4px 4px;
+}
+
+.index-header h1	{
+				font-size: 20px;
+}
+
+.indexBoard {
+				padding-bottom: 9px;
+				margin: 10px 0 10px;
+				border-bottom: 1px solid #fff;
+				min-height: 182px;
+}
+
+.checkbox-inline.no_indent,
+.checkbox-inline.no_indent+.checkbox-inline.no_indent {
+  margin-left: 0;
+  margin-right: 40px;
+  margin-bottom: 10px;
+  font-size: 17px;
+}
+
+.checkbox-inline.no_indent:last-child {
+  margin-right: 0;
+}
+
+.modal-dialog.page
+{
+	min-width: 1000px;
+}
+.fa-plus:before {
+		content : "\2b";
+}
+.fa-minus:before{
+		content: "\2212"
+}
+
+
+
+
+
+
+
+

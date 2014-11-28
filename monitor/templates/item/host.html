@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block body %}
+  	
+<form id="fieldIconsForm" class="form-horizontal" method="POST" action="">
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >Host name</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" placeholder="host name" name="hostname">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >ip address</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" placeholder="host ip address" name="hostip">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >Belong to Area</label>
+        <div class="col-sm-5">
+            <select class="form-control"  name="areaid">
+              {% for a in areas %}
+                {% if a.areaname == 'ap-southeast-1'%}
+                  <option value="{{a.areaid}}" selected>{{a.areaname}}</option>
+                {% else %}
+                  <option value="{{a.areaid}}">{{a.areaname}}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >Belong to Service</label>
+        <div class="col-sm-5">
+            <select class="form-control"  name="serviceid">
+              {% for s in services %}
+                {% if s.servicename == 'NAT'%}
+                  <option value="{{s.serviceid}}" selected>{{s.servicename}}</option>
+                {% else %}
+                  <option value="{{s.serviceid}}">{{s.servicename}}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-5 col-sm-offset-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}

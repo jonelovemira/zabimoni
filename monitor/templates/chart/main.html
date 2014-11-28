@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block body %}
+<div class="container marketing">
+	<div class="row">
+		<div class="col-lg-4">
+			<img class="img-circle" src="{{ url_for('static',filename='img/singlechart.png')}}" alt="Generic placeholder image" style="width:140px; height:140px">
+			<h2>Single Chart</h2>
+			<p>Can dynamically add monitoring series into the chart.</p>
+			<p><a class="btn btn-default" href="{{url_for('chart.window')}}" role="button">View details</a></p>
+		</div>
+		<div class="col-lg-4">
+			<img class="img-circle" src="{{ url_for('static',filename='img/ninecharts.png')}}" alt="Generic placeholder image" style="width:140px; height:140px">
+			<h2>Nine Charts in a page</h2>
+			<p>Can add at most nine charts into a table of displaying monitoring data</p>
+			<p><a class="btn btn-default" href="{{url_for('chart.page')}}" role="button">View details</a></p>
+		</div>
+		<div class="col-lg-4">
+			<img class="img-circle" src="{{ url_for('static',filename='img/ninecharts.png')}}" alt="Generic placeholder image" style="width:140px; height:140px">
+			<h2>Reports</h2>
+			<p>Define report configurations for generating reports during user-defined intervals.</p>
+			<p><a class="btn btn-default" href="{{url_for('chart.report')}}" role="button">View details</a></p>
+		</div>
+	</div>
+</div>
+{% endblock %}

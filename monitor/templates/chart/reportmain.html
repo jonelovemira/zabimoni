@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<script type="text/javascript">
+$(document).ready(function(){
+    $("#myTab a").click(function(e){
+        e.preventDefault();
+        $(this).tab('show');
+    });
+    $('a[delete=1]').click(function()
+    {
+    	info = $(this).attr("info");
+    	if (confirm('You want to delete ' + info)) {
+    		href = $(this).attr("href")
+    		window.location.href=href;
+    	};
+    });
+});
+</script>
+
+<ul class="nav nav-tabs" id="myTab">
+  <li role="presentation" class="active"><a href="#schedule">Email Schedule</a></li>
+  <li role="presentation"><a href="#report">Reports</a></li>
+</ul>
+
+<div class="tab-content">
+	<div id="schedule" class="tab-pane fade in active">
+		<div class="panel panel-default">
+
+		  	<table class="table table-striped">
+					<thead>
+						<th>#</th>
+						<th>subject</th>
+						<th>frequency</th>
+						<th>start time</th>
+						<th>time zone</th>
+						<th>reports</th>
+						<th>receivers</th>
+						<th>delete</th>
+					</thead>
+					<tbody>
+						{% for s in emailschedule %}
+						<tr>
+							<td>{{s.emailscheduleid}}</td>
+							<td>{{s.subject}}</td>
+							<td>{{s.frequency}}</td>
+							<td>{{s.starttime}}</td>
+							<td>{{s.timezone}}</td>
+							<td>{{s.reports.all()}}</td>
+							<td>{{s.receivers.all()}}</td>
+							<td><a href="/chart/schedule/delete/{{s.emailscheduleid}}" delete="1" info="Schedule:{{s.subject}}" >delete</a></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+			</table>
+		</div>
+	</div>
+	<div id="report" class="tab-pane fade">
+		<div class="panel panel-default">
+		  	<table class="table table-striped">
+					<thead>
+						<th>#</th>
+						<th>Report Name</th>
+						<th>Scale Type</th>
+						<th>Function Type</th>
+						<th>Title</th>
+						<th>Discription</th>
+						<th>Delete</th>
+					</thead>
+					<tbody>
+						{% for r in report %}
+						<tr>
+							<td>{{r.reportid}}</td>
+							<td>{{r.reportname}}</td>
+							<td>{{r.scaletype}}</td>
+							<td>{{r.functiontype}}</td>
+							<td>{{r.title}}</td>
+							<td>{{r.discription}}</td>
+							<td><a href="/chart/report/delete/{{r.reportid}}" delete="1" info="Report:{{r.reportname}}">delete</a></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+
+	
+
+
+
+	<a href='{{url_for("chart.addschedule")}}'> Add Schedule</a>
+	<a href='{{url_for("chart.addreport")}}'> Add Report</a>
+{% endblock %}

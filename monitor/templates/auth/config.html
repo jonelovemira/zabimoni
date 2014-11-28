@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+{% block body %}
+<script type="text/javascript">
+$(document).ready(function(){
+	$('a[delete=1]').click(function()
+    {
+    	info = $(this).attr("info");
+    	if (confirm('You want to delete ' + info)) {
+    		href = $(this).attr("href")
+    		window.location.href=href;
+    	};
+    });
+});
+</script>
+
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">Users</div>
+		<table class="table table-striped">
+			<thead>
+				<th>#</th>
+				<th>Name</th>
+				<th>Role</th>
+				<th>Login Permission</th>
+				<th>Email address</th>
+				<th>Delete</th>
+			</thead>
+			<tbody>
+				{% for user in users %}
+				<tr>
+					<td>{{user.userid}}</td>
+					<td>{{user.username}}</td>
+					<td>{{user.role}}</td>
+					<td>{{user.loginpermission}}</td>
+					<td>{{user.email}}</td>
+					<td><a href="/auth/user/delete/{{user.userid}}" delete="1" info="user:{{user.username}}">delete</a>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+</div>
+	<a href='{{url_for("auth.add")}}'> Add user</a>
+{% endblock %}

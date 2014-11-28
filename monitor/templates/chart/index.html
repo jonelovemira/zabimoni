@@ -1,0 +1,112 @@
+
+
+<div class=indexBoard>
+    <div class="index-header">
+    <ul class="nav nav-pills">
+      <li class="active" choose="monitorWindowLi" type="area"> 
+        <a class=indexbutton name='area' data-toggle="pill" data-placement="left" title="" >Area<span class="badge" indextype="area"></span></a>
+      </li>
+      <li class="" choose="monitorWindowLi" type="service">
+        <a class=indexbutton name='service' data-toggle="pill" data-placement="left" title=""  >Service<span class="badge" indextype="service"></span></a>
+      </li>
+      <li class="" choose="monitorWindowLi" type="host">
+        <a class=indexbutton name='host' data-toggle="tooltip" data-placement="left" title="" >Host<span class="badge" indextype="host"></span></a>
+      </li>
+      <li class="" choose="monitorWindowLi" type="aws">
+        <a class=indexbutton name='aws' data-toggle="tooltip" data-placement="left" title=""  >Aws<span class="badge" indextype="aws"></span></a>
+      </li>
+    </ul>
+  </div>
+  <div style="margin-top:10px;">
+    <div class="IndexDiv" type='area'>
+      {% for a in area %}
+        <div class="col-sm-3" style="padding-left:0px;">
+          <label class="checkbox-inline no_indent">
+            <input type="checkbox" indextype="area" value="{{a.areaid}}" name="{{a.areaname}}" >{{a.areaname}}
+          </label>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="IndexDiv" type='service'>
+      {% for s in service %}
+        <div class="col-sm-3" style="padding-left:0px;">
+          <label class="checkbox-inline no_indent">
+            <input type="checkbox" indextype="service" value="{{s.serviceid}}" name="{{s.servicename}}" >{{s.servicename}}
+          </label>
+        </div>
+      {% endfor %}
+    </div>
+    <div class="IndexDiv" type='host'>
+      {% for h in host %}
+        <div class="col-sm-3" style="padding-left:0px;">
+          <label class="checkbox-inline no_indent">
+            <input type="checkbox" indextype="host" value="{{h.hostid}}" name="{{h.hostname}}" >{{h.hostname}}
+          </label>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div class="IndexDiv" type='aws'>
+      {% for a_n in aws %}
+        <div class="col-sm-3" style="padding-left:0px;">
+          <label class="checkbox-inline no_indent">
+            <input type="checkbox" indextype="aws" value="{{a_n.awsid}}" name="{{a_n.awsname}}" >{{a_n.awsname}}
+          </label>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<div class="chooseresult">
+</div>
+<div class="row">
+  <div class="col-md-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Application data</h3>
+      </div>
+      <div class="panel-body" itemdatatype="Application data"></div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Countings</h3>
+      </div>
+      <div class="panel-body" itemdatatype="Counting"></div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Others</h3>
+      </div>
+      <div class="panel-body" itemdatatype="Other"></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Healthy data: CPU</h3>
+      </div>
+      <div class="panel-body" itemdatatype="CPU data"></div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Healthy data: Memory</h3>
+      </div>
+      <div class="panel-body" itemdatatype="Memory data"></div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Healthy data: Connections</h3>
+      </div>
+      <div class="panel-body" itemdatatype="Connections"></div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h3 class="panel-title">Aws fee</h3>
+      </div>
+      <div class="panel-body" itemdatatype="AWS fee data"></div>
+    </div>
+  </div>
+</div>
+

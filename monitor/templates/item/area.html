@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<form id="fieldIconsForm" class="form-horizontal" method="POST" action="">
+
+  <div class="form-group">
+        <label class="col-sm-3 control-label" >Area name</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control"  placeholder="Input Area Name" name="areaname">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" >Select Service</label>
+        <div class="col-sm-5">
+            {% for s in services %}
+                <label class="checkbox-inline">
+                    <input type="checkbox" name="service" value="{{s.serviceid}}">{{s.servicename}}
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-5 col-sm-offset-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}

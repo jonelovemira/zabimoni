@@ -1,0 +1,248 @@
+{% extends "layout.html" %}
+{% block body %}
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
+<script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+    // The maximum number of options
+    var MAX_OPTIONS = 5;
+    settimezone();
+    function settimezone()
+    {
+        timezone = -((new Date()).getTimezoneOffset()/60);
+        $('#timezone').attr('value',timezone);
+        // console.log(timezone);
+    }
+
+    load_report();
+    $('#fieldIconsForm')
+        .bootstrapValidator({
+            feedbackIcons: {
+                valid: 'glyphicon glyphicon-ok',
+                invalid: 'glyphicon glyphicon-remove',
+                validating: 'glyphicon glyphicon-refresh'
+            },
+            fields: {
+                emailsubject: {
+                    validators: {
+                        notEmpty: {
+                            message: 'The question required and cannot be empty'
+                        }
+                    }
+                },
+                'email[]': {
+                    validators: {
+                        notEmpty: {
+                            message: 'The email required and cannot be empty'
+                        },
+                        emailAddress: {
+                        	message: 'The value is not a valid email address'
+                        }
+                    }
+                }
+            }
+        })
+
+        // Add button click handler
+        .on('click', '.addButton', function() {
+            var $template = $('#optionTemplate'),
+                $clone    = $template
+                                .clone()
+                                .removeClass('hide')
+                                .removeAttr('id')
+                                .insertBefore($template),
+                $email   = $clone.find('[name="email[]"]');
+
+            // Add new field
+            $('#fieldIconsForm').bootstrapValidator('addField', $email);
+        })
+
+        // Remove button click handler
+        .on('click', '.removeButton', function() {
+            var $row    = $(this).parents('.form-group'),
+                $email = $row.find('[name="email[]"]');
+
+            // Remove element containing the option
+            $row.remove();
+
+            // Remove field
+            $('#fieldIconsForm').bootstrapValidator('removeField', $email);
+        })
+
+        // Called after adding new field
+        .on('added.field.bv', function(e, data) {
+            // data.field   --> The field name
+            // data.element --> The new field element
+            // data.options --> The new field options
+
+            if (data.field === 'email[]') {
+                if ($('#fieldIconsForm').find(':visible[name="email[]"]').length >= MAX_OPTIONS) {
+                    $('#fieldIconsForm').find('.addButton').attr('disabled', 'disabled');
+                }
+            }
+        })
+
+        // Called after removing the field
+        .on('removed.field.bv', function(e, data) {
+           if (data.field === 'option[]') {
+                if ($('#fieldIconsForm').find(':visible[name="option[]"]').length < MAX_OPTIONS) {
+                    $('#fieldIconsForm').find('.addButton').removeAttr('disabled');
+                }
+            }
+        });
+
+    $('#choosereport').click(function()
+    {
+      			        $('#myModal').modal({
+      			            keyboard: false
+      			        });
+      			        $('#myModal').modal('show');
+    });
+
+    $(document).on('click','button.savechoose',function()
+    {
+    	current_id_list = [];
+    	current_name_list = [];
+    	$("input[type=checkbox]").each(function(i,d){
+            // console.log("D.VALUE",d.value);
+            if (d.checked) {
+                // console.log("D.VALUE",d.value);
+                current_id_list.push(d.value);
+                current_name_list.push(d.name);
+            }
+        });
+
+        // console.log(current_id_list,current_name_list);
+
+                    $('#myModal').modal('hide');
+                    display_str = current_name_list.join(';');
+                    $('#choosereport').attr('value',display_str);
+                    str = JSON.stringify({'report_id_list':current_id_list});
+                    $('#hiddenreportid').attr('value',str);
+                    // console.log(str);   
+    });
+
+    
+
+    function load_report()
+	{
+	    $('div[class=IndexDiv]').empty();
+	    $.getJSON('/chart/reportlist',function(data)
+	    {
+	            for (var j = 0 ; j < data.length ; j ++)
+	            {
+	                var rn = Math.floor(j/4);
+	                if (j % 4 == 0) {
+	                    $('div[class=IndexDiv][type=report]').append('<div class="row" num=' + rn + ' type=report></div>');
+	                };
+	                $('div[class=row][num=' + rn + '][type=report]').append('<div class="col-sm-3"><label class="checkbox-inline no_indent"><input type="checkbox" id=inlineCheckbox' + (j+1) + ' value=' + data[j].reportid + ' name="' + data[j].reportname + '" >'
+	                     + data[j].reportname + '</label></div>');
+	            }
+	    });
+	}
+
+    $('#timestart').datetimepicker({
+        pickDate:false,
+        pick12HourFormat: false,
+        format: 'HH:mm'
+    });
+});
+
+</script>
+<form id="fieldIconsForm" class="form-horizontal" method="POST" action="">
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="InputEmailSubject">Email Subject</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" id="InputEmailSubject" placeholder="Enter Email Subject" name="emailsubject">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="choosereport">Reports</label>
+        <div class="col-sm-5">
+          <input type="text" class="form-control" id="choosereport" placeholder="Choose Reports" name="report">
+        </div>
+    </div>
+
+    <div class="form-group hidden">
+        <label class="col-sm-3 control-label" for="hiddenreportid">Reports</label>
+        <div class="col-sm-5">
+          <input type="text" class="form-control" id="hiddenreportid" name="reportid">
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="timestart">Time Start</label>
+        <div class="col-sm-5">
+          <div class='input-group date' id='timestart'>
+            <input type='text' class="form-control" name="timestart"/>
+            <span class="input-group-addon"><span class="glyphicon glyphicon-calendar"></span></span>
+          </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="hiddenreportid">Period</label>
+        <div class="col-sm-5">
+          <select class="form-control" id="ScaleType" name="period">
+            <option value=86400>Daily</option>
+            <option value=604800>Weekly</option>
+          </select>
+        </div>
+    </div>
+
+    <div class="form-group hidden">
+        <label class="col-sm-3 control-label" >TimeZone</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" id="timezone" name="timezone">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label">Email Address</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" name="email[]" placeholder="Receiver email address"/>
+        </div>
+        <div class="col-sm-4">
+            <button type="button" class="btn btn-default addButton"><i class="fa fa-plus"></i></button>
+        </div>
+    </div>
+
+    <!-- The option field template containing an option field and a Remove button -->
+    <div class="form-group hide" id="optionTemplate">
+        <div class="col-sm-offset-3 col-sm-5">
+            <input class="form-control" type="text" name="email[]" placeholder="Receiver email address"/>
+        </div>
+        <div class="col-sm-4">
+            <button type="button" class="btn btn-default removeButton"><i class="fa fa-minus"></i></button>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-5 col-sm-offset-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog page">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="myModalLabel">Choos Reports</h4>
+      </div>
+      <div class="modal-body">
+        {% include 'chart/reportlist.html'%}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary savechoose">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

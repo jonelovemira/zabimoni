@@ -1,0 +1,279 @@
+from sqlalchemy import create_engine, MetaData, Table,select
+from sqlalchemy import Column,Integer, String, Text ,DateTime, Float,BigInteger
+from sqlalchemy.orm import mapper, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import func,union
+# from monitor import db
+
+def zabbix_history(engine,itemid_list,ground):
+
+    engine = engine #create_engine('mysql://root:root@localhost/zabbix')
+    Base = declarative_base(engine)
+
+
+
+
+    class Zabbixhistory(Base):
+        __tablename__ = 'history'
+        itemid = Column('itemid',Integer,primary_key=True)
+        clock = Column('clock',BigInteger,primary_key=True)
+        value = Column('value',Float)
+        ns = Column('ns',Integer)
+        
+        def __repr__(self):
+            return "<zabbix history itemid - %s value - %s at %s>" % (self.itemid,self.value,self.clock)
+
+
+    class Zabbixhistoryuint(Base):
+        __tablename__ = 'history_uint'
+        itemid = Column('itemid',Integer,primary_key=True)
+        clock = Column('clock',BigInteger,primary_key=True)
+        value = Column('value',Float)
+        ns = Column('ns',Integer)
+
+        def __repr__(self):
+            return "<zabbix history_uint itemid - %s value - %s at %s>" % (self.itemid,self.value,self.clock)
+
+    #----------------------------------------------------------------------
+    def loadSession():
+        """"""  
+        metadata = MetaData(engine)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        return session
+
+    def gen_history_select_object(item,ground):
+        s1 = select(    [Zabbixhistory.itemid,\
+                        func.count(Zabbixhistory.itemid).label('count'),\
+                        func.avg(Zabbixhistory.value).label('avg'),\
+                        func.max(Zabbixhistory.value).label('max'),\
+                        func.min(Zabbixhistory.value).label('min'),\
+                        func.floor((Zabbixhistory.clock)/ground).label('minute') ]). \
+            where(Zabbixhistory.itemid == item). \
+            group_by('minute') 
+
+        return s1
+
+    def gen_history_uint_select_object(item,ground):
+        s1 = select(    [Zabbixhistoryuint.itemid,\
+                        func.count(Zabbixhistoryuint.itemid).label('count'),\
+                        func.avg(Zabbixhistoryuint.value).label('avg'),\
+                        func.max(Zabbixhistoryuint.value).label('max'),\
+                        func.min(Zabbixhistoryuint.value).label('min'),\
+                        func.floor((Zabbixhistoryuint.clock)/ground).label('minute') ]). \
+            where(Zabbixhistoryuint.itemid == item). \
+            group_by('minute') 
+
+        return s1
+
+    def get_itemlist_history(itemid_list,ground):
+
+        s = []
+
+        for item in itemid_list:
+            tmp_s = gen_history_select_object(item,ground)
+            s.append(tmp_s)
+
+        u = union(*s).alias('Newtable')
+
+        session = loadSession()
+
+        res = session.query(func.sum(u.c.count).label('count'),\
+                      func.avg(u.c.avg).label('avg'),\
+                      func.max(u.c.max).label('max'),\
+                      func.min(u.c.min).label('min'),\
+                      u.c.minute).group_by(u.c.minute).all()
+        return res
+
+
+    def get_itemlist_history_uint(itemid_list,ground):
+
+        s = []
+
+        for item in itemid_list:
+            tmp_s = gen_history_uint_select_object(item,ground)
+            s.append(tmp_s)
+
+        u = union(*s).alias('Newtable')
+
+        session = loadSession()
+
+        res = session.query(func.sum(u.c.count).label('count'),\
+                      func.avg(u.c.avg).label('avg'),\
+                      func.max(u.c.max).label('max'),\
+                      func.min(u.c.min).label('min'),\
+                      u.c.minute).group_by(u.c.minute).all()
+        return res
+
+    def get_history(itemid_list,ground):
+
+        return get_itemlist_history(itemid_list,ground) + get_itemlist_history_uint(itemid_list,ground)
+
+    return get_history(itemid_list,ground) 
+if __name__ == "__main__":
+    engine = create_engine('mysql://root:root@localhost/zabbix')
+    itemlist = ['28373','28375']
+    ground = 60
+    print zabbix(engine,itemlist,ground)
+#     # session = loadSession()
+#     # res_h = session.query(func.sum(getattr(Zabbixhistory,"value")).label('value')).filter_by(itemid='28373').all()
+#     ground = 60
+
+#     itemid_list = ['28373','28374','28375']
+
+#     print get_history(itemid_list,ground)
+#     # res_1 = session.query(  Zabbixhistory.itemid,\
+#     #                         func.count(getattr(Zabbixhistory,'itemid')).label('count'),\
+#     #                         func.avg(getattr(Zabbixhistory,'value')).label('avg'),\
+#     #                         func.max(getattr(Zabbixhistory,'value')).label('max'),\
+#     #                         func.min(getattr(Zabbixhistory,'value')).label('min'),\
+#     #                         func.floor((getattr(Zabbixhistory,"clock")-base)/base).label('minute')).filter_by(itemid='28373').group_by('minute')
+    
+#     # res_2 = session.query(  Zabbixhistory.itemid,\
+#     #                         func.count(getattr(Zabbixhistory,'itemid')).label('count'),\
+#     #                         func.avg(getattr(Zabbixhistory,'value')).label('avg'),\
+#     #                         func.max(getattr(Zabbixhistory,'value')).label('max'),\
+#     #                         func.min(getattr(Zabbixhistory,'value')).label('min'),\
+#     #                         func.floor((getattr(Zabbixhistory,"clock")-base)/base).label('minute')).filter_by(itemid='28375').group_by('minute')
+
+#     # res_3 = res_1.union(res_2)
+#     # res = res_3.all()
+
+#     # itemid_list = ['28373','28375']
+#     # count = 0
+#     # for iid in itemid_list:
+#     #     res_1 = session.query(  getattr(Zabbixhistory,'itemid'),\
+#     #                         func.count(getattr(Zabbixhistory,'itemid')).label('count'),\
+#     #                         func.avg(getattr(Zabbixhistory,'value')).label('avg'),\
+#     #                         func.max(getattr(Zabbixhistory,'value')).label('max'),\
+#     #                         func.min(getattr(Zabbixhistory,'value')).label('min'),\
+#     #                         func.floor((getattr(Zabbixhistory,"clock")-ground)/ground).label('minute')).filter_by(itemid=iid).group_by('minute')
+#     #     if count == 0:
+#     #         base = res_1
+#     #     count += 1
+#     #     if count >= 2:
+#     #         base = base.union(res_1)
+
+#     # x = base.subquery('table_sum')
+#     # res = session.query(x.count).all()
+#     # print res
+#     # # q = base.from_self('anon_2_count').all()
+#     # q = base.from_statement()
+#     # print q
+
+#     # stat = base.subquery('base')
+#     # # print stat
+#     # res = session.query(stat).all()
+#     # res = session.query(base).all()
+#     # res = base.group_by('minute')
+#     # res = session.query(func.sum(base.count).label('count'),\
+#     #               func.avg(base.avg).label('avg'),\
+#     #               func.max(base.max).label('max'),\
+#     #               func.min(base.min).label('min'),\
+#     #               base.minute).group_by(base.minute).all()
+
+
+
+#     # # res_h = session.query(Zabbixhistory).filter_by(itemid='28373').all()
+#     # # res_u = session.query(Zabbixhistoryuint).filter_by(itemid='28373').all()
+#     # res_u = []
+#     # res = res_h + res_u
+#     # # res[1].title
+#     # for row in res:
+#     #     print row
+
+#     # itemid_list = ['28373','28375']
+#     # count = 0
+
+#     # for item in itemid_list:
+#     #     s = select( [Zabbixhistory.itemid,\
+#     #                 func.count(Zabbixhistory.itemid).label('count'),\
+#     #                 func.avg(Zabbixhistory.value).label('avg'),\
+#     #                 func.max(Zabbixhistory.value).label('max'),\
+#     #                 func.min(Zabbixhistory.value).label('min'),\
+#     #                 func.floor((Zabbixhistory.clock-base)/base).label('minute') ]). \
+#     #         where(Zabbixhistory.itemid == item). \
+#     #         group_by('minute')
+
+#     #     print s
+
+#     #     count += 1
+#     #     base = s
+#     #     if count >= 2:
+#     #         base = base.union(s).alias('alias'+str(count))
+
+#     # res = session.query(func.sum(base.c.count).label('count'),\
+#     #                 func.avg(base.c.avg).label('avg'),\
+#     #                 func.max(base.c.max).label('max'),\
+#     #                 func.min(base.c.min).label('min'),\
+#     #                 base.c.minute).group_by(base.c.minute).all()
+
+
+
+#     # s1 = select(    [Zabbixhistory.itemid,\
+#     #                 func.count(Zabbixhistory.itemid).label('count'),\
+#     #                 func.avg(Zabbixhistory.value).label('avg'),\
+#     #                 func.max(Zabbixhistory.value).label('max'),\
+#     #                 func.min(Zabbixhistory.value).label('min'),\
+#     #                 func.floor((Zabbixhistory.clock-ground)/ground).label('minute') ]). \
+#     #     where(Zabbixhistory.itemid == '28373'). \
+#     #     group_by('minute')
+
+#     # # print s1
+
+#     # s2 = select(    [Zabbixhistory.itemid,\
+#     #                 func.count(Zabbixhistory.itemid).label('count'),\
+#     #                 func.avg(Zabbixhistory.value).label('avg'),\
+#     #                 func.max(Zabbixhistory.value).label('max'),\
+#     #                 func.min(Zabbixhistory.value).label('min'),\
+#     #                 func.floor((Zabbixhistory.clock-ground)/ground).label('minute')] ). \
+#     #     where(Zabbixhistory.itemid == '28375'). \
+#     #     group_by('minute')
+
+#     # s3 = select(    [Zabbixhistory.itemid,\
+#     #                 func.count(Zabbixhistory.itemid).label('count'),\
+#     #                 func.avg(Zabbixhistory.value).label('avg'),\
+#     #                 func.max(Zabbixhistory.value).label('max'),\
+#     #                 func.min(Zabbixhistory.value).label('min'),\
+#     #                 func.floor((Zabbixhistory.clock-ground)/ground).label('minute')] ). \
+#     #     where(Zabbixhistory.itemid == '28374'). \
+#     #     group_by('minute')
+
+#     # # s1.object()
+#     # u = union(*[s1,s2,s3]).alias('new_tabel')
+
+#     # res = session.query(func.sum(u.c.count).label('count'),\
+#     #               func.avg(u.c.avg).label('avg'),\
+#     #               func.max(u.c.max).label('max'),\
+#     #               func.min(u.c.min).label('min'),\
+#     #               u.c.minute).group_by(u.c.minute).all()
+
+#     # count = 0
+#     # for row in res:
+#     #     count += row[0]
+
+#     # print "count",count
+
+#     # q = s1.union(s2).union(s3)
+#     # q = q1.union(s3)
+
+#     # s1 = select([Zabbixhistory.itemid]).where(Zabbixhistory.itemid != None)
+#     #session.query(s1)
+
+
+#     # q = s1.union(s2).alias('alias')
+#     # print q
+#     # res = session.query(func.sum(q.c.count).label('count'),\
+#     #                 func.avg(q.c.avg).label('avg'),\
+#     #                 func.max(q.c.max).label('max'),\
+#     #                 func.min(q.c.min).label('min'),\
+#     #                 q.c.minute).group_by(q.c.minute).all()
+   
+#     # count = 0
+#     # for row in res:
+#     #     count += row[1]
+#     #     # if row[0] == 0:
+#     #  #        print row
+#     #  #        break
+
+#     # print "count,",count

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+
+
+{% for attach in attach_info %}
+	<p>[ {{attach.title}} ] </p>
+	<img src="cid:{{ attach.cid }}">
+	<p>[ {{attach.discription}} ] </p>
+{% endfor %}
+
+</body>
+</html>
