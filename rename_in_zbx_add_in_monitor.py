@@ -14,7 +14,7 @@ if __name__ == '__main__':
 		session.close()
 		hostid = i.hostid
 		zabbix = zabbix_api()
-		hostid = zabbix_api.host_update(hostid,hostname=host_ip,host_ip=host_ip)
+		hostid = zabbix.host_update(hostid,hostname=host_ip,host_ip=host_ip)
 	except Exception, e:
 		raise Exception('error',str(e))
 
