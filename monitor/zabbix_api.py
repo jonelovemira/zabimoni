@@ -130,7 +130,7 @@ class zabbix_api:
 
 	def host_update(self,hostid,hostname=None,host_ip=None):
 		session = loadSession()
-		i = session.query(Zabbixinterface).filter_by(hostid=host_id).first()
+		i = session.query(Zabbixinterface).filter_by(hostid=hostid).first()
 		tmp_hostname = i.name
 		tmp_host_ip = i.ip
 		session.close()
