@@ -131,7 +131,8 @@ class zabbix_api:
 	def host_update(self,hostid,hostname=None,host_ip=None):
 		session = loadSession()
 		i = session.query(Zabbixinterface).filter_by(hostid=hostid).first()
-		tmp_hostname = i.name
+		h = session.query(Zabbixhosts).filter_by(hostid=hostid).first()
+		tmp_hostname = h.name
 		tmp_host_ip = i.ip
 		session.close()
 
@@ -147,18 +148,9 @@ class zabbix_api:
 		data = json.dumps({ 
 			"jsonrpc":"2.0", \
 			"method":"host.update", 
-			"params":{ 
-				"host": hostname,
-				"interfaces": [ 
-					{ 
-						"type": 1, 
-						"main": 1, 
-						"useip": 1, 
-						"ip": host_ip, 
-						"dns": "", 
-						"port": "10050" 
-					} 
-				]
+			"params":{
+				"hostid": hostid ,
+				"host": hostname
 			}, 
 			"auth": self.user_login(), 
 			"id":1
