@@ -1,8 +1,9 @@
 from flask import Flask
 # from base import db
 from flask.ext.sqlalchemy import SQLAlchemy
-from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
+from config import basedir, ADMINS, MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD, TMP_FILE
 from flask.ext.login import LoginManager
+import os
 # from flask.ext.mail import Mail
 
 
@@ -33,7 +34,9 @@ db = SQLAlchemy(app)
 if not app.debug:
     import logging
     from logging.handlers import RotatingFileHandler
-    file_handler = RotatingFileHandler('tmp/monitor.log', 'a', 1 * 1024 * 1024, 10)
+    #tmp_file = '/home/monitor/project/monitor-0.3.7/tmp/monitor.log'
+    tmp_file = TMP_FILE
+    file_handler = RotatingFileHandler(tmp_file, 'a', 1 * 1024 * 1024, 10)
     file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
     app.logger.setLevel(logging.INFO)
     file_handler.setLevel(logging.INFO)
