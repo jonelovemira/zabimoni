@@ -150,7 +150,8 @@ class zabbix_api:
 			"method":"host.update", 
 			"params":{
 				"hostid": hostid ,
-				"host": hostname
+				"host": hostname,
+				"name":hostname
 			}, 
 			"auth": self.user_login(), 
 			"id":1

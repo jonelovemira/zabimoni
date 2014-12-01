@@ -1583,3 +1583,4 @@ KeyError: 'item_list'
 2014-12-01 03:40:18,660 INFO: monitor startup [in /home/jone/flask_project/monitor-0.3.7/monitor/__init__.py:41]
 2014-12-01 03:40:30,626 INFO: monitor startup [in /home/jone/flask_project/monitor-0.3.7/monitor/__init__.py:41]
 2014-12-01 03:42:08,188 INFO: monitor startup [in /home/jone/flask_project/monitor-0.3.7/monitor/__init__.py:41]
+2014-12-01 03:42:46,171 INFO: monitor startup [in /home/jone/flask_project/monitor-0.3.7/monitor/__init__.py:41]
