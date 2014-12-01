@@ -128,17 +128,27 @@ class zabbix_api:
 		finally:
 			session.close()
 
-	def host_update(self,hostid,host_ip=None):
+	def host_update(self,hostid,hostname=None,host_ip=None):
 		session = loadSession()
 		i = session.query(Zabbixinterface).filter_by(hostid=host_id).first()
-		host_ip = i.ip
+		tmp_hostname = i.name
+		tmp_host_ip = i.ip
 		session.close()
+
+		if hostname == None:
+			hostname = tmp_hostname
+
+		if host_ip == None:
+			host_ip = tmp_host_ip
+
+		
 
 
 		data = json.dumps({ 
 			"jsonrpc":"2.0", \
 			"method":"host.update", 
 			"params":{ 
+				"host": hostname,
 				"interfaces": [ 
 					{ 
 						"type": 1, 
