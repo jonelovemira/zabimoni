@@ -331,6 +331,35 @@ class zabbix_api:
 		finally:
 			session.close()
 
+	def trigger_update(self,triggerid,status):
+		data = json.dumps({
+					"jsonrpc":"2.0",
+					"method":"trigger.update",
+					"params":{
+						"triggerid":triggerid,
+						"status":status
+					},
+					"auth":self.user_login(),
+					"id":1
+		})
+
+		request = urllib2.Request(self.url, data)
+
+		for key in self.header: 
+			request.add_header(key, self.header[key]) 
+	          
+		try: 
+			result = urllib2.urlopen(request) 
+		except URLError as e: 
+			raise MonitorException('trigger cannot update')
+		else: 
+			response = json.loads(result.read()) 
+			result.close()
+			if response.has_key('result'):
+				return response['result']
+			else:
+				raise MonitorException('trigger cannot update ,' + str(response))
+
 
 if __name__ == '__main__':
 	# zabbix = zabbix_api('192.168.221.130')

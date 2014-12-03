@@ -234,6 +234,19 @@ class Zabbixitemapplication(Base):
     def __repr__(self):
         return '<zabbix items_applications itemappid %s>' % (self.itemappid)
 
+class Zabbixfunctions(Base):
+    __tablename__ = 'functions'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return '<zabbix functions %s>' % (self.function)
+
+class Zabbixtriggers(Base):
+    __tablename__ = 'triggers'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return '<zabbix triggers %s>' % (self.expression)
+
+
 def loadSession():
     session = None
     for attempt in range(3):

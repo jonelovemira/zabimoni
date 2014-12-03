@@ -103,9 +103,10 @@ function refresh_item_container(check_result)
             value = data[data_it].items.join('@');
             name = data[data_it].name;
             itemdatatype = data[data_it].itemdatatypename;
+            time_frequency = data[data_it].time_frequency;
             // console.log(itemdatatypename);
             // $('div[class=itemContainer]').append('<div typename='+);
-            html_tag = '<button class="btn btn-sm btn-default itemtype" value=' + value + ' itemtypeid=' + data_it + ' name="' + name + '">' + name + '</button>' ;
+            html_tag = '<button class="btn btn-sm btn-default itemtype" value=' + value + ' itemtypeid=' + data_it + ' name="' + name + '" time_frequency=' + time_frequency + '>' + name + '</button>' ;
             $('div[itemdatatype="' + itemdatatype + '"]').append(html_tag);
         };
     })

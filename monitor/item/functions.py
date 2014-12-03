@@ -299,7 +299,8 @@ def update_host(hostid,hostname,areaid,serviceid,host_ip=None):
 			item = Item(itemid,it.itemtypename,host,it)
 		else:
 			# update
-			zabbix.item_update(item.itemid,it.itemkey,2,it.zabbixvaluetype)
+			if it.zabbixvaluetype != None:
+				zabbix.item_update(item.itemid,it.itemkey,2,it.zabbixvaluetype)
 			item.area = area
 			item.itemtype = it
 			item.service = service
@@ -361,13 +362,13 @@ def find_object_2_action(kinds,indexid):
 	o = arr[0].query.filter(arr[1] + '=' + str(indexid)).first()
 	return o
 
-def add_key(kinds,indexid,key,itemdatatypename,unitname,zabbixvaluetype):
+def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype):
 	kinds = int(kinds)
 	if indexid == None:
 		indexid = 1
 	o = find_object_2_action(kinds,indexid)
 	# print o
-	add_it(o,key,itemdatatypename,unitname,zabbixvaluetype)
+	add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype)
 
 	update_key_to_host(kinds,o)
 

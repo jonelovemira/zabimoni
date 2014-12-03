@@ -169,7 +169,7 @@ def get_all_itemtypes_for_diff_index(arg,arg_filter_key,arg_filter_value = []):
 
 	return allargitem
 
-def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
+def get_all_itemtypes2(area=[],service=[],host=[],aws=[]):
 
 	indexes = {
 				1:{'type':Area,'key':'areaid','value':area},
@@ -209,6 +209,129 @@ def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
 			result[item.itemtype_id]['itemdatatypename'] = itemtype.itemdatatype.itemdatatypename
 			result[item.itemtype_id]['items'] = [item.itemid]
 	return result
+
+def get_area_host(area):
+	result = []
+	if len(area) == 0:
+		result = Host.query.all()
+	else:
+		for a in area:
+			atmp = Area.query.filter_by(areaid=a).first()
+			result = list( set(result) | set(atmp.hosts))
+
+	return result
+
+def get_service_host(service):
+	result = []
+	if len(service) == 0:
+		result = Host.query.all()
+	else:
+		for s in service:
+			stmp = Service.query.filter_by(serviceid=s).first()
+			result = list( set(result) | set(stmp.hosts))
+
+	return result
+
+def get_hosts(host):
+	result = []
+	if len(host) == 0:
+		result = Host.query.all()
+	else:
+		for h in host:
+			htmp = Host.query.filter_by(hostid=h).first()
+			result.append(htmp)
+	return result
+
+def get_area_aws(area):
+	result = []
+	if len(area) == 0:
+		result = Aws.query.all()
+	else:
+		for a in area:
+			atmp = Area.query.filter_by(areaid=a).first()
+			result = list( set(result) | set(atmp.awses))
+
+	return result
+
+def get_aws(aws):
+	result = []
+	if len(aws) == 0:
+		result = Aws.query.all()
+	else:
+		for a in aws:
+			atmp = Aws.query.filter_by(awsid=a).first()
+			result.append(atmp)
+
+	return result
+
+
+
+
+def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
+	result = {}
+	# all index are empty
+	if len(area) == 0 and len(service) == 0 and len(host) == 0 and len(aws) == 0:
+		return result
+
+	# choosed service or host will comfilct with aws
+	if (len(service) != 0 or len(host) != 0) and len(aws) != 0:
+		return result
+
+	finalhost = []
+
+	# may have some hosts
+	if not (len(area) == 0 and len(service) == 0 and len(host) == 0):
+	 	ahosts = get_area_host(area)
+	 	shosts = get_service_host(service)
+	 	hhosts = get_hosts(host)
+	 	# get intersect of hosts
+		finalhost = list(set(ahosts) & set(shosts) & set(hhosts))
+
+	# have no items to monitor
+	if len(finalhost) == 0 and len(aws) == 0:
+		return result
+
+	#collect normal monitor items
+	for h in finalhost:
+		for item in h.items.all():
+			if result.has_key(item.itemtype_id):
+				result[item.itemtype_id]['items'].append(item.itemid)
+			else :
+				itemtype = item.itemtype
+				result[item.itemtype_id] = {}
+				result[item.itemtype_id]['name'] = itemtype.itemtypename
+				result[item.itemtype_id]['itemdatatypename'] = itemtype.itemdatatype.itemdatatypename
+				result[item.itemtype_id]['items'] = [item.itemid]
+				result[item.itemtype_id]['time_frequency'] = 60
+	if len(result) != 0:
+		return result
+
+	# have no aws items
+	if len(area) == 0 and len(aws) == 0:
+		return result
+
+	
+	checkedaws = get_aws(aws)
+	areaaws = get_area_aws(area)
+	finalaws = list( set(checkedaws) & set(areaaws))
+
+	# collect items in intersect itemtypes
+	for fa in finalaws:
+		for it in fa.itemtypes:
+			result[it.itemtypeid] = {}
+			result[it.itemtypeid]['name'] = it.itemtypename
+			result[it.itemtypeid]['itemdatatypename'] = it.itemdatatype.itemdatatypename
+			result[it.itemtypeid]['items'] = []
+			for i in it.items.all():
+				result[it.itemtypeid]['items'].append(i.itemid)
+			result[it.itemtypeid]['time_frequency'] = 14400
+
+	return result
+
+
+
+
+
 
 def arg_2_array(arg=''):
 	result = []

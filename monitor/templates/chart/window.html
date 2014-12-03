@@ -169,8 +169,9 @@ $(function () {
           // console.log(name);
           var display_name = generate_display_name(name,check_result);
           var itemtypeid = $(this).attr('itemtypeid');
-          if (itemtypeid <= 28 ) {time_frequency = 14400;}
-          else time_frequency=60;
+          time_frequency = $(this).attr('time_frequency');
+          // if (itemtypeid <= 28 ) {time_frequency = 14400;}
+          // else time_frequency=60;
           value = value.split('@');
           create_series_chart(itemtypeid,value,display_name);
           $(this).attr('disabled','true');
