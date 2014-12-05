@@ -88,94 +88,101 @@ def add_update_host(hostname, servicename,host_ip,areaname):
 
 	zabbix = zabbix_api()
 
-	print '.'*6 , " Checking for preconditions " , '.'*6
-	area = Area.query.filter_by(areaname=areaname).first()
-	if area == None:
-		raise AreaNotExist('input area do not exists')
+	try:
+		# check preconditions
+		print '.'*6 , " Checking for preconditions " , '.'*6
+		area = Area.query.filter_by(areaname=areaname).first()
+		if area == None:
+			raise AreaNotExist('input area do not exists')
 
+		service = Service.query.filter_by(servicename=servicename).first()
+		if service == None:
+			raise ServiceNotExist('input service do not exists')
 
-	service = Service.query.filter_by(servicename=servicename).first()
-	if service == None:
-		raise ServiceNotExist('input service do not exists')
+		host_group_name = [HOST_GROUP_NAME]
+		template_name = [TEMPLATE_NAME] 
+					
+		print "processing host: %s in service: %s ..." %  (hostname,servicename)
 
-	host_group_name = [HOST_GROUP_NAME]
-	template_name = [TEMPLATE_NAME] 
-				
-	print "processing host: %s in service: %s ..." %  (hostname,servicename)
-
-	#create host via zabbix api
-	print "creating host via zabbix_api..."
-	session = loadSession()
-	checkh = session.query(Zabbixhosts).filter_by(name=host_ip).first()
-	session.close()
-	hostid = None
-	if checkh == None:
-		print host_ip,host_ip,host_group_name,template_name
-		hostid = zabbix.host_create(host_ip,host_ip,host_group_name,template_name)
-	else:
-		hostid = checkh.hostid
-
-	#create host in monitor database
-	h1 = Host.query.filter_by(hostid = hostid).first()
-	if h1 == None:
-		h1 = Host(hostid,hostname,area,service)
-		db.session.add(h1)
-
-	# update the relationship between area and service
-	t = h1.area.add_service(h1.service)
-	if t != None:
-		db.session.add(t)
-
-	for i in h1.items:
-		if i.itemtype == None:
-			try:
-				zabbix.item_delete(i.itemid)
-			except Exception, e:
-				pass
-			session = loadSession()
-			c = session.query(Zabbixitems).filter_by(itemid=i.itemid).count()
-			session.close()
-			if c > 0:
-				raise MonitorException('can not delete by zabbix api')
-			db.session.delete(i)
-
-	
-	allitemtype = nit_ait_sit_zit(area,service)
-
-	
-	for it in allitemtype:
+		#create host via zabbix api
+		print "creating host if not exists via zabbix_api..."
 		session = loadSession()
-		addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+		checkh = session.query(Zabbixhosts).filter_by(name=host_ip).first()
 		session.close()
-		itemid = None
-		if addbytem == None:
-			interface_id = get_host_interfaceid(hostid)
-			itemid = zabbix.item_create(it.itemkey,hostid,host_ip,interface_id,2,it.zabbixvaluetype)
+		hostid = None
+		if checkh == None:
+			print host_ip,host_ip,host_group_name,template_name
+			hostid = zabbix.host_create(host_ip,host_ip,host_group_name,template_name)
 		else:
-			itemid = addbytem.itemid
-			print "update",itemid
-			if it.zabbixvaluetype != None:
-				try:
-					zabbix.item_update(itemid,it.itemkey,2,it.zabbixvaluetype)
-				except Exception as e:
-					print e
+			hostid = checkh.hostid
+			# dangerous to update as it will clear history data in zabbix database
+			# host_update(hostid,hostname=None,host_ip=None)
 
-		if itemid == None:
-			db.session.rollback()
-			raise ItemCannotCreate('Item cannot create by zabbix api')
+		#create host in monitor database
+		h1 = Host.query.filter_by(hostid = hostid).first()
+		if h1 == None:
+			h1 = Host(hostid,hostname,area,service)
+			db.session.add(h1)
 
-		addi = Item.query.filter_by(itemid = itemid).first()
-		if addi == None:
-			addi = Item(itemid,it.itemtypename,h1,it)
-			db.session.add(addi)
+		# update the relationship between area and service
+		t = h1.area.add_service(h1.service)
+		if t != None:
+			db.session.add(t)
 
-	db.session.commit()
+
+		# delete in monitor database
+		delete_itemids = []
+		for i in h1.items:
+			if i.itemtype == None:
+				delete_itemids.append(i.itemid)
+				db.session.delete(i)
+
+
+		# delete in zabbix database
+		try:
+			zabbix.item_delete(delete_itemids)
+		except Exception, e:
+			pass
+		
+
+		# create items which is added later
+		allitemtype = nit_ait_sit_zit(area,service)
+
+		for it in allitemtype:
+			session = loadSession()
+			addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+			session.close()
+			itemid = None
+
+			# do not exist in zabbix database will create now
+			if addbytem == None:
+				if it.zabbixvaluetype == None:
+					raise MonitorException('has no template items')
+				interface_id = get_host_interfaceid(hostid)
+				itemid = zabbix.item_create(it.itemkey,hostid,host_ip,interface_id,2,it.zabbixvaluetype)
+			else:
+				itemid = addbytem.itemid
+				print "update",itemid
+				if it.zabbixvaluetype != None:
+					try:
+						zabbix.item_update(itemid,it.itemkey,2,it.zabbixvaluetype)
+					except Exception as e:
+						print e
+
+			# add in monitor database if it do not exist
+			addi = Item.query.filter_by(itemid = itemid).first()
+			if addi == None:
+				addi = Item(itemid,it.itemtypename,h1,it)
+				db.session.add(addi)
+
+	except Exception, e:
+		zabbix.rollback()
+		raise MonitorException('can not add or update host',str(e))
 
 	print "host: %s in service: %s add items complete!" %  (hostname,servicename)
 	return hostid
 
 def delete_host(hostid):
-	zabbix = zabbix_api()
 	host = Host.query.filter_by(hostid=hostid).first()
 	if host == None:
 		raise MonitorException('host to be delete does not exists')
@@ -184,12 +191,11 @@ def delete_host(hostid):
 	for i in items:
 		db.session.delete(i)
 	db.session.delete(host)
+	zabbix = zabbix_api()
 	zabbix.host_delete([hostid])
 
 
 def add_host(hostname, servicename,host_ip,areaname):
-
-	zabbix = zabbix_api()
 
 	''' preconditions '''
 	area = Area.query.filter_by(areaname=areaname).first()
@@ -204,47 +210,56 @@ def add_host(hostname, servicename,host_ip,areaname):
 
 	host_group_name = [HOST_GROUP_NAME]
 	template_name = [TEMPLATE_NAME] 
-				
-	hostid = zabbix.host_create(host_ip,host_ip,host_group_name,template_name)
+	hostid = None
 
-	h1 = Host(hostid,hostname,area,service)
-	db.session.add(h1)
+	zabbix = zabbix_api()
 
-	allitemtype = nit_ait_sit_zit(area,service)
+	try:
+		# add host record in zabbix database, template items will create now
+		hostid = zabbix.host_create(host_ip,host_ip,host_group_name,template_name)
 
+		# add host record in monitor database
+		h1 = Host(hostid,hostname,area,service)
+		db.session.add(h1)
 
-	for it in allitemtype:
-		session = loadSession()
-		addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
-		session.close()
-		itemid = None
-		if addbytem == None:
-			interface_id = get_host_interfaceid(hostid)
-			itemid = zabbix.item_create(it.itemkey,hostid,host_ip,interface_id,2,it.zabbixvaluetype)
-		else:
-			itemid = addbytem.itemid
+		# all itemtype need to add
+		allitemtype = nit_ait_sit_zit(area,service)
 
-		addi = Item(itemid,it.itemtypename,h1,it)
-		db.session.add(addi)
+		for it in allitemtype:
+			session = loadSession()
+			addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+			session.close()
+			itemid = None
 
-		# update related chart series
-		s = Series.query.filter_by(host_id='').filter_by(aws_id='').filter_by(itemtype_id=it.itemtypeid).first()
-		if s != None:
-			if str(area.areaid) in s.area_id or str(service.serviceid) in s.service_id:
-				s.add_item(addi)
-				db.session.add(s)	
+			# not template items
+			if addbytem == None:
+				interface_id = get_host_interfaceid(hostid)
+				itemid = zabbix.item_create(it.itemkey,hostid,host_ip,interface_id,2,it.zabbixvaluetype)
+			else:
+				itemid = addbytem.itemid
 
+			# add record in monitor database
+			addi = Item(itemid,it.itemtypename,h1,it)
+			db.session.add(addi)
+
+			# update related chart series
+			s = Series.query.filter_by(host_id='').filter_by(aws_id='').filter_by(itemtype_id=it.itemtypeid).first()
+			if s != None:
+				if str(area.areaid) in s.area_id or str(service.serviceid) in s.service_id:
+					s.add_item(addi)
+					db.session.add(s)
+
+	except Exception, e:
+		zabbix.rollback()
+		raise Exception(' cannot create host',str(e))
+	
 
 	return hostid
-
-# def is_zabbix_item_changed(item,it):
-# 	if item.itemname != it.itemtypename:
-# 		return True
-# 	if 
 
 
 def update_host(hostid,hostname,areaid,serviceid,host_ip=None):
 
+	# checkout preconditions
 	area = Area.query.filter_by(areaid=areaid).first()
 	if area == None:
 		raise AreaNotExist('area do not exists')
@@ -258,58 +273,60 @@ def update_host(hostid,hostname,areaid,serviceid,host_ip=None):
 		raise HostNotExist('host do not exists')
 
 	zabbix = zabbix_api()
-	# zabbix.update_host(hostid,host_ip)
+	try:
+		# zabbix.update_host(hostid,host_ip)
+		host.hostname = hostname
+		host.area = area
+		host.service = service
 
-	host.hostname = hostname
-	host.area = area
-	host.service = service
+		# delete items in monitor database
+		delete_itemids = []
+		for i in host.items:
+			if i.itemtype == None:
+				delete_itemids.append(i.itemid)
+				db.session.delete(i)
 
-	envitemtype = nit_ait_sit_zit(area,service)
-	hostitemtype = host.itemtypes.all()
+		# delete items in zabbix database
+		try:
+			zabbix.item_delete(delete_itemids)
+		except Exception, e:
+			pass
 
-	allitemtype = list( set(envitemtype) | set(hostitemtype) )
+		envitemtype = nit_ait_sit_zit(area,service)
+		hostitemtype = host.itemtypes.all()
+		allitemtype = list( set(envitemtype) | set(hostitemtype) )
 
-	# olditemtype = get_old_allitemtype(host)
+		# add items which added later
+		for it in allitemtype:
+			item = it.items.filter_by(host_id=hostid).first()
+			if item == None:
+				session = loadSession()
+				zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+				session.close()
+				# create item in zabbix database if it not exists
+				if zitem != None:
+					itemid = zitem.itemid
+				else:
+					itemid = zabbix.item_create(it.itemkey,hostid,None,None,2,it.zabbixvaluetype)
 
-	for i in host.items:
-		if i.itemtype == None:
-			try:
-				zabbix.item_delete(i.itemid)
-			except Exception, e:
-				pass
-			session = loadSession()
-			c = session.query(Zabbixitems).filter_by(itemid=i.itemid).count()
-			session.close()
-			if c > 0:
-				raise MonitorException('can not delete by zabbix api')
-			db.session.delete(i)
-
-	for it in allitemtype:
-		item = it.items.filter_by(host_id=hostid).first()
-		if item == None:
-			# create
-			interface_id = get_host_interfaceid(hostid)
-			session = loadSession()
-			zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
-			session.close()
-			if zitem != None:
-				itemid = zitem.itemid
+				# create item record in monitor database
+				item = Item(itemid,it.itemtypename,host,it)
 			else:
-				itemid = zabbix.item_create(it.itemkey,hostid,None,None,2,it.zabbixvaluetype)
-			item = Item(itemid,it.itemtypename,host,it)
-		else:
-			# update
-			if it.zabbixvaluetype != None:
-				zabbix.item_update(item.itemid,it.itemkey,2,it.zabbixvaluetype)
-			item.area = area
-			item.itemtype = it
-			item.service = service
-			item.aws = it.aws
-			
-		db.session.add(item)
+				# update in both zabbix database or monitor database
+				if it.zabbixvaluetype != None:
+					zabbix.item_update(item.itemid,it.itemkey,2,it.zabbixvaluetype)
+				item.area = area
+				item.itemtype = it
+				item.service = service
+				item.aws = it.aws
 
-	db.session.add(host)
+			db.session.add(item)
+		db.session.add(host)
+	except Exception, e:
+		zabbix.rollback()
+		raise Exception('can not update',str(e))
 
+# will test on current host 
 def it_test(key):
 	session = loadSession()
 	th = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
@@ -321,8 +338,11 @@ def it_test(key):
 	zabbix = zabbix_api()
 	itemid = zabbix.item_create(key,hostid)
 
-	if itemid != None:
-		zabbix.item_delete(itemid)
+	try:
+		if itemid != None:
+			zabbix.item_delete([itemid])
+	except Exception, e:
+		pass
 
 def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype):
 	idt = Itemdatatype.query.filter_by(itemdatatypeid=itemdatatypeid).first()
@@ -377,8 +397,51 @@ def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype):
 # 	db.session.add(zit)
 # 	raise MonitorException('test')
 	
+def get_formula_for_items(itemids):
+	result = ''
+	count = 0
+	session = loadSession()
+	try:
+		for itemid in itemids:
+			item_formula = ''
+			if count == 0:
+				count += 1
+			else:
+				item_formula = '+'
 
+			item_formula += 'last("'
+			zi = session.query(Zabbixitems).filter_by(itemid=itemid).first()
+			hostid = zi.hostid
+			hostname = session.query(Zabbixhosts).filter_by(hostid=hostid).first().name
+			item_formula += hostname
+			item_formula += ':'
+			item_formula += zi.key_
+			item_formula += '")'
 
+			result += item_formula
+	except Exception, e:
+		raise Exception('get formula for item error, ' + str(e))
+	finally:
+		session.close()
+
+	return result
+	
+
+def create_calculated_items(scale,scale_operator,first_itemids,fs_operator,second_itemids):
+	final_formula = ''
+	final_formula += str(scale)
+	final_formula += scale_operator
+	final_formula += '('
+	first_itemids_formula = get_formula_for_items(first_itemids)
+	final_formula += first_itemids_formula
+	final_formula += ')'
+	final_formula += fs_operator
+	final_formula += '('
+	second_itemids_formula = get_formula_for_items(second_itemids)
+	final_formula += second_itemids_formula
+	final_formula += ')'
+	
+	return final_formula
 
 
 

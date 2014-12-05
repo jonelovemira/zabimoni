@@ -47,6 +47,7 @@ def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype):
 
 if __name__ == '__main__':
 	session = None
+	zabbix = zabbix_api()
 	try:
 		# test if can execute
 		# content = 'new content'
@@ -55,7 +56,6 @@ if __name__ == '__main__':
 		# output = open('/home/monitor/project/monitor-0.3.7/new.cron','w')
 		# output.write(content)
 		# output.close()
-		zabbix = zabbix_api()
 		hostname = sys.argv[1]
 		session = loadSession()
 
@@ -88,6 +88,7 @@ if __name__ == '__main__':
 
 	except Exception, e:
 		db.session.rollback()
+		zabbix.rollback()
 		raise Exception('error',str(e))
 	else:
 		db.session.commit()

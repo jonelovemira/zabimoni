@@ -19,12 +19,19 @@ import os,StringIO,ConfigParser,traceback,sys
 def init_aws():
 	arr = ['By All','By ServiceName','By LinkedAccount','By ServiceName and LinkedAccount']
 
-	for r in arr:
-		aws = Aws.query.filter_by(awsname=r).first()
-		if aws == None:
-			aws = Aws(awsname=r,area=None)
-			db.session.add(aws)
-	db.session.commit()
+	try:
+		for r in arr:
+			aws = Aws.query.filter_by(awsname=r).first()
+			if aws == None:
+				aws = Aws(awsname=r,area=None)
+				db.session.add(aws)
+	except Exception, e:
+		db.session.rollback()
+		Exception('cannot init aws', str(e))
+	else:
+		db.session.commit()
+	finally:
+		db.session.remove()
 
 
 def get_zabbix_server_ip():
@@ -43,111 +50,126 @@ def init_aws_itemtype(dimension,idt,hostid,additembyapi,area):
 
 	zabbix = zabbix_api()
 
-	if not dimension.has_key('ServiceName') and not dimension.has_key('LinkedAccount'):
-		itname = 'All'
-		itkey = 'All'
-		awsname = 'By All'
-	elif dimension.has_key('ServiceName') and dimension.has_key('LinkedAccount'):
-		itname = dimension['ServiceName'][0] + ' ' + dimension['LinkedAccount'][0]
-		itkey = dimension['ServiceName'][0] + '_' + dimension['LinkedAccount'][0]
-		awsname='By ServiceName and LinkedAccount'
-	elif dimension.has_key('ServiceName'):
-		itname = dimension['ServiceName'][0]
-		itkey = itname
-		awsname='By ServiceName'
+	try:
+		if not dimension.has_key('ServiceName') and not dimension.has_key('LinkedAccount'):
+			itname = 'All'
+			itkey = 'All'
+			awsname = 'By All'
+		elif dimension.has_key('ServiceName') and dimension.has_key('LinkedAccount'):
+			itname = dimension['ServiceName'][0] + ' ' + dimension['LinkedAccount'][0]
+			itkey = dimension['ServiceName'][0] + '_' + dimension['LinkedAccount'][0]
+			awsname='By ServiceName and LinkedAccount'
+		elif dimension.has_key('ServiceName'):
+			itname = dimension['ServiceName'][0]
+			itkey = itname
+			awsname='By ServiceName'
+		else:
+			itname = dimension['LinkedAccount'][0]
+			itkey = itname
+			awsname='By LinkedAccount'
+
+		aws = Aws.query.filter_by(awsname=awsname).first()
+		if aws == None:
+			aws = Aws(awsname=awsname,area=area)
+			db.session.add(aws)
+
+		it_tmp = Itemtype.query.filter_by(itemtypename=itname).first()
+		if it_tmp == None:
+			it_tmp = Itemtype(itemtypename=itname,itemkey=itkey,aws=aws,itemdatatype=idt,itemunit='USD',zabbixvaluetype=NUMERIC_FLOAT)
+			db.session.add(it_tmp)
+		
+		itkey = area.areaname + '_' + itkey
+		itemid = None
+
+		session = loadSession()
+		chechi = session.query(Zabbixitems).filter_by(hostid=hostid,key_=itkey).first()
+		session.close()
+		create_results = None
+		if chechi == None:
+			create_results = zabbix.item_create(itkey,hostid)
+		if create_results != None:
+			print 'create_results',create_results
+			itemid = create_results
+			additembyapi.append(itemid) 
+
+		if itemid == None:
+			return
+		
+		
+		itmp = Item.query.filter_by(itemname=itkey).first()
+		if itmp == None:
+			ni = Item(itemid,itkey,None,it_tmp)
+			db.session.add(ni)
+			t = ni.set_belong_to_area(area)
+			if t != None:
+				db.session.add(t)
+
+	except Exception, e:
+		db.session.rollback()
+		zabbix.rollback()
+		raise Exception(' cannot init_aws_itemtype ', str(e))
 	else:
-		itname = dimension['LinkedAccount'][0]
-		itkey = itname
-		awsname='By LinkedAccount'
-
-	aws = Aws.query.filter_by(awsname=awsname).first()
-	if aws == None:
-		aws = Aws(awsname=awsname,area=area)
-		db.session.add(aws)
-
-	it_tmp = Itemtype.query.filter_by(itemtypename=itname).first()
-	if it_tmp == None:
-		it_tmp = Itemtype(itemtypename=itname,itemkey=itkey,aws=aws,itemdatatype=idt,itemunit='USD',zabbixvaluetype=NUMERIC_FLOAT)
-		db.session.add(it_tmp)
-	
-	itkey = area.areaname + '_' + itkey
-	itemid = None
-
-	session = loadSession()
-	chechi = session.query(Zabbixitems).filter_by(hostid=hostid,key_=itkey).first()
-	session.close()
-	create_results = None
-	if chechi == None:
-		create_results = zabbix.item_create(itkey,hostid)
-	if create_results != None:
-		print 'create_results',create_results
-		itemid = create_results
-		additembyapi.append(itemid) 
-
-	if itemid == None:
-		return
-	
-	
-	itmp = Item.query.filter_by(itemname=itkey).first()
-	if itmp == None:
-		ni = Item(itemid,itkey,None,it_tmp)
-		db.session.add(ni)
-		t = ni.set_belong_to_area(area)
-		if t != None:
-			db.session.add(t)
-
-	db.session.commit()
-
-
+		db.session.commit()
+	finally:
+		db.session.remove()
 
 def init_aws_item():
 	
+	# add aws item in current host
 	host_name = get_zabbix_server_ip()
 
 	zabbix = zabbix_api()
-	
-	additembyapi = []
-	addhostbyapi = []
 
 	init_aws()
 
+	# checkout if current host exists in zabbix database
 	session = loadSession()
 	tmphost = session.query(Zabbixhosts).filter_by(name=host_name).first()
 	session.close()
 	hostid = None
-	if tmphost != None:
-		hostid = tmphost.hostid
-	if hostid == None:
-		host_group_name = ['AWS servers']
-		template_name = []
-		hostid = zabbix.host_create(host_name,host_name,host_group_name,template_name)
-		addhostbyapi.append(hostid)
+	
 	try:
+		# will create in zabbix if do not exist
+		if tmphost != None:
+			hostid = tmphost.hostid
+		if hostid == None:
+			host_group_name = ['AWS servers']
+			template_name = ['Template OS Linux']
+			zabbix.host_create(host_name,host_name,host_group_name,template_name)
 		print "hostid",hostid
+
+		# get all regions for aws
 		rs = boto.ec2.cloudwatch.regions()
+
+		# get data type category and will create if do not exist
 		idt = Itemdatatype.query.filter_by(itemdatatypename='AWS fee data').first()
 		print "idt",idt
 		if idt == None:
 			idt = Itemdatatype(itemdatatypename='AWS fee data')
 			db.session.add(idt)
-		for r in rs:
 
+		# get aws data for every area
+		for r in rs:
 			a = Area.query.filter_by(areaname=r.name).first()
 			print r.name
 			if a == None:
 				a = Area(areaname=r.name)
 				db.session.add(a)
-			
 			con = boto.ec2.cloudwatch.connect_to_region(r.name)
 			lms = con.list_metrics(None,None,metric_name="EstimatedCharges",namespace="AWS/Billing")
 			for lm in lms:
 				init_aws_itemtype(lm.dimensions,idt,hostid,additembyapi,a)
-		db.session.commit()
 	except Exception, e:
 		print "Exception in user code:"
 		print '-'*60
 		traceback.print_exc(file=sys.stdout)
 		print '-'*60
+		db.session.rollback()
+		zabbix.rollback()
+	else:
+		db.session.commit()
+	finally:
+		db.session.remove()
 		# zabbix.item_delete(additembyapi)
 		# zabbix.host_delete(addhostbyapi)
 		# db.session.rollback()
@@ -450,21 +472,29 @@ def mass_add_host_item_for_area(areaname):
 
 	con = boto.ec2.connect_to_region(areaname)
 	reservations = con.get_all_instances()
+	
 	for res in reservations:
 		for inst in res.instances:
-			if 'ServiceType' in inst.tags: #zabbix server does not have servicetype 
+			if 'ServiceType' in inst.tags: 
 
 				hostname = inst.tags['Name']
 				servicename = inst.tags['ServiceType']
 				host_ip = inst.private_ip_address
 				if host_ip == None:
 					continue
-				
-				hostid = add_update_host(hostname, servicename,host_ip,areaname)
-				if hostid == None:
-					print " add host item failed ", host_ip
+				try:
+					hostid = add_update_host(hostname, servicename,host_ip,areaname)
+					if hostid == None:
+						print " add host item failed ", host_ip
+					else:
+						print " add host item Success ", host_ip					
+				except Exception, e:
+					db.session.rollback()
+					raise Exception(' failed ',str(e))
 				else:
-					print " add host item Success ", host_ip
+					db.session.commit()
+				finally:
+					db.session.remove()
 
 
 if __name__ == '__main__':

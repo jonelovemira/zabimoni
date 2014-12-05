@@ -22,6 +22,9 @@ def get_zabbix_server_ip():
 
 class zabbix_api:
 	
+	created_hosts = []
+	created_items = []
+
 	#### server_ip shuould be valid for zabbix_api ###
 	def __init__(self): 
 		server_ip = get_zabbix_server_ip()
@@ -40,30 +43,12 @@ class zabbix_api:
 	                                  "password": "zabbix" 
 	                                  }, 
 	                       "id": 0 
-	                       }) 
-	     
-	    request = urllib2.Request(self.url, data) 
-	    for key in self.header: 
-	        request.add_header(key, self.header[key]) 
-	    try: 
-	        result = urllib2.urlopen(request) 
-	    except URLError as e:
-	    	# return 
-	        raise  MonitorException('can not login the zabbix api due to urlerror')
-	    else: 
-	        response = json.loads(result.read()) 
-	        result.close()
-	        if response.has_key('result'):
-	         	self.authID = response['result']
-	         	return self.authID 
-	        else:
-	        	# return
-	        	raise  MonitorException('can not login the zabbix api: ' + str(response))
-	
+	                       })
+	    return self.request_api(data)
 
-	####   create a host via zabbix api                 #####
-	####   attention: hostgroup_name cannot be empty    #####
-	def host_create(self, host_name , host_ip , hostgroup_name, template_name): 
+	
+	#### generate create host json        ####
+	def gen_host_create_json(self,host_name , host_ip , hostgroup_name, template_name):
 		session = loadSession()
  		if len(hostgroup_name) == 0:
  			raise MonitorException('host group cannot be null')
@@ -88,120 +73,97 @@ class zabbix_api:
 				template_list.append(var)
 			else:
 				raise MonitorException('Template not found ' + template)
-
-		data = json.dumps({ 
-	                       "jsonrpc":"2.0", 
-	                       "method":"host.create", 
-	                       "params":{ 
-	                                 "host": host_name, 
-	                                 "interfaces": [ 
-	                                 { 
-	                                 "type": 1, 
-	                                 "main": 1, 
-	                                 "useip": 1, 
-	                                 "ip": host_ip, 
-	                                 "dns": "", 
-	                                 "port": "10050" 
-	                                  } 
-	                                 ], 
-	                               "groups": group_list,
-	                               "templates": template_list,
-	                                 }, 
-	                       "auth": self.user_login(), 
-	                       "id":1                   
-	    }) 
-		
-		request = urllib2.Request(self.url, data)
-		for key in self.header:
-			request.add_header(key, self.header[key]) 
-		try:
-			result = urllib2.urlopen(request)
-		except URLError as e:
-			raise MonitorException('can not create host due to urlerror')
-		else:
-			response = json.loads(result.read())
-			result.close()
-			if response.has_key('result'):
-				return response['result']['hostids'][0]
-			else:
-				raise MonitorException('can not create host ,response ' + str(response))
-		finally:
-			session.close()
-
-	def host_update(self,hostid,hostname=None,host_ip=None):
-		session = loadSession()
-		i = session.query(Zabbixinterface).filter_by(hostid=hostid).first()
-		h = session.query(Zabbixhosts).filter_by(hostid=hostid).first()
-		tmp_hostname = h.name
-		tmp_host_ip = i.ip
 		session.close()
-
-		if hostname == None:
-			hostname = tmp_hostname
-
-		if host_ip == None:
-			host_ip = tmp_host_ip
-
-		
-
-
 		data = json.dumps({ 
-			"jsonrpc":"2.0", \
-			"method":"host.update", 
+			"jsonrpc":"2.0",
+			"method":"host.create",
 			"params":{
-				"hostid": hostid ,
-				"host": hostname,
-				"name":hostname
-			}, 
-			"auth": self.user_login(), 
+				"host": host_name,
+				"interfaces": [
+					{
+						"type": 1,
+						"main": 1,
+						"useip": 1,
+						"ip": host_ip,
+						"dns": "",
+						"port": "10050"
+					}
+				],
+				"groups": group_list,
+				"templates": template_list
+			},
+			"auth": self.user_login(),
 			"id":1
 		})
-		request = urllib2.Request(self.url, data)
-		for key in self.header:
-			request.add_header(key, self.header[key]) 
-		try:
-			result = urllib2.urlopen(request)
-		except URLError as e:
-			raise MonitorException('cannot update host')
-		else:
-			response = json.loads(result.read())
-			result.close()
-			if response.has_key('result'):
-				return response['result']['hostids'][0]
-			else:
-				raise MonitorException('cannot update host due to ' + str(response))
 
+		return data 
 
+	####   create a host via zabbix api                 #####
+	####   attention: hostgroup_name cannot be empty    #####
+	def host_create(self, host_name , host_ip , hostgroup_name, template_name): 
+		data = self.gen_host_create_json(host_name , host_ip , hostgroup_name, template_name)
+		api_result = self.request_api(data)['hostids'][0]
+		self.created_hosts.append(api_result)
+		return api_result
+			
 
-	# def host_delete(self,hostid):
+	# def host_update(self,hostid,hostname=None,host_ip=None):
+	# 	template_list=[]
 	# 	session = loadSession()
+	# 	i = session.query(Zabbixinterface).filter_by(hostid=hostid).first()
 	# 	h = session.query(Zabbixhosts).filter_by(hostid=hostid).first()
-	# 	if h == None:
-	# 		return False
-
-	# ####   We can read host info via sqlalchemy class mapper ####
-	# def get_hostid_by_name(self,host_name):
-	# 	session = loadSession()
-	# 	h = session.query(Zabbixhosts).filter_by(name=host_name).first()
+	# 	tmp_hostname = h.name
+	# 	tmp_host_ip = i.ip
+	# 	template_name = ['Template OS Linux']
+	# 	for template in template_name:
+	# 		if session.query(Zabbixhosts).filter_by(name = template).count() > 0:
+	# 			var = {}
+	# 			t = session.query(Zabbixhosts).filter_by(name = template).first()
+	# 			var['templateid'] = t.hostid
+	# 			template_list.append(var)
+	# 		else:
+	# 			raise MonitorException('Template not found ' + template)
 	# 	session.close()
-	# 	if h == None:
-	# 		return None
-	# 	return h.hostid
 
+	# 	if hostname == None:
+	# 		hostname = tmp_hostname
 
-	def item_create(self,item_name,host_id,host_ip=None,interface_id=None,item_type=2,value_type=0):
+	# 	if host_ip == None:
+	# 		host_ip = tmp_host_ip
+
+	# 	data = json.dumps({ 
+	# 		"jsonrpc":"2.0", \
+	# 		"method":"host.update", 
+	# 		"params":{
+	# 			"hostid": hostid ,
+	# 			"host": hostname,
+	# 			"name":hostname,
+	# 			"templates": template_list,
+	# 		}, 
+	# 		"auth": self.user_login(), 
+	# 		"id":1
+	# 	})
+	# 	request = urllib2.Request(self.url, data)
+	# 	for key in self.header:
+	# 		request.add_header(key, self.header[key]) 
+	# 	try:
+	# 		result = urllib2.urlopen(request)
+	# 	except URLError as e:
+	# 		raise MonitorException('cannot update host')
+	# 	else:
+	# 		response = json.loads(result.read())
+	# 		result.close()
+	# 		if response.has_key('result'):
+	# 			return response['result']['hostids'][0]
+	# 		else:
+	# 			raise MonitorException('cannot update host due to ' + str(response))
+
+	def gen_normal_item_json(self,item_name,host_id,host_ip=None,interface_id=None,item_type=2,value_type=0):
 		session = loadSession()
-		# if session.query(Zabbixhosts).filter_by(hostid = host_id).count()>0:
-		# 	itmp = session.query(Zabbixitems).filter_by(key_=item_name,hostid=host_id).first()
-		# 	if itmp != None:
-		# 		return itmp.itemid
 		i = session.query(Zabbixinterface).filter_by(hostid=host_id).first()
 		interface_id = i.interfaceid
 		host_ip = i.ip
 		session.close()
-		# 	# print interface_id
-		# else:
-		# 	raise ZabbixAPICreateItemError('host can not found' + str(host_id))
 
 		data = json.dumps({
 			"jsonrpc":"2.0",
@@ -219,6 +181,36 @@ class zabbix_api:
 			"id":1
 		})
 
+		return data
+
+	def gen_calc_item_json(self,item_name,host_id,formula,host_ip=None,interface_id=None,item_type=15,value_type=0):
+		session = loadSession()
+		i = session.query(Zabbixinterface).filter_by(hostid=host_id).first()
+		interface_id = i.interfaceid
+		host_ip = i.ip
+		session.close()
+
+		data = json.dumps({
+			"jsonrpc":"2.0",
+			"method":"item.create",
+			"params":{
+				"name":item_name,
+				"key_":item_name,
+				"hostid": str(host_id),
+				"type":item_type,
+				"value_type":value_type,
+				"interfaceid":interface_id,
+				"trapper_hosts":host_ip,
+				"params": formula,
+				"delay":60
+			},
+			"auth":self.user_login(),
+			"id":1
+		})
+
+		return data
+
+	def request_api(self,data):
 		request = urllib2.Request(self.url, data)
 
 		for key in self.header: 
@@ -226,18 +218,27 @@ class zabbix_api:
 		try: 
 			result = urllib2.urlopen(request) 
 		except URLError as e: 
-			raise MonitorException('cannot create item ')
+			raise MonitorException('can not generate request')
 		else: 
 			response = json.loads(result.read()) 
 			result.close()
 			if response.has_key('result'):
-				return response['result']['itemids'][0]
+				return response['result']
 			else:
-				# print response
-				raise MonitorException('item can not create ,' + str(response))
-		# finally:
-		# 	session.close()
-			#return response['result']
+				raise MonitorException('request api fail,' + str(response))
+
+
+	def item_create(self,item_name,host_id,host_ip=None,interface_id=None,item_type=2,value_type=0):
+		data = self.gen_normal_item_json(item_name,host_id,host_ip,interface_id,item_type,value_type)
+		api_result = self.request_api(data)['itemids'][0]
+		self.created_items.append(api_result)
+		return api_result
+
+	def calc_item_create(self,item_name,host_id,formula,host_ip=None,interface_id=None,item_type=15,value_type=0):
+		data = self.gen_calc_item_json(item_name,host_id,formula,host_ip,interface_id,item_type,value_type)
+		api_result = self.request_api(data)['itemids'][0]
+		self.created_items.append(api_result)
+		return api_result
 
 	def item_update(self,itemid,item_name,item_type=2,value_type=0):
 		data = json.dumps({
@@ -253,83 +254,52 @@ class zabbix_api:
 			"auth":self.user_login(),
 			"id":1
 		})
-		request = urllib2.Request(self.url, data)
 
-		for key in self.header: 
-			request.add_header(key, self.header[key]) 
-		try: 
-			result = urllib2.urlopen(request) 
-		except URLError as e: 
-			raise MonitorException('cannot update item')
-		else: 
-			response = json.loads(result.read()) 
-			result.close()
-			if response.has_key('result'):
-				return response['result']['itemids'][0]
-			else:
-				raise MonitorException('item can not update ,' + str(response))
+		api_result = self.request_api(data)['itemids'][0]
 
-	def item_delete(self,itemid):
-		di = [itemid]
+		return api_result
+
+	def item_delete(self,itemids):
+		# precheck if the item exist in zabbix
+		session = loadSession()
+		delete_itemids = []
+		for itemid in itemids:
+			if session.query(Zabbixitems).filter_by(itemid=itemid).count() > 0:
+				delete_itemids.append(itemid)
+		session.close()
+		if len(delete_itemids) == 0:
+			return None
+		# di = [itemid]
 		data = json.dumps({
 					"jsonrpc":"2.0",
 					"method":"item.delete",
-					"params":di,
+					"params":delete_itemids,
 					"auth":self.user_login(),
 					"id":1
 		})
+		api_result = self.request_api(data)
+		return api_result
 
-		request = urllib2.Request(self.url, data)
-
-		for key in self.header: 
-			request.add_header(key, self.header[key]) 
-		try: 
-			result = urllib2.urlopen(request) 
-		except URLError as e: 
-			raise MonitorException('can not delete item')
-		else: 
-			response = json.loads(result.read()) 
-			result.close()
-			if response.has_key('result'):
-				return response['result']
-			else:
-				raise MonitorException('item can not delete ,' + str(response))
-
-	def host_delete(self,hosts):
+	def host_delete(self,hostids):
 		session = loadSession()
-		dh = []
-		for i in hosts:
+		delete_hostids = []
+		for i in hostids:
 			host = session.query(Zabbixhosts).filter_by(hostid=i).first()
 			if host != None:
-				dh.append(i)
-		if len(dh) == 0:
+				delete_hostids.append(i)
+		session.close()
+		if len(delete_hostids) == 0:
 			return None
 		data = json.dumps({
 					"jsonrpc":"2.0",
 					"method":"host.delete",
-					"params":dh,
+					"params":delete_hostids,
 					"auth":self.user_login(),
 					"id":1
 		})
 
-		request = urllib2.Request(self.url, data)
-
-		for key in self.header: 
-			request.add_header(key, self.header[key]) 
-	          
-		try: 
-			result = urllib2.urlopen(request) 
-		except URLError as e: 
-			raise MonitorException('host can not delete due to url error')
-		else: 
-			response = json.loads(result.read()) 
-			result.close()
-			if response.has_key('result'):
-				return response['result']
-			else:
-				raise MonitorException('host can not delete ,' + str(response))
-		finally:
-			session.close()
+		api_result = self.request_api(data)
+		return api_result
 
 	def trigger_update(self,triggerid,status):
 		data = json.dumps({
@@ -342,23 +312,28 @@ class zabbix_api:
 					"auth":self.user_login(),
 					"id":1
 		})
+		api_result = self.request_api(data)
+		return api_result
 
-		request = urllib2.Request(self.url, data)
+	def rollback(self):
 
-		for key in self.header: 
-			request.add_header(key, self.header[key]) 
-	          
-		try: 
-			result = urllib2.urlopen(request) 
-		except URLError as e: 
-			raise MonitorException('trigger cannot update')
-		else: 
-			response = json.loads(result.read()) 
-			result.close()
-			if response.has_key('result'):
-				return response['result']
-			else:
-				raise MonitorException('trigger cannot update ,' + str(response))
+		try:
+			self.item_delete(self.created_items)
+		except Exception, e:
+			pass
+
+		try:
+			self.host_delete(self.created_hosts)
+		except Exception, e:
+			pass
+
+		# try:
+		# 	print self.created_hosts,self.created_items
+		# 	self.created_items.append(12937)
+		# 	self.item_delete(self.created_items)
+		# 	self.host_delete(self.created_hosts)
+		# except Exception, e:
+		# 	print str(e)
 
 
 if __name__ == '__main__':
@@ -371,8 +346,35 @@ if __name__ == '__main__':
 	# # print zabbix.item_delete([35572])
 	# # print zabbix.host_delete([10415])
 	# # print zabbix.get_host_interface('10260')[0]['interfaceid']
+	# zabbix = zabbix_api()
+	# zabbix.item_update(36631,'Count',item_type=2,value_type=4)
+
+	# # test for zabbix_api rollback
+	# zabbix = zabbix_api()
+	# try:
+	# 	host_name = '192.168.221.134'
+	# 	host_ip = host_name
+	# 	hostgroup_name = ['AWS servers']
+	# 	template_name = ['Template OS Linux']
+	# 	hostid = zabbix.host_create(host_name , host_ip , hostgroup_name ,template_name)
+	# 	print hostid
+	# 	itemid = zabbix.item_create('item_name',hostid)
+	# 	print itemid
+	# 	itemid2 = zabbix.item_create('item_name2',hostid)
+	# 	print itemid2
+	# 	print 1/0
+	# except Exception, e:
+	# 	print str(e)
+	# 	zabbix.rollback()
+
+	# test for calc_item_create
 	zabbix = zabbix_api()
-	zabbix.item_update(36631,'Count',item_type=2,value_type=4)
+	try:
+		host_id = 10451
+		formula = 'last("10.0.150.191:Count")+last("10.0.20.107:Count")+last("192.168.221.132:Count")+last("192.168.221.130:Count")'
+		zabbix.calc_item_create('itemname',host_id,formula)
+	except Exception, e:
+		raise e
 
 
 

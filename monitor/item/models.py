@@ -284,3 +284,20 @@ class Item(db.Model):
 
 	def __repr__(self):
 		return '<Item %r>' % self.itemname
+
+class Calculateditem(db.Model):
+	calculateditemid = db.Column(db.Integer,primary_key=True,autoincrement=False)
+	formula = db.Column(db.String(512))
+	triggervalue = db.Column(db.Float)
+	triggerid = db.Column(db.Integer)
+	timeshift = db.Column(db.Integer)
+
+	def __init__(self,calculateditemid,formula,triggervalue,triggerid,timeshift):
+		self.calculateditemid = calculateditemid
+		self.formula = formula
+		self.triggervalue = triggervalue
+		self.triggerid = triggerid
+		self.timeshift = timeshift
+
+	def __repr__(self):
+		return '<Calculateditem %r>' % (self.formula)

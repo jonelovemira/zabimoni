@@ -225,21 +225,23 @@ def itemtype():
 @mod_item.route('/itemtype/delete/<itemtypeid>', methods=['GET', 'POST'])
 @login_required
 def itemtypedelete(itemtypeid):
+	zabbix = zabbix_api()
 	try:
 		it = Itemtype.query.filter_by(itemtypeid = itemtypeid).first()
 		if it != None:
 			items = it.items
-			zabbix = zabbix_api()
+			itemids = []
 			for i in items:
-				itemid = i.itemid
-				zabbix.item_delete(itemid)
+				itemids.append(i.itemid)
 				db.session.delete(i)
+			zabbix.item_delete(itemids)
 			db.session.delete(it)
 			# hosts = Host.query.all()
 			# for h in hosts:
 			# 	update_host(h.hostid,h.hostname,h.area.areaid,h.service.serviceid)
 	except Exception, e:
 		db.session.rollback()
+		zabbix.rollback()
 		flash(str(e),'error')
 	else:
 		db.session.commit()

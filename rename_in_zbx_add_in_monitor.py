@@ -9,6 +9,7 @@ import boto.ec2
 from monitor.item.functions import add_update_host
 
 if __name__ == '__main__':
+	zabbix = zabbix_api()
 	try:
 		# test if can execute
 		#content = 'new content'
@@ -26,9 +27,8 @@ if __name__ == '__main__':
 		i = session.query(Zabbixinterface).filter_by(ip=host_ip).first()
 		session.close()
 		hostid = i.hostid
-		zabbix = zabbix_api()
-		hostid = zabbix.host_update(hostid,hostname=host_ip,host_ip=host_ip)
 		
+		hostid = zabbix.host_update(hostid,hostname=host_ip,host_ip=host_ip)
 		# add host in monitor database
 		con = boto.ec2.connect_to_region(areaname)
 		res = con.get_all_instances(filters={'private_ip_address':host_ip})
@@ -41,6 +41,7 @@ if __name__ == '__main__':
 		add_update_host(nametag, servicename,host_ip,areaname)
 
 	except Exception, e:
+		zabbix.rollback()
 		db.session.rollback()
 		raise Exception('error',str(e))
 	else:
