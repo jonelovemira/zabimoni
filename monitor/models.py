@@ -4,8 +4,8 @@ from monitor import db
 
 
 
-series_item = db.Table('series_item',
-				db.Column('series_id',db.Integer,db.ForeignKey('series.seriesid')),
-				db.Column('item_id',db.Integer,db.ForeignKey('item.itemid')))
+# series_item = db.Table('series_item',
+# 				db.Column('series_id',db.Integer,db.ForeignKey('series.seriesid')),
+# 				db.Column('item_id',db.Integer,db.ForeignKey('item.itemid')))
 
 

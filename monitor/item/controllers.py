@@ -3,13 +3,14 @@ from flask import Blueprint, request, render_template, \
 from flask.ext.login import login_required
 from monitor import db
 
-from monitor.item.models import Area,Service,Host,Itemdatatype,Itemtype,Zbxitemtype
+from monitor.item.models import Area,Service,Host,Itemdatatype,Itemtype,Zbxitemtype,Aws,Action
 from monitor.item.forms import addAreaForm,addServiceForm,chooseServiceForm,addHostForm
 # from monitor.item.functions import mass_add_1_level,mass_add_host_item_for_area,mass_add_itemtype,add_host
 from monitor.item.functions import *
 from monitor.zabbix_api import zabbix_api
 from monitor.MonitorException import *
 import json
+import boto.ec2.autoscale
 
 
 mod_item = Blueprint('item', __name__, url_prefix='/item')
@@ -46,12 +47,13 @@ def area():
 				service = Service.query.filter_by(serviceid=int(serviceid)).first()
 				a = area.add_service(service)
 				db.session.add(a)
+
+			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'error')
 			return redirect(url_for('item.area'))
 		else:
-			db.session.commit()
 			flash('You add an area')
 			return redirect(url_for('item.mainboard'))
 		finally:
@@ -65,11 +67,11 @@ def areadelete(areaid):
 	try:
 		area = Area.query.filter_by(areaid=areaid).first()
 		db.session.delete(area)
+		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'error')
 	else:
-		db.session.commit()
 		flash('you delete an area')
 	finally:
 		db.session.remove()
@@ -97,13 +99,14 @@ def service():
 			addhost = request.form.get('addhost')
 			if addhost == '1' and usetype == '2':
 				add_host_register_in_elb(servicename,areaid)
+
+			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'error')
-			db,session.remove()
+			db.session.remove()
 			return redirect(url_for('item.service'))
 		else:
-			db.session.commit()
 			flash('You add a service')
 			db.session.remove()
 			return redirect(url_for('item.mainboard'))
@@ -131,11 +134,11 @@ def servicedelete(serviceid):
 	try:
 		service = Service.query.filter_by(serviceid=serviceid).first()
 		db.session.delete(service)
+		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'error')
 	else:
-		db.session.commit()
 		flash('you delete a service type')
 	finally:
 		db.session.remove()
@@ -159,13 +162,13 @@ def host():
 			servicename = Service.query.filter_by(serviceid = serviceid).first().servicename
 			areaname = Area.query.filter_by(areaid = areaid).first().areaname
 			# print hostname,host_ip,servicename,areaname
-			add_host(hostname, servicename,host_ip,areaname);
+			add_host(hostname, servicename,host_ip,areaname)
+			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'error')
 			return redirect(url_for('item.host'))
 		else:
-			db.session.commit()
 			flash('You add a host')
 			return redirect(url_for('item.mainboard'))
 		finally:
@@ -178,11 +181,11 @@ def host():
 def hostdelete(hostid):
 	try:
 		delete_host(hostid)
+		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'error')
 	else:
-		db.session.commit()
 		flash('You delete a host')
 	finally:
 		db.session.remove()
@@ -199,6 +202,7 @@ def itemtype():
 	idts = Itemdatatype.query.all()
 
 	if request.method == 'POST':
+		zabbix = zabbix_api()
 		try:
 			kinds = request.form.get('kinds')
 			indexid = request.form.get('indexid'+kinds)
@@ -207,14 +211,15 @@ def itemtype():
 			unitname = request.form.get('unitname')
 			zabbixvaluetype = request.form.get('datatype')
 			# print kinds,indexid,key,itemdatatypename,unitname,zabbixvaluetype
-			add_key(kinds,indexid,key,itemdatatypename,unitname,zabbixvaluetype)
+			add_key(kinds,indexid,key,itemdatatypename,unitname,zabbixvaluetype,zabbix)
+			db.session.commit()
 		except Exception, e:
+			zabbix.rollback()
 			db.session.rollback()
 			flash(str(e),'error')
 			return redirect(url_for('item.itemtype'))
 			# return redirect(url_for('item.itemtype',areas=areas,services=services,hosts=hosts,idts=idts))
 		else:
-			db.session.commit()
 			flash(' you add an item ')
 			return redirect(url_for('item.mainboard'))
 		finally:
@@ -236,6 +241,7 @@ def itemtypedelete(itemtypeid):
 				db.session.delete(i)
 			zabbix.item_delete(itemids)
 			db.session.delete(it)
+			db.session.commit()
 			# hosts = Host.query.all()
 			# for h in hosts:
 			# 	update_host(h.hostid,h.hostname,h.area.areaid,h.service.serviceid)
@@ -244,13 +250,119 @@ def itemtypedelete(itemtypeid):
 		zabbix.rollback()
 		flash(str(e),'error')
 	else:
-		db.session.commit()
 		flash('delete an item')
 	# finally:
 	# 	db.session.remove()
 	
 	return redirect(url_for('item.mainboard'))
 
+
+@mod_item.route('/trigger_action/', methods=['GET', 'POST'])
+@login_required
+def trigger_action():
+	area = Area.query.all()
+	service = Service.query.all()
+	host = Host.query.all()
+	aws = Aws.query.all()
+	idt = Itemdatatype.query.all()
+	actions = Action.query.all()
+
+	if request.method == 'POST':
+		formula = request.form.get('formula')
+		triggerfunction = request.form.get('triggerfunction')
+		comparetype = request.form.get('comparetype')
+		triggervalue = request.form.get('triggervalue')
+		timeshift = request.form.get('timeshift')
+		command = request.form.get('command')
+		kinds = request.form.get('kinds')
+
+		kinds = int(kinds)
+
+		areaid = None
+		asgname = None
+		asgtype = None
+		if kinds == 1:
+			areaid = request.form.get('areaid')
+			asgname = request.form.get('asgname')
+			asgtype = request.form.get('asgtype')
+
+		zabbix = zabbix_api()
+
+		# print "formula",formula
+		# print "triggerfunction",triggerfunction
+		# print "triggervalue",triggervalue
+		# print "timeshift",timeshift
+		# print "comparetype",comparetype
+		# print "command",command
+		# print "asgname",asgname
+		# print "asgtype",asgtype
+		# print "areaid",areaid
+
+		try:
+
+			print "formula",formula
+			print "triggerfunction",triggerfunction
+			print "triggervalue",triggervalue
+			print "timeshift",timeshift
+			print "comparetype",comparetype
+			print "command",command
+			print "asgname",asgname
+			print "asgtype",asgtype
+			print "areaid",areaid
+
+
+			create_calcitem_trigger_action(zabbix,formula,triggerfunction,triggervalue,timeshift,comparetype,\
+									command,asgname,asgtype,areaid)
+			db.session.commit()
+		except Exception, e:
+			db.session.rollback()
+			zabbix.rollback()
+			# raise MonitorException('can not create calcitem trigger and action')
+			flash('can not create calcitem trigger and action' + str(e), 'error')
+			return redirect(url_for('item.trigger_action'))
+		else:
+			flash('add calcitem trigger and action successfully')
+			return redirect(url_for('item.trigger_action'))
+		finally:
+			db.session.remove()
+
+	return render_template('item/trigger_action.html',title='trigger',area=area,service=service,host=host,aws=aws,idt=idt,actions=actions)
+
+@mod_item.route('/generateformula',methods=['GET','POST'])
+@login_required
+def generateformula():
+	scale = request.args.get('scale')
+	scale_operator = request.args.get('scaleoperator')
+	first_itemids = request.args.get('first_itemids')
+	fs_operator = request.args.get('fs_operator')
+	second_itemids = request.args.get('second_itemids')
+	brackets_position = request.args.get('brackets_position')
+
+	first_itemids = arg_2_array(first_itemids)
+	second_itemids = arg_2_array(second_itemids)
+
+	result = create_calculated_items_formula(scale,scale_operator,first_itemids,fs_operator,second_itemids,brackets_position)
+
+	# print result
+	return json.dumps(result)
+
+@mod_item.route('/autoscalegroup',methods=['GET','POST'])
+@login_required
+def autoscalegroup():
+
+	areaid = request.args.get('areaid')
+	areaname = Area.query.filter_by(areaid=areaid).first().areaname
+
+	result = []
+
+	con = boto.ec2.autoscale.connect_to_region(areaname)
+	asg = con.get_all_groups()
+
+	for a in asg:
+		result.append(a.name)
+
+
+	return json.dumps(result)
 
 
 # @mod_item.route('/test')

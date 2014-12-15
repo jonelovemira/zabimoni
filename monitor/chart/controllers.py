@@ -69,16 +69,15 @@ def addreport():
 		functiontype = request.form['functiontype']
 		title = request.form['title']
 		discription = request.form['discription']
-
 		owner = g.user
 		try:
 			save_report(reportname,seriesinfo,scaletype,functiontype,owner,title,discription)
+			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'error')
 			return redirect(url_for('chart.addreport'))
 		else:
-			db.session.commit()
 			flash('you add a report')
 			return redirect(url_for('chart.report'))
 		finally:
@@ -92,11 +91,11 @@ def reportdelete(reportid):
 	try:
 		r = Report.query.filter_by(reportid=reportid).first()
 		db.session.delete(r)
+		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'error')
 	else:
-		db.session.commit()
 		flash(' you delete a report ')
 	finally:
 		db.session.remove()
@@ -133,14 +132,13 @@ def addschedule():
 		period = request.form['period']
 		start_time = request.form['timestart']
 		timezone = request.form['timezone']
-
 		try:
 			save_emailschedule(subject,reportids,email,period,start_time,u,timezone)
+			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'error')
 		else:
-			db.session.commit()
 			flash('Save email schedule successfully')
 			return redirect(url_for('chart.report'))
 		finally:
@@ -155,11 +153,11 @@ def scheduledelete(emailscheduleid):
 	try:
 		# es = Emailschedule.query.filter_by(emailscheduleid=emailscheduleid).first()
 		delete_schedule(emailscheduleid)
+		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'error')
 	else:
-		db.session.commit()
 		flash('you delete a schedule')
 	finally:
 		db.session.remove()
@@ -186,6 +184,10 @@ def init():
 		request_data = json.loads(request.data)
 		current_series_info = request_data['current_series_info']
 		time_frequency = request_data['time_frequency']
+
+		if not current_series_info[0].has_key('series_item_list'):
+			return json.dumps(0)
+
 		data_result = init_result(current_series_info,time_frequency)
 		y_title = get_init_y_title(current_series_info)
 		result = {'data':data_result,'y_title':y_title}
@@ -221,11 +223,12 @@ def save_window():
 			else:
 				w = save_window_chart(wc_name,current_series,user)
 				result = w
+
+			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
 			raise MonitorException('save window failed ' + str(e))
 		else:
-			db.session.commit()
 			if result != None:
 				return json.dumps({'id':result.windowid,'name':result.windowname})
 		finally:
@@ -249,11 +252,12 @@ def save_page():
 			else:
 				p = save_page_chart(pagename,series_info,user)
 				result = p
+
+			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
 			raise MonitorException('save page failed ' + str(e))
 		else:
-			db.session.commit()
 			if result != None:
 				return json.dumps({'id':result.pageid,'name':result.pagename})
 		finally:
@@ -342,6 +346,8 @@ def load_series():
 	result = {}
 
 	result = get_series_info(series)
+
+	# print result[0]['series_item_list']
 
 	return json.dumps(result)
 

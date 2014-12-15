@@ -1,7 +1,7 @@
 from monitor import db
 # from monitor.auth.models import User
 from monitor.item.models import Item
-from monitor.models import series_item
+# from monitor.models import series_item
 
 class Window(db.Model):
 	windowid = db.Column(db.Integer,primary_key=True)
@@ -34,13 +34,13 @@ class Series(db.Model):
 	itemtype_id = db.Column(db.Integer,db.ForeignKey('itemtype.itemtypeid'))
 	window_id = db.Column(db.Integer,db.ForeignKey('window.windowid'))
 	report_id = db.Column(db.Integer,db.ForeignKey('report.reportid'))
-
-	items = db.relationship('Item',
-				secondary=series_item,
-				primaryjoin=(series_item.c.series_id == seriesid),
-				secondaryjoin=(series_item.c.item_id == Item.itemid),
-				lazy = 'dynamic'
-	)
+	
+	# items = db.relationship('Item',
+	# 			secondary=series_item,
+	# 			primaryjoin=(series_item.c.series_id == seriesid),
+	# 			secondaryjoin=(series_item.c.item_id == Item.itemid),
+	# 			lazy = 'dynamic'
+	# )
 
 	def __init__(self,seriesname,index,area_id,service_id,host_id,aws_id,itemtype,window,report):
 		self.seriesname = seriesname
@@ -53,18 +53,18 @@ class Series(db.Model):
 		self.window = window
 		self.report = report
 
-	def add_item(self,item):
-		if not self.has_item(item):
-			self.items.append(item)
-			return self
+	# def add_item(self,item):
+	# 	if not self.has_item(item):
+	# 		self.items.append(item)
+	# 		return self
 
-	def rm_item(self,item):
-		if self.has_item(item):
-			self.items.remove(item)
-			return self
+	# def rm_item(self,item):
+	# 	if self.has_item(item):
+	# 		self.items.remove(item)
+	# 		return self
 
-	def has_item(self,item):
-		return self.items.filter('itemid='+str(item.itemid)).count() > 0
+	# def has_item(self,item):
+	# 	return self.items.filter('itemid='+str(item.itemid)).count() > 0
 	
 
 	def __repr__(self):

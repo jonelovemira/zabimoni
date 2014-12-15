@@ -200,7 +200,7 @@ host_itemtype = db.Table('host_itemtype',
 
 class Host(db.Model):
 	hostid = db.Column(db.Integer,primary_key=True,autoincrement=False,unique=True)
-	hostname = db.Column(db.String(80),unique=True)
+	hostname = db.Column(db.String(80))
 	items = db.relationship('Item',backref='host',lazy='dynamic')
 	area_id = db.Column(db.Integer,db.ForeignKey('area.areaid'))
 	service_id = db.Column(db.Integer,db.ForeignKey('service.serviceid'))
@@ -288,16 +288,80 @@ class Item(db.Model):
 class Calculateditem(db.Model):
 	calculateditemid = db.Column(db.Integer,primary_key=True,autoincrement=False)
 	formula = db.Column(db.String(512))
-	triggervalue = db.Column(db.Float)
-	triggerid = db.Column(db.Integer)
-	timeshift = db.Column(db.Integer)
+	triggers = db.relationship('Trigger',backref='calcitem',lazy='dynamic')
 
-	def __init__(self,calculateditemid,formula,triggervalue,triggerid,timeshift):
+
+	def __init__(self,calculateditemid,formula):
 		self.calculateditemid = calculateditemid
 		self.formula = formula
-		self.triggervalue = triggervalue
-		self.triggerid = triggerid
-		self.timeshift = timeshift
 
 	def __repr__(self):
 		return '<Calculateditem %r>' % (self.formula)
+
+class Action(db.Model):
+	actionid = db.Column(db.Integer,primary_key=True,autoincrement=False)
+	autoscalegroupname = db.Column(db.String(100))
+	autoscaletype = db.Column(db.Integer)
+	areaid = db.Column(db.Integer)
+	command = db.Column(db.String(512))
+	actionname = db.Column(db.String(80))
+
+	def __init__(self,actionid,autoscalegroupname,autoscaletype,areaid,command,actionname):
+		self.actionid = actionid
+		self.autoscalegroupname = autoscalegroupname
+		self.autoscaletype = autoscaletype
+		self.areaid = areaid
+		self.command = command
+		self.actionname = actionname
+
+	def __repr__(self):
+		return '<Action %s>' % (self.actionid)
+
+action_trigger = db.Table('action_trigger',
+				db.Column('action_id',db.Integer,db.ForeignKey('action.actionid')),
+				db.Column('trigger_id',db.Integer,db.ForeignKey('trigger.triggerid')))
+
+	
+
+class Trigger(db.Model):
+	triggerid = db.Column(db.Integer,primary_key=True,autoincrement=False)
+	triggername = db.Column(db.String(100))
+	triggervalue = db.Column(db.Float)
+	timeshift = db.Column(db.Integer)
+
+	calculateditem_id = db.Column(db.Integer,db.ForeignKey('calculateditem.calculateditemid'))
+
+	actions = db.relationship('Action',
+				secondary=action_trigger,
+				primaryjoin=(action_trigger.c.trigger_id == triggerid),
+				secondaryjoin=(action_trigger.c.action_id == Action.actionid),
+				backref=db.backref('triggers',lazy='dynamic'),
+				lazy = 'dynamic'
+	)
+
+	
+	# serviceid = db.Column(db.In)
+
+	def __init__(self,triggerid,triggername,triggervalue,timeshift,calcitem):
+		self.triggerid = triggerid
+		self.triggername = triggername
+		self.triggervalue = triggervalue
+		self.timeshift = timeshift
+		self.calcitem = calcitem
+
+	def __repr__(self):
+		return '<Trigger %r>' % ( self.triggername )
+
+	def add_action(self,action):
+		if not self.has_action(action):
+			self.actions.append(action)
+			return self
+
+	def rm_action(self,action):
+		if self.has_action(action):
+			self.actions.remove(action)
+			return self
+
+	def has_action(self,action):
+		return self.actions.filter_by(actionid = action.actionid).count() > 0
+

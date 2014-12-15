@@ -15,6 +15,8 @@ from monitor.item.functions import add_update_host
 
 import os,StringIO,ConfigParser,traceback,sys
 
+from config import AREA
+
 ################################           add aws            ####################################
 def init_aws():
 	arr = ['By All','By ServiceName','By LinkedAccount','By ServiceName and LinkedAccount']
@@ -46,11 +48,8 @@ def get_zabbix_server_ip():
 	return Hostname
 
 ## idt should be exist ##
-def init_aws_itemtype(dimension,idt,hostid,additembyapi,area):
+def init_aws_itemtype(dimension,idt,hostid,area,zabbix):
 
-	zabbix = zabbix_api()
-
-	try:
 		if not dimension.has_key('ServiceName') and not dimension.has_key('LinkedAccount'):
 			itname = 'All'
 			itkey = 'All'
@@ -90,7 +89,6 @@ def init_aws_itemtype(dimension,idt,hostid,additembyapi,area):
 		if create_results != None:
 			print 'create_results',create_results
 			itemid = create_results
-			additembyapi.append(itemid) 
 
 		if itemid == None:
 			return
@@ -104,14 +102,6 @@ def init_aws_itemtype(dimension,idt,hostid,additembyapi,area):
 			if t != None:
 				db.session.add(t)
 
-	except Exception, e:
-		db.session.rollback()
-		zabbix.rollback()
-		raise Exception(' cannot init_aws_itemtype ', str(e))
-	else:
-		db.session.commit()
-	finally:
-		db.session.remove()
 
 def init_aws_item():
 	
@@ -158,16 +148,15 @@ def init_aws_item():
 			con = boto.ec2.cloudwatch.connect_to_region(r.name)
 			lms = con.list_metrics(None,None,metric_name="EstimatedCharges",namespace="AWS/Billing")
 			for lm in lms:
-				init_aws_itemtype(lm.dimensions,idt,hostid,additembyapi,a)
+				init_aws_itemtype(lm.dimensions,idt,hostid,a,zabbix)
+		db.session.commit()
 	except Exception, e:
 		print "Exception in user code:"
 		print '-'*60
 		traceback.print_exc(file=sys.stdout)
 		print '-'*60
 		db.session.rollback()
-		zabbix.rollback()
-	else:
-		db.session.commit()
+		# zabbix.rollback()		
 	finally:
 		db.session.remove()
 		# zabbix.item_delete(additembyapi)
@@ -189,7 +178,7 @@ def init_area():
 
 def init_service():
 
-	names = ['NAT','Web_App','Relay','Control','Database']
+	names = ['nat','web','relay','control','database']
 
 	for n in names:
 		s = Service.query.filter_by(servicename=n).first()
@@ -246,7 +235,7 @@ def init_itemtype():
 		else:
 			idt.append(i)
 
-	servicenames = ['NAT','Web_App','Relay','Control','Database']
+	servicenames = ['nat','web','relay','control','databse']
 	svs = []
 	for sn in servicenames:
 		stmp = Service.query.filter_by(servicename=sn).first()
@@ -519,8 +508,12 @@ if __name__ == '__main__':
 	init_zbxitemtype()
 	print 'process itemtype'
 	init_itemtype()
-	print 'process host item'
-	mass_add_host_item_for_area('ap-southeast-1')
+
+	print 'add current host'
+	add_update_host(get_zabbix_server_ip(), 'web_app',get_zabbix_server_ip(),AREA)
+	db.session.commit()
+	# print 'process host item'
+	# mass_add_host_item_for_area('ap-southeast-1')
 
 
 

@@ -10,6 +10,10 @@ from datetime import datetime
 from monitor.MonitorException import *
 import string,random
 
+#########################################################################################
+###11111111111111111111111111111111111111111111111111111111111111111111111111111111######
+#########################################################################################
+#############   generate report at server side via export.js ############################
 def generate_infile(save_json):
 	f = open('monitor/static/js/export/generate/infile.json','w')
 	f.write(save_json)
@@ -153,63 +157,15 @@ def generate_report(report,postfix,time_since,time_till):
 	imgfilename = r.owner.username + '_' + r.reportname + '_' + postfix + '.png'
 	generate_png_chart(imgfilename)
 	return imgfilename
+#########################################################################################
+####1111111111111111111111111111111111111111111111111111111111111111111111111############
+#########################################################################################
 
-def get_all_itemtypes_for_diff_index(arg,arg_filter_key,arg_filter_value = []):
-	allargitem = None
-	base = None
 
-	for value in arg_filter_value:
-		items = arg.query.filter(arg_filter_key + '=' + str(value)).first().items
-		if base == None:
-			base = items
-		else:
-			base = base.union(items)
-	
-	allargitem = base
-
-	return allargitem
-
-def get_all_itemtypes2(area=[],service=[],host=[],aws=[]):
-
-	indexes = {
-				1:{'type':Area,'key':'areaid','value':area},
-				2:{'type':Service,'key':'serviceid','value':service},
-				3:{'type':Host,'key':'hostid','value':host},
-				4:{'type':Aws,'key':'awsid','value':aws},
-	}
-
-	base = None
-
-	count = 1
-	
-	for it in indexes:
-		items = get_all_itemtypes_for_diff_index(indexes[it]['type'],indexes[it]['key'],indexes[it]['value'])
-
-		if base == None:
-			base = items
-		else:
-			if items != None :
-				base = base.union_all(items)
-				count += 1
-
-	result = {}
-	if base == None:
-		return result
-	# print base.from_self(Item.itemid)
-	# for row in base.all():
-	# 	print row
-	intersect_result = base.group_by(Item.itemid).having(func.count(Item.itemid) == count)
-	for item in intersect_result.all():
-		if result.has_key(item.itemtype_id):
-			result[item.itemtype_id]['items'].append(item.itemid)
-		else :
-			itemtype = Itemtype.query.filter_by(itemtypeid = item.itemtype_id).first()
-			result[item.itemtype_id] = {}
-			result[item.itemtype_id]['name'] = itemtype.itemtypename
-			result[item.itemtype_id]['itemdatatypename'] = itemtype.itemdatatype.itemdatatypename
-			result[item.itemtype_id]['items'] = [item.itemid]
-	return result
-
+########################################################################################
+###222222222222222222222222222222222222222222222222222222222222222222222222222222#######
+########################################################################################
+###########     return itemtypes based on selection of area,service,host,aws   #########
 def get_area_host(area):
 	result = []
 	if len(area) == 0:
@@ -263,9 +219,6 @@ def get_aws(aws):
 			result.append(atmp)
 
 	return result
-
-
-
 
 def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
 	result = {}
@@ -328,98 +281,70 @@ def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
 
 	return result
 
+########################################################################################
+###222222222222222222222222222222222222222222222222222222222222222222222222222222#######
+########################################################################################
 
 
 
 
 
-def arg_2_array(arg=''):
-	result = []
-
-	if len(arg) > 0:
-		if '@' in arg:
-			result = arg.split('@')
-		else:
-				result.append(arg)
-	return result
-
-
-def index_arg_2_array(area='',service='',host='',aws=''):
-	area_arr = []
-	service_arr = []
-	host_arr = []
-	aws_arr = []
-	result = {'area':area_arr,'service':service_arr,'host':host_arr,'aws':aws_arr}
-
-	arg_id_map = {0:area,1:service,2:host,3:aws}
-	arr_id_map = {0:area_arr,1:service_arr,2:host_arr,3:aws_arr}
-	name_id_map = {0:'area',1:'service',2:'host',3:'aws'}
-
-	for i in arg_id_map:
-		result[name_id_map[i]] = arg_2_array(arg_id_map[i])
-
-	return result
-
-def init_history_data(item_arr=[],ground = 60):
-
-	engine = ''
-
-	query_result = zabbix_history(engine,item_arr,ground)
-
-	result = []
-
-	for row in query_result:
-		count = int(row[0])
-		avg = float(row[1])
-		maxv = float(row[2])
-		minv = float(row[3])
-		index = row[4] * ground
-		arr = [count,avg,maxv,minv,index]
-		result.append(arr)
-	return result
-
-def update_history_data(item_arr=[],time_till=60,time_since=0,ground=60):
-
-	engine = ''
-
-	query_result = zabbix_update_history(engine,item_arr,ground,time_till,time_since)
-
-	result = []
-
-	for row in query_result:
-		count = int(row[0])
-		avg = float(row[1])
-		maxv = float(row[2])
-		minv = float(row[3])
-		index = row[4] * ground
-		arr = [count,avg,maxv,minv,index]
-		result.append(arr)
-	return result
-
-def get_series_info(series):
-
-	result = {}
-	for s in series:
-		tmp = {}
-		tmp['area_list'] = s.area_id
-		tmp['service_list'] = s.service_id
-		tmp['aws_list'] = s.aws_id
-		tmp['series_type'] = s.itemtype.itemtypeid
-		tmp['series_name'] = s.seriesname
-		tmp['host_list'] = s.host_id
-		items = s.items
-		item_arr = []
-		for i in items:
-			item_arr.append(str(i.itemid))
-		tmp['series_item_list'] = item_arr
-		result[s.index] = tmp
-
-	return result
 
 def str_2_seconds(strtime):
 	format = '%m/%d/%Y %I:%M:%S %p'
 	return int(time.mktime(time.strptime(strtime,format)))
 
+
+#######################################################################################
+#####3333333333333333333333333333333333333333333333333333333333333333333333############
+#######################################################################################
+# series config #
+# w and r should at least one exist #
+def mass_save_series(series,w,r):
+	if ( w == None and r == None) or (w != None and r != None):
+		raise MonitorException('save series failed for args error in w and r')
+	for sindex in range(len(series)):
+		seriesname = series[sindex]['series_name']
+		seriesindex = sindex
+		area = series[sindex]['area_list']
+		service = series[sindex]['service_list']
+		host = series[sindex]['host_list']
+		aws = series[sindex]['aws_list']
+		it = Itemtype.query.filter_by(itemtypeid = series[sindex]['series_type']).first()
+		s = Series(seriesname,seriesindex,area,service,host,aws,it,w,r)
+		db.session.add(s)
+		item_arr = series[sindex]['series_item_list']
+		# for itemid in item_arr:
+		# 	i = Item.query.filter_by(itemid=itemid).first()
+		# 	tmp = s.add_item(i)
+		# 	if tmp != None:
+		# 		db.session.add(tmp)
+
+
+def mass_update_series(series,w,r):
+	if ( w == None and r == None) or (w != None and r != None):
+		raise MonitorException('update series failed for args error in w and r')
+	if w != None:
+		for s in w.window_series:
+			db.session.delete(s)
+		db.session.add(w)
+
+	if r != None:
+		for s in r.report_series:
+			db.session.delete(s)
+		db.session.add(r)
+
+	mass_save_series(series,w,r)
+
+# series config #
+#######################################################################################
+###3333333333333333333333333333333333333333333333333333333333333333333333333333########
+#######################################################################################
+
+##############################################################################################
+###44444444444444444444444444444444444444444444444444444444444444444444444444444##############
+##############################################################################################
+### report save and delete ##########
 
 def	save_report(reportname,seriesinfo,scaletype,functiontype,owner,title,discription):
 	# s_s = str_2_seconds(timesince)
@@ -469,6 +394,162 @@ def	save_report(reportname,seriesinfo,scaletype,functiontype,owner,title,discrip
 
 	# db.session.commit()
 
+### report save and delete ##########
+##############################################################################################
+####44444444444444444444444444444444444444444444444444444444444444444444444444444#############
+##############################################################################################
+
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
+##### emailschedule save and delete ##############
+
+def gen_new_cron(frequency,start_time,esid,timezone):
+
+	# print frequency,start_time
+	days = int(frequency)/(3600*24)
+	h_m = start_time.split(':')
+	# print days,h_m,esid
+	command = os.getcwd() + '/generate_report.py ' + str(esid)
+	#new_crontab = '*/2 * * * * ' + command + '\n'
+	# new_crontab = "****"
+	new_crontab = str(h_m[1]) + ' ' + str(( int(h_m[0]) + 24 - int(timezone) ) % 24) + ' */' + str(days) + ' * * ' + command + '\n'
+
+	return new_crontab
+
+def update_cron_job(eses):
+	try:
+		output = open('new.cron','w')
+		# print "output"
+		for es in eses:
+			new_crontab = gen_new_cron(es.frequency,es.starttime,es.emailscheduleid,es.timezone)
+			output.write(new_crontab)
+		if len(eses) == 0:
+			output.write('')
+
+	except Exception, e:
+		raise MonitorException('write crontab job file failed')
+	finally:
+		output.close()
+
+	try:
+		call(['crontab','new.cron'])
+	except Exception, e:
+		raise MonitorException(' call crontab command failed ')
+
+def add_specific_cron(es):
+	eses = Emailschedule.query.all()
+	eses = list( set(eses) | set([es]) )
+	update_cron_job(eses)
+
+def delete_specific_cron(es):
+	eses = Emailschedule.query.all()
+	eses.remove(es)
+	update_cron_job(eses)
+
+def save_emailschedule(subject,reportids,email,frequency,start_time,owner,timezone):
+
+
+	es = Emailschedule(subject,frequency,start_time,owner,timezone)
+	db.session.add(es)
+	for rid in reportids['report_id_list']:
+		r = Report.query.filter_by(reportid=rid).first()
+		tr = es.add_report(r)
+		if tr != None:
+			db.session.add(tr)
+
+	for e in email:
+		rv = Receiver.query.filter_by(mailaddress=e).first()
+		if rv == None:
+			rv = Receiver(e)
+			db.session.add(rv)
+		trv = es.add_receiver(rv)
+		if trv != None:
+			db.session.add(trv)
+
+	add_specific_cron(es)
+	
+
+def delete_schedule(esid):
+	es = Emailschedule.query.filter_by(emailscheduleid=esid).first()
+	if es == None:
+		raise MonitorException('schedule do not exist')
+	db.session.delete(es)
+	delete_specific_cron(es)
+
+##### emailschedule save and delete ##############
+#################################################################################################
+#################################################################################################
+#################################################################################################
+
+###########################################################################################
+###########################################################################################
+###########################################################################################
+# window chart save, delete, update #
+def save_window_chart(wc_name,series,owner,wc_type=0,window_index=0,page=None):
+	w = Window(wc_name,wc_type,window_index,owner,page)
+	db.session.add(w)
+
+	mass_save_series(series,w,None)
+	return w
+
+## window chart for this user is already exist ##
+def update_window_chart(wc_name,current_series,user):
+	w = user.windows.filter_by(type=0,windowname=wc_name).first()
+	mass_update_series(current_series,w,None)
+	return None
+
+###########################################################################################
+###########################################################################################
+###########################################################################################
+
+
+####################################################################################
+####################################################################################
+####################################################################################
+# page config
+def save_page_chart(pagename,series_info,user):
+
+	page = Page(pagename,user)
+	db.session.add(page)
+
+	for i in range(len(series_info)):
+		if len(series_info[i]) > 0 :
+			wc_name = pagename + str(i)
+			series = series_info[i]
+			wc_type = 1
+			window_index = i
+			save_window_chart(wc_name,series,user,wc_type,window_index,page)
+	return page
+
+def update_page_chart(pagename,series_info,user):
+
+	page = user.pages.filter_by(pagename=pagename).first()
+
+	for w in page.windows:
+		for s in w.window_series:
+			db.session.delete(s)
+		db.session.delete(w)
+	
+	for i in range(len(series_info)):
+		if len(series_info[i]) > 0 :
+			wc_name = pagename + str(i)
+			series = series_info[i]
+			wc_type = 1
+			window_index = i
+			save_window_chart(wc_name,series,user,wc_type,window_index,page)
+	return page
+# page config
+####################################################################################
+####################################################################################
+####################################################################################
+
+
+##############################################################################################
+##############################################################################################
+##############################################################################################
+# history data process
 def init_series_data(init_data,data,s_s,t_s,time_frequency,functiontype):
 		from_t = s_s/time_frequency*time_frequency
 		to_t = t_s/time_frequency*time_frequency
@@ -581,94 +662,101 @@ def update_result(series_info,time_frequency,time_till):
 	return result
 
 
-# def report_init_result(current_series_info,time_frequency,time_since,time_till):
-# 	s_s = time_since
-# 	t_s = time_till
-	
-# 	result = []
-# 	if s_s + int(time_frequency) > t_s:
-# 		return result
+def arg_2_array(arg=''):
+	result = []
 
-# 	ground = int(time_frequency)
-
-
-# 	for series in current_series_info:
-# 		item_list = series['series_item_list']
-# 		# print "item_list",item_list
-		
-# 		data_result = update_history_data(item_list,t_s,s_s,ground)
-# 		name = series['series_name']
-# 		tmp = {'data':data_result,'name':name}
-# 		result.append(tmp)
-
-# 	return result
-
-def gen_new_cron(frequency,start_time,esid,timezone):
-
-	# print frequency,start_time
-	days = int(frequency)/(3600*24)
-	h_m = start_time.split(':')
-	# print days,h_m,esid
-	command = os.getcwd() + '/generate_report.py ' + str(esid)
-	#new_crontab = '*/2 * * * * ' + command + '\n'
-	# new_crontab = "****"
-	new_crontab = str(h_m[1]) + ' ' + str(( int(h_m[0]) + 24 - int(timezone) ) % 24) + ' */' + str(days) + ' * * ' + command + '\n'
-
-	return new_crontab
-
-def update_cron_job():
-
-	eses = Emailschedule.query.all()
-
-	try:
-		output = open('new.cron','w')
-		# print "output"
-		for es in eses:
-			new_crontab = gen_new_cron(es.frequency,es.starttime,es.emailscheduleid,es.timezone)
-			output.write(new_crontab)
-		if len(eses) == 0:
-			output.write('')
-
-	except Exception, e:
-		raise MonitorException('write crontab job file failed')
-	finally:
-		output.close()
-
-	try:
-		call(['crontab','new.cron'])
-	except Exception, e:
-		raise MonitorException(' call crontab command failed ')
+	if len(arg) > 0:
+		if '@' in arg:
+			result = arg.split('@')
+		else:
+				result.append(arg)
+	return result
 
 
-def save_emailschedule(subject,reportids,email,frequency,start_time,owner,timezone):
+def index_arg_2_array(area='',service='',host='',aws=''):
+	area_arr = []
+	service_arr = []
+	host_arr = []
+	aws_arr = []
+	result = {'area':area_arr,'service':service_arr,'host':host_arr,'aws':aws_arr}
+
+	arg_id_map = {0:area,1:service,2:host,3:aws}
+	arr_id_map = {0:area_arr,1:service_arr,2:host_arr,3:aws_arr}
+	name_id_map = {0:'area',1:'service',2:'host',3:'aws'}
+
+	for i in arg_id_map:
+		result[name_id_map[i]] = arg_2_array(arg_id_map[i])
+
+	return result
+
+def init_history_data(item_arr=[],ground = 60):
+
+	engine = ''
+
+	query_result = zabbix_history(engine,item_arr,ground)
+
+	result = []
+
+	for row in query_result:
+		count = int(row[0])
+		avg = float(row[1])
+		maxv = float(row[2])
+		minv = float(row[3])
+		index = row[4] * ground
+		arr = [count,avg,maxv,minv,index]
+		result.append(arr)
+	return result
+
+def update_history_data(item_arr=[],time_till=60,time_since=0,ground=60):
+
+	engine = ''
+
+	query_result = zabbix_update_history(engine,item_arr,ground,time_till,time_since)
+
+	result = []
+
+	for row in query_result:
+		count = int(row[0])
+		avg = float(row[1])
+		maxv = float(row[2])
+		minv = float(row[3])
+		index = row[4] * ground
+		arr = [count,avg,maxv,minv,index]
+		result.append(arr)
+	return result
+
+def get_series_info(series):
+
+	result = {}
+	for s in series:
+		tmp = {}
+		tmp['area_list'] = s.area_id
+		tmp['service_list'] = s.service_id
+		tmp['aws_list'] = s.aws_id
+		tmp['series_type'] = s.itemtype.itemtypeid
+		tmp['series_name'] = s.seriesname
+		tmp['host_list'] = s.host_id
+
+		indexes = index_arg_2_array(s.area_id,s.service_id,s.host_id,s.aws_id)
+		all_itemtypes = get_all_itemtypes(indexes['area'],indexes['service'],indexes['host'],indexes['aws'])
+		if all_itemtypes.has_key(s.itemtype.itemtypeid):
+			tmp['series_item_list'] = all_itemtypes[s.itemtype.itemtypeid]['items']
+		# items = s.items
+		# item_arr = []
+		# for i in items:
+		# 	item_arr.append(str(i.itemid))
+		# tmp['series_item_list'] = item_arr
+		result[s.index] = tmp
+
+	return result
+# history data process
+##############################################################################################
+##############################################################################################
+##############################################################################################
 
 
-	es = Emailschedule(subject,frequency,start_time,owner,timezone)
-	db.session.add(es)
-	for rid in reportids['report_id_list']:
-		r = Report.query.filter_by(reportid=rid).first()
-		tr = es.add_report(r)
-		if tr != None:
-			db.session.add(tr)
 
-	for e in email:
-		rv = Receiver.query.filter_by(mailaddress=e).first()
-		if rv == None:
-			rv = Receiver(e)
-			db.session.add(rv)
-		trv = es.add_receiver(rv)
-		if trv != None:
-			db.session.add(trv)
 
-	update_cron_job()
-	
-
-def delete_schedule(esid):
-	es = Emailschedule.query.filter_by(emailscheduleid=esid).first()
-	if es == None:
-		raise MonitorException('schedule do not exist')
-	db.session.delete(es)
-	update_cron_job()
 
 
 
@@ -691,11 +779,11 @@ def gen_report_img(emailscheduleid):
 			img = generate_report(r,postfix,time_since,time_till)
 			ri = Reportimg(img,daytime,r,es)
 			db.session.add(ri)
+
+		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
 		raise MonitorException('generate img or save img info failed'+str(e))
-	else:
-		db.session.commit()
 	finally:
 		db.session.remove()
 
@@ -734,104 +822,10 @@ def send_specific_schedule(esid):
 	result = {'reports':report_info,'rvaddress':rvaddress,'subject':subject,'starttime':es.starttime,'frequency':es.frequency}
 	return json.dumps(result)
 
-## window chart for this user is already exist ##
-def update_window_chart(wc_name,current_series,user):
-	w = user.windows.filter_by(type=0,windowname=wc_name).first()
-	mass_update_series(current_series,w,None)
-	return None
 
-def mass_update_series(series,w,r):
-	if ( w == None and r == None) or (w != None and r != None):
-		raise MonitorException('update series failed for args error in w and r')
-	if w != None:
-		for s in w.window_series:
-			# w.window_series.remove(s)
-			db.session.delete(s)
 
-		db.session.add(w)
 
-		for sindex in range(len(series)):
-			seriesname = series[sindex]['series_name']
-			seriesindex = sindex
-			area = series[sindex]['area_list']
-			service = series[sindex]['service_list']
-			host = series[sindex]['host_list']
-			aws = series[sindex]['aws_list']
-			it = Itemtype.query.filter_by(itemtypeid = series[sindex]['series_type']).first()
-			s = Series(seriesname,seriesindex,area,service,host,aws,it,w,r)
-			db.session.add(s)
-			item_arr = series[sindex]['series_item_list']
-			for itemid in item_arr:
-				i = Item.query.filter_by(itemid=itemid).first()
-				tmp = s.add_item(i)
-				if tmp != None:
-					db.session.add(tmp)
 
-	if r != None:
-		pass
-
-# w and r should at least one exist #
-def mass_save_series(series,w,r):
-	if ( w == None and r == None) or (w != None and r != None):
-		raise MonitorException('save series failed for args error in w and r')
-	if w != None:
-		for sindex in range(len(series)):
-			seriesname = series[sindex]['series_name']
-			seriesindex = sindex
-			area = series[sindex]['area_list']
-			service = series[sindex]['service_list']
-			host = series[sindex]['host_list']
-			aws = series[sindex]['aws_list']
-			it = Itemtype.query.filter_by(itemtypeid = series[sindex]['series_type']).first()
-			s = Series(seriesname,seriesindex,area,service,host,aws,it,w,r)
-			db.session.add(s)
-			item_arr = series[sindex]['series_item_list']
-			for itemid in item_arr:
-				i = Item.query.filter_by(itemid=itemid).first()
-				tmp = s.add_item(i)
-				if tmp != None:
-					db.session.add(tmp)
-	if r != None:
-		pass
-
-def save_window_chart(wc_name,series,owner,wc_type=0,window_index=0,page=None):
-	w = Window(wc_name,wc_type,window_index,owner,page)
-	db.session.add(w)
-
-	mass_save_series(series,w,None)
-	return w
-
-def save_page_chart(pagename,series_info,user):
-
-	page = Page(pagename,user)
-	db.session.add(page)
-
-	for i in range(len(series_info)):
-		if len(series_info[i]) > 0 :
-			wc_name = pagename + str(i)
-			series = series_info[i]
-			wc_type = 1
-			window_index = i
-			save_window_chart(wc_name,series,user,wc_type,window_index,page)
-	return page
-
-def update_page_chart(pagename,series_info,user):
-
-	page = user.pages.filter_by(pagename=pagename).first()
-
-	for w in page.windows:
-		for s in w.window_series:
-			db.session.delete(s)
-		db.session.delete(w)
-	
-	for i in range(len(series_info)):
-		if len(series_info[i]) > 0 :
-			wc_name = pagename + str(i)
-			series = series_info[i]
-			wc_type = 1
-			window_index = i
-			save_window_chart(wc_name,series,user,wc_type,window_index,page)
-	return page
 
 
 

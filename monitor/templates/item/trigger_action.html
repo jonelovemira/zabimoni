@@ -1,0 +1,286 @@
+{% extends "layout.html" %}
+{% block body %}
+<script src="{{url_for('static',filename='js/save_load_refresh.js')}}"></script>
+<script type="text/javascript">
+$(function () {
+    load_indexes();
+
+    index = 'first';
+
+    $('#formulaitemfirst').click(function()
+    {
+        index = 'first';
+        $('#forchooseitem').modal({
+            keyboard: false
+        });
+        $('#forchooseitem').modal('show');
+    });
+
+    $('#formulaitemsecond').click(function()
+    {
+        index = 'second';
+        $('#forchooseitem').modal({
+            keyboard: false
+        });
+        $('#forchooseitem').modal('show');
+    });
+
+    $(document).on('click','button.itemtype',function()
+    {
+        var value = $(this).attr('value');
+        $('#formulaitem' + index).attr('value',value);
+        $('#forchooseitem').modal('hide');
+    });
+
+    $('a[udf="generateformula"]').click(function()
+    {
+        scale = $('#formulascale').val();
+        scaleoperator = $('select[name="scaleoperator"]').val();
+        first_itemids = $('#formulaitemfirst').val();
+        fs_operator = $('select[name="firstsecondoperator"]').val();
+        second_itemids = $('#formulaitemsecond').val();
+        brackets_position = $('#bracketsposition').val();
+
+        $.getJSON('/item/generateformula',{scale:scale,scaleoperator:scaleoperator,first_itemids:first_itemids,fs_operator:fs_operator,second_itemids:second_itemids,brackets_position:brackets_position},function(data)
+        {
+            console.log(data);
+            $('textarea[name=formula]').val(data);
+        });
+    });
+
+    $('select[name="selectedaction"]').change(function()
+    {
+        value = $('select[name="selectedaction"]').val();
+        alert(value);
+        // $('textarea[name="command"]').val(value);
+    })
+
+    $('div[case="actiontype"]').hide();
+    $('div[udf=at1]').show();
+    $('input[name=kinds]').click(function()
+    {
+        value = $(this).val();
+        if (value >2 ) {
+            value = 2;
+        }
+        // alert(value);
+        $('div[case="actiontype"]').hide();
+        $('div[udf=at' + value + ']').show();
+
+        if (value == 2) {
+            history_command = $('select[name="selectedaction"]').val();
+            $('textarea[name="command"]').val(history_command);
+        }
+        else
+        {
+            $('textarea[name="command"]').val('');
+        }
+    });
+
+    loadfirstareaasg();
+
+    function loadfirstareaasg()
+    {
+        value = $('select[name="areaid"]').val();
+        loadautoscalegroup(value);
+    }
+
+    function loadautoscalegroup(areaid)
+    {
+        $.getJSON('/item/autoscalegroup',{areaid:areaid},function(data)
+        {
+            $('select[name="asgname"]').empty();
+            for(datait = 0 ; datait < data.length ; datait ++)
+            {
+                $('select[name="asgname"]').append('<option value=' + data[datait] + '>' + data[datait] + '</option>');
+            }
+        });
+    }
+
+    $('select[name="areaid"]').change(function()
+    {
+        value = $('select[name="areaid"]').val();
+        loadautoscalegroup(value);
+    });
+
+})
+</script>
+
+<form id="fieldIconsForm" class="form-horizontal" method="POST" action="">
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label"> Calculated Item</label>
+        <!-- <div class="col-sm-4"> -->
+            <!-- <input type="text" class="form-control" placeholder="generated calculated formula" name="calcexpression" disabled> -->
+        <!-- </div> -->
+
+        <!-- {% include 'item/calculateitem.html'%} -->
+            
+        <div class="col-sm-2">
+            <input type="text" class="form-control" id="formulascale" placeholder="Scale">
+        </div>
+
+        <div class="col-sm-1">
+            <select class="form-control" name="scaleoperator">
+                <option value="*">*</option>
+                <option value="-">-</option>
+                <option value="+">+</option>
+                <option value="/">/</option>
+            </select>
+        </div>
+
+        <div class="col-sm-3">
+            <input type="text" class="form-control" id="formulaitemfirst" >
+        </div>
+
+        <div class="col-sm-1">
+            <select class="form-control" name="firstsecondoperator">
+                <option value="/">/</option>
+                <option value="-">-</option>
+                <option value="*">*</option>
+                <option value="+">+</option>
+            </select>
+        </div>
+
+        <div class="col-sm-2">
+            <input type="text" class="form-control" id="formulaitemsecond" >
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">brackets position</label>
+        <div class="col-sm-9">
+            <select class="form-control" name="bracketsposition">
+                <option value="2">scale op1 (itemfirst op2 itemsecond)</option>
+                <option value="1">(scale op1 itemfirst) op2 itemsecond</option>
+                
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label"> generated items</label>
+        <div class="col-sm-7">
+            <textarea type="text" class="form-control" name="formula" rows="4"></textarea>
+        </div>
+        <div class="col-sm-2">
+            <a href="#" class="form-control" udf="generateformula">generate</a>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label"> trigger function </label>
+        <div class="col-sm-9">
+            <select class="form-control" name="triggerfunction">
+                <option value="min">min</option>
+                <option value="max">max</option>
+                <option value="avg">avg</option>
+                <option value="last">last</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">Compare type</label>
+        <div class="col-sm-9">
+            <select class="form-control" name="comparetype">
+                <option value=">">></option>
+                <option value="<"><</option>
+                <option value="=">=</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label"> trigger value</label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control" placeholder="input value" name="triggervalue">
+        </div>
+    </div>
+
+    
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label"> timeshift </label>
+        <div class="col-sm-9">
+            <input type="text" class="form-control" placeholder="input timeshift in seconds" name="timeshift">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label"> action type </label>
+        <div class="col-sm-9">
+            <label class="radio-inline">
+                <input type="radio" name="kinds" value="1" checked>auto scale
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="kinds"  value="2">load from history
+            </label>
+        </div>
+    </div>
+
+    <div class="form-group" udf="at1" case="actiontype">
+        <label class="col-sm-2 control-label"> autoscale configuration</label>
+        <div class="col-sm-3">
+            <select class="form-control" name="areaid">
+                {% for a in area %}
+                    <option value="{{a.areaid}}" bring="{{a.areaname}}">{{a.areaname}}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-sm-4">
+            <select class="form-control" name="asgname">
+            </select>
+        </div>
+        <div class="col-sm-2">
+            <select class="form-control" name="asgtype">
+                <option value="0">UP</option>
+                <option value="1">DOWN</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group" udf="at2" case="actiontype">
+        <label class="col-sm-2 control-label">history</label>
+        <div class="col-sm-9">
+            <select class="form-control" name="selectedaction">
+                {% for a in actions %}
+                    <option value="{{a.command}}">{{a.actionname}}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">command</label>
+        <div class="col-sm-9">
+            <textarea class="form-control" name="command" rows="3"></textarea>
+        </div>
+    </div>
+        
+    <div class="form-group">
+        <div class="col-sm-9 col-sm-offset-2">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+
+<div class="modal fade" id="forchooseitem" tabindex="-1" role="dialog" aria-labelledby="chooseitem" aria-hidden="true">
+  <div class="modal-dialog page">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="chooseitem">Choos monitor items</h4>
+      </div>
+      <div class="modal-body">
+        {% include 'chart/index.html'%}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary addchart">Add a chart</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

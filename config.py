@@ -29,3 +29,6 @@ ADMINS = ['xuzhongyong@tp-link.net']
 
 # path of tmp file for log
 TMP_FILE = '/home/monitor/project/monitor-0.3.7/tmp/monitor.log'
+
+# area name of 
+AREA = 'ap-southeast-1'

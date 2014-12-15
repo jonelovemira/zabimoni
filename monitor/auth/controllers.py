@@ -60,11 +60,11 @@ def add():
         try:
             user = User(username,password,usertype,loginpermission,email)
             db.session.add(user)
+            db.session.commit()
         except Exception, e:
             db.session.rollback()
             flash(str(e),'error')
         else:
-            db.session.commit()
             flash('you add an user')
             return redirect(url_for('auth.config'))
         finally:
@@ -79,11 +79,11 @@ def userdelete(userid):
     try:
         user = User.query.filter_by(userid=userid).first()
         db.session.delete(user)
+        db.session.commit()
     except Exception, e:
         db.session.rollback()
         flash(str(e),'error')
     else:
-        db.session.commit()
         flash('you delete an user')
     finally:
         db.session.remove()

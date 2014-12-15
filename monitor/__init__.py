@@ -16,7 +16,8 @@ lm.login_view = 'auth.login'
 #configuration
 app.config.from_object('config')
 
-db = SQLAlchemy(app)
+# db = SQLAlchemy(app)
+db = SQLAlchemy(app,session_options={'autoflush':False})
 # mail = Mail(app)
 # db.init_app(app)
 

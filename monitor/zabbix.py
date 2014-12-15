@@ -246,6 +246,12 @@ class Zabbixtriggers(Base):
     def __repr__(self):
         return '<zabbix triggers %s>' % (self.expression)
 
+class Zabbixactions(Base):
+    __tablename__ = 'actions'
+    __table_args__ = {'autoload':True}
+    def __repr__(self):
+        return '<zabbix actions %s>' % (self.name)
+
 
 def loadSession():
     session = None

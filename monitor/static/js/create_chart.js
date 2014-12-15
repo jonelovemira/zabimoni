@@ -141,10 +141,16 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
                dataType: 'json', 
                contentType : 'application/json', 
                success: function (data) {
-                    $(container_selector).empty();
-                    series_for_current_window = data.data;
-                    y_title = data.y_title;
-                    create_highstock_chart(container_selector,sortId,y_title);
+                    if (data == 0) {
+                        $(container_selector).empty();
+                        $(container_selector).append('<button class="btn btn-lg btn-info">No Monitor data to display</button>');
+                    }
+                    else
+                    {
+                        series_for_current_window = data.data;
+                        y_title = data.y_title;
+                        create_highstock_chart(container_selector,sortId,y_title);
+                    }
                 }  
         };  
         $.ajax(option);

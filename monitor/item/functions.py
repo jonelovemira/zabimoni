@@ -2,14 +2,29 @@
 
 from monitor.zabbix_api import zabbix_api,get_zabbix_server_ip
 from monitor import db
-from monitor.item.models import Area,Service,Host,Item,Itemtype,Normalitemtype,Zbxitemtype,Itemdatatype
+from monitor.item.models import Area,Service,Host,Item,Itemtype,Normalitemtype,Zbxitemtype,Itemdatatype,Calculateditem,Trigger,Action
 from monitor.chart.models import Series
 import boto.ec2
 import boto.ec2.elb
 from constants import *
 from monitor.zabbix import Zabbixitems,Zabbixapplication,Zabbixitemapplication,loadSession,Zabbixinterface,Zabbixhosts
-from monitor.chart.functions import get_all_itemtypes
+from monitor.chart.functions import construct_random_str
 from monitor.MonitorException import *
+from datetime import datetime
+import sys,traceback
+
+#################################################################
+#################################################################
+############ public function
+def arg_2_array(arg=''):
+	result = []
+
+	if len(arg) > 0:
+		if '@' in arg:
+			result = arg.split('@')
+		else:
+				result.append(arg)
+	return result
 
 def get_elb_for_area(areaname):
 	result = []
@@ -81,9 +96,17 @@ def get_host_interfaceid(hostid):
 		raise IpAddressNotExist('ip address do not exists')
 	interface_id = i.interfaceid
 	return interface_id
+#################################################################
+#################################################################
+#################################################################
 
-# preconditions : service exists, area exists, zabbixitemtype exists, normal itemtype exists, service itemtype exists 
-#       
+
+
+
+#################################################################
+#################################################################
+#### host operations  #######
+# preconditions : service exists, area exists, zabbixitemtype exists, normal itemtype exists, service itemtype exists       
 def add_update_host(hostname, servicename,host_ip,areaname):
 
 	zabbix = zabbix_api()
@@ -176,6 +199,7 @@ def add_update_host(hostname, servicename,host_ip,areaname):
 				db.session.add(addi)
 
 	except Exception, e:
+		traceback.print_exc(file=sys.stdout)
 		zabbix.rollback()
 		raise MonitorException('can not add or update host',str(e))
 
@@ -243,11 +267,11 @@ def add_host(hostname, servicename,host_ip,areaname):
 			db.session.add(addi)
 
 			# update related chart series
-			s = Series.query.filter_by(host_id='').filter_by(aws_id='').filter_by(itemtype_id=it.itemtypeid).first()
-			if s != None:
-				if str(area.areaid) in s.area_id or str(service.serviceid) in s.service_id:
-					s.add_item(addi)
-					db.session.add(s)
+			# s = Series.query.filter_by(host_id='').filter_by(aws_id='').filter_by(itemtype_id=it.itemtypeid).first()
+			# if s != None:
+			# 	if str(area.areaid) in s.area_id or str(service.serviceid) in s.service_id:
+			# 		s.add_item(addi)
+			# 		db.session.add(s)
 
 	except Exception, e:
 		zabbix.rollback()
@@ -299,10 +323,10 @@ def update_host(hostid,hostname,areaid,serviceid,host_ip=None):
 		# add items which added later
 		for it in allitemtype:
 			item = it.items.filter_by(host_id=hostid).first()
+			session = loadSession()
+			zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+			session.close()
 			if item == None:
-				session = loadSession()
-				zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
-				session.close()
 				# create item in zabbix database if it not exists
 				if zitem != None:
 					itemid = zitem.itemid
@@ -313,7 +337,7 @@ def update_host(hostid,hostname,areaid,serviceid,host_ip=None):
 				item = Item(itemid,it.itemtypename,host,it)
 			else:
 				# update in both zabbix database or monitor database
-				if it.zabbixvaluetype != None:
+				if zitem.type != 0 and it.zabbixvaluetype != None:
 					zabbix.item_update(item.itemid,it.itemkey,2,it.zabbixvaluetype)
 				item.area = area
 				item.itemtype = it
@@ -325,14 +349,22 @@ def update_host(hostid,hostname,areaid,serviceid,host_ip=None):
 	except Exception, e:
 		zabbix.rollback()
 		raise Exception('can not update',str(e))
+#################################################################
+#################################################################
+#################################################################
 
-# will test on current host 
+
+
+#################################################################
+#################################################################
+## add key ##
+# will test on monitor server 
 def it_test(key):
 	session = loadSession()
 	th = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
 	session.close()
 	if th == None:
-		raise MonitorException('cannot check the if the key can be added due to host is not available')
+		raise MonitorException('cannot check if the key can be added due to host is not available')
 
 	hostid = th.hostid
 	zabbix = zabbix_api()
@@ -343,6 +375,34 @@ def it_test(key):
 			zabbix.item_delete([itemid])
 	except Exception, e:
 		pass
+
+
+def add_itkey_to_host(hostid,it,zabbix):
+	host = Host.query.filter_by(hostid=hostid).first()
+	if host == None:
+		raise HostNotExist('host do not exists')
+
+	if it == None:
+		raise MonitorException('it to be add do not exists')
+
+	item = host.items.filter_by(itemname=it.itemtypename).first()
+	if item != None:
+		raise MonitorException(' item to be add in current host is already exist')
+
+	session = loadSession()
+	zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+	session.close()
+
+	
+	if zitem != None:
+		itemid = zitem.itemid
+	else:
+		itemid = zabbix.item_create(it.itemkey,hostid,None,None,2,it.zabbixvaluetype)
+
+	newitem = Item(itemid,it.itemtypename,host,it)
+
+	db.session.add(newitem)
+
 
 def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype):
 	idt = Itemdatatype.query.filter_by(itemdatatypeid=itemdatatypeid).first()
@@ -358,8 +418,9 @@ def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype):
 	if htmp != None:
 		db.session.add(htmp)
 
-def update_key_to_host(kinds,o):
-	print "kinds",kinds
+	return it
+
+def find_hosts_and_add_key(kinds,o,it,zabbix):
 	hosts = None
 	if kinds == 1:
 		hosts = Host.query.all()
@@ -369,9 +430,8 @@ def update_key_to_host(kinds,o):
 		hosts = o.hosts.all()
 
 	for h in hosts:
-		print h
-		update_host(h.hostid,h.hostname,h.area.areaid,h.service.serviceid)
-
+		add_itkey_to_host(h.hostid,it,zabbix)
+		# update_host(h.hostid,h.hostname,h.area.areaid,h.service.serviceid)
 
 def find_object_2_action(kinds,indexid):
 	if kinds > 4 :
@@ -382,21 +442,26 @@ def find_object_2_action(kinds,indexid):
 	o = arr[0].query.filter(arr[1] + '=' + str(indexid)).first()
 	return o
 
-def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype):
+def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix):
 	kinds = int(kinds)
 	if indexid == None:
 		indexid = 1
 	o = find_object_2_action(kinds,indexid)
 	# print o
-	add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype)
+	it = add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype)
 
-	update_key_to_host(kinds,o)
+	find_hosts_and_add_key(kinds,o,it,zabbix)
 
-# def test_add():
-# 	zit = Zbxitemtype()
-# 	db.session.add(zit)
-# 	raise MonitorException('test')
-	
+## add key ##
+#################################################################
+#################################################################
+
+
+
+#################################################################
+#################################################################
+#################################################################
+#################  calculate items,trigger and actions  #########
 def get_formula_for_items(itemids):
 	result = ''
 	count = 0
@@ -425,27 +490,167 @@ def get_formula_for_items(itemids):
 		session.close()
 
 	return result
-	
 
-def create_calculated_items(scale,scale_operator,first_itemids,fs_operator,second_itemids):
+def create_calculated_items_formula(scale,scale_operator,first_itemids,fs_operator,second_itemids,brackets_position = 1):
 	final_formula = ''
-	final_formula += str(scale)
-	final_formula += scale_operator
-	final_formula += '('
-	first_itemids_formula = get_formula_for_items(first_itemids)
-	final_formula += first_itemids_formula
-	final_formula += ')'
-	final_formula += fs_operator
-	final_formula += '('
-	second_itemids_formula = get_formula_for_items(second_itemids)
-	final_formula += second_itemids_formula
-	final_formula += ')'
+	# final_formula += str(scale)
+	# final_formula += scale_operator
 	
+	first_itemids_formula = get_formula_for_items(first_itemids)
+
+	if len(first_itemids_formula) != 0:
+		first_itemids_formula = '(' + first_itemids_formula + ')'
+	# final_formula += first_itemids_formula
+
+	# final_formula += fs_operator
+
+	second_itemids_formula = get_formula_for_items(second_itemids)
+
+	if len(second_itemids_formula) != 0:
+		second_itemids_formula = '(' + second_itemids_formula +')'
+	
+	# final_formula += second_itemids_formula
+
+	if brackets_position == 1:
+		final_formula += '('
+		final_formula += str(scale)
+		final_formula += scale_operator
+		final_formula += first_itemids_formula
+		final_formula += ')'
+		final_formula += fs_operator
+		final_formula += second_itemids_formula
+	else:
+		final_formula += str(scale)
+		final_formula += scale_operator
+		final_formula += '('
+		final_formula += first_itemids_formula
+		final_formula += fs_operator
+		final_formula += second_itemids_formula
+		final_formula += ')'
+
 	return final_formula
 
+def get_valid_hostid(first,second):
+	total = list( set(first) | set(second) )
+	session = loadSession()
+	result = None
+	for itemid in total:
+		item = session.query(Zabbixitems).filter_by(itemid=itemid).first()
+		if item != None:
+			result = session.query(Zabbixhosts).filter_by(hostid=item.hostid).first()
+			break
+	session.close()
+	return result
 
+def create_calculate_item(zabbix,hostid,formula):
+	result = {}
+	day = datetime.today()
+	daytime = day.strftime("%Y%m%d")
+	itemname = daytime + construct_random_str()
+	calcitemid = zabbix.calc_item_create(itemname,hostid,formula)
+	result['itemid'] = calcitemid
+	result['itemname'] = itemname
+	return result
 
+def get_trigger_expression(hostname,itemname,func,triggervalue,timeshift,equality):
+	expression = '{'
+	expression += hostname
+	expression += ':'
+	expression += itemname
+	expression += '.'
+	expression += func
+	expression += '('
+	expression += str(timeshift)
+	expression += ')'
+	expression += '}'
+	expression += equality
+	expression += str(triggervalue)
+	return expression
 
+def get_action_name(command_path):
+	if len(command_path) == 0 :
+		return ''
+	split_result1 = command_path.split('/')
+	split_result2 = split_result1[len(split_result1) - 1].split('.')
+	result = split_result2[0]
+	if len(result) >= 80:
+		result = result[0:80]
+
+	return result
+
+# use current host
+def create_calcitem_trigger_action(zabbix,formula,functiontype,triggervalue,timeshift,trigger_operator,\
+									command_path,autoscalegroupname,autoscaletype,areaid):
+
+	#generate calculate item in zabbix
+	session = loadSession()
+	host = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
+	session.close()
+	iteminfo = create_calculate_item(zabbix,host.hostid,formula)
+	
+
+	# save in monitor database
+	calcitem = Calculateditem(iteminfo['itemid'],formula)
+	db.session.add(calcitem)
+
+	# add trigger and action both in zabbix and monitor
+	hostname = host.name
+	expression = get_trigger_expression(hostname,iteminfo['itemname'],functiontype,triggervalue,timeshift,trigger_operator)
+	name = iteminfo['itemname']
+	
+	# in zabbix
+	triggerid = zabbix.trigger_create(expression,name)
+
+	# in monitor 
+	trigger = Trigger(triggerid,name,triggervalue,timeshift,calcitem)
+	db.session.add(trigger)
+
+	# add action in zabbix
+	actionid = zabbix.action_create(name,host.hostid,triggerid,command_path)
+
+	# add action in monitor
+	actionname = get_action_name(command_path)
+	action =  Action(actionid,autoscalegroupname,autoscaletype,areaid,command_path,actionname)
+	db.session.add(action)
+
+	# add relationship between trigger and action
+	ttmp = trigger.add_action(action)
+	if ttmp != None:
+		db.session.add(ttmp)
+
+def test_create_calcitem_trigger_action():
+	zabbix = zabbix_api()
+	scale = '1'
+	scale_operator = '*'
+	first_itemids = [37677,37628]
+	fs_operator = ''
+	second_itemids = []
+
+	triggervalue = 100
+	timeshift = 60
+	functiontype = 'min'
+	trigger_operator = '>'
+
+	command_path = '/home/jone/flask_project/monitor-0.3.7/command/test_remote_command.py'
+	autoscalegroupname = 'test autoscale group'
+	autoscaletype = '1'
+	areaid = '1'
+
+	try:
+		create_calcitem_trigger_action(zabbix,scale,scale_operator,first_itemids,fs_operator,second_itemids,\
+									functiontype,triggervalue,timeshift,trigger_operator,\
+									command_path,autoscalegroupname,autoscaletype,areaid)
+		db.session.commit()
+	except Exception, e:
+		db.session.rollback()
+		zabbix.rollback()
+		raise e
+	finally:
+		db.session.remove()
+
+#################################################################
+#################################################################
+#################################################################
 
 
 
