@@ -1,9 +1,9 @@
-from flask import render_template,g
+from flask import render_template,g,request
 from flask.ext.login import login_user,logout_user,current_user,login_required
 from monitor import app,lm
 from monitor import db
 from monitor.auth.models import User
-import os
+import os,json
 from flask import send_from_directory
 
 
@@ -12,18 +12,7 @@ from flask import send_from_directory
 @app.before_request
 def before_request():
     g.user = current_user
-    # metadata = Base.metadata
-    # session_factory = sessionmaker(bind=engine)
-    # Session = scoped_session(session_factory)
-    # # print Session
-    # Session = localSession
-    # g.Session = Session
-    # print 'Session in before_request ,' ,g.Session
 
-# @app.teardown_request
-# def teardown_request(exception):
-#     # print 'Session in after_request ,', g.Session
-#     g.Session.remove()
 
 
 @lm.user_loader
@@ -37,9 +26,26 @@ def index():
     # print 'Session in dashboard ,' ,g.Session
     return render_template('dashboard.html')
 
+# @app.route('/testlogin/',methods=['POST','GET'])
+# def testlogin():
+#     if request.method == 'POST':
+#         # print dir(request)
+#         print request.form.get('username')
+#         print request.form.get('password')
+#         # print request.form.get('username')
+#         # print request.data.get('username')
+#         # print request.data.get('password')
+#         # print request.data
+#     # print 'Session in dashboard ,' ,g.Session
+#     return json.dumps(0)
+
 @app.errorhandler(404)
 def not_found_error(error):
     return render_template('404.html'), 404
+
+@app.errorhandler(403)
+def page_not_found(e):
+    return render_template('403.html',referer=request.referrer),403
 
 @app.errorhandler(500)
 def internal_error(error):

@@ -63,9 +63,12 @@ $(function () {
         value = $(this).val();
         $('div[case="actiontype"]').hide();
         $('div[udf=at' + value + ']').show();
+        if (value == 2) {
+            loadfirstareaasg();
+        };
     });
 
-    loadfirstareaasg();
+    // loadfirstareaasg();
 
     function loadfirstareaasg()
     {

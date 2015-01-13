@@ -1,0 +1,7 @@
+<!-- extend base layout -->
+{% extends "layout.html" %}
+
+{% block body %}
+  <h1>You are Not Authorized to Access this Page</h1>
+  <a href="{{referer}}">Go Back Now</a>
+{% endblock %}

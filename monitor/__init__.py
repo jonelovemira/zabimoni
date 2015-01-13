@@ -2,13 +2,10 @@ from flask import Flask,g
 from flask.ext.sqlalchemy import SQLAlchemy
 from config import basedir, ADMINS, TMP_FILE
 from flask.ext.login import LoginManager
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from flask.ext.login import current_user
-import os
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
-from sqlalchemy.orm import sessionmaker,scoped_session
+from flask.ext.principal import Principal
+
 #from flask_alembic import Alembic
 
 
@@ -25,6 +22,8 @@ db = SQLAlchemy(app,session_options={'autoflush':False})
 migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
+
+Principal(app)
 # mail = Mail(app)
 # db.init_app(app)
 

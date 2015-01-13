@@ -588,8 +588,8 @@ def get_action_name(command_path):
 	if len(command_path) == 0 :
 		return ''
 	split_result1 = command_path.split('/')
-	split_result2 = split_result1[len(split_result1) - 1].split('.')
-	result = split_result2[0]
+	split_result2 = split_result1[len(split_result1) - 1].split(' ')
+	result = split_result2[0].split('.')[0]
 	if len(result) >= 80:
 		result = result[0:80]
 
@@ -617,7 +617,7 @@ def create_calcitem_trigger_action(zabbix,formula,functiontype,triggervalue,time
 	triggerid = zabbix.trigger_create(expression,name)
 
 	
-
+	content = "'" + functiontype + ' of ' + formula + ' ' + trigger_operator + ' ' + triggervalue + ' for ' + timeshift + 's' +"'"
 
 	# in monitor 
 	# trigger = Trigger(triggerid,name,triggervalue,timeshift,calcitem)
@@ -647,7 +647,7 @@ def create_calcitem_trigger_action(zabbix,formula,functiontype,triggervalue,time
 					"opcommand" :
 					{
 						"type": 0,
-						"command":command + ' ' + expression,
+						"command":command + ' ' + content,
 						"execute_on":1
 					}
 				}

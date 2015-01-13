@@ -12,8 +12,12 @@ import json
 import boto.ec2.autoscale
 from config import AUTOSCALE_COMMAND_PATH ,EMAIL_NOTIFICATION_COMMAND_PATH,AUTOSCALE,EMAILNOTIFICATION
 
+from flask.ext.principal import Permission, RoleNeed
+admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
+
 
 mod_item = Blueprint('item', __name__, url_prefix='/item')
+
 
 @mod_item.route('/')
 @login_required
@@ -28,6 +32,7 @@ def mainboard():
 
 @mod_item.route('/area/', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def area():
 	# form = addAreaForm()
 	# choose = chooseServiceForm()
@@ -63,6 +68,7 @@ def area():
 	return render_template('item/area.html',services=services)
 
 @mod_item.route('/area/delete/<areaid>', methods=['GET', 'POST'])
+@admin_permission.require(http_exception=403)
 @login_required
 def areadelete(areaid):
 	try:
@@ -81,6 +87,7 @@ def areadelete(areaid):
 
 @mod_item.route('/service/', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def service():
 
 	# areaelb = get_all_area_elb()
@@ -117,6 +124,7 @@ def service():
 
 @mod_item.route('/elbforarea/', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def elbforarea():
 	areaid = request.args.get('areaid','')
 	result = []
@@ -131,6 +139,7 @@ def elbforarea():
 
 @mod_item.route('/service/delete/<serviceid>', methods=['GET'])
 @login_required
+@admin_permission.require(http_exception=403)
 def servicedelete(serviceid):
 	try:
 		service = Service.query.filter_by(serviceid=serviceid).first()
@@ -149,6 +158,7 @@ def servicedelete(serviceid):
 
 @mod_item.route('/host/', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def host():
 	services = Service.query.all()
 	areas = Area.query.all()
@@ -179,6 +189,7 @@ def host():
 
 @mod_item.route('/host/delete/<hostid>', methods=['GET'])
 @login_required
+@admin_permission.require(http_exception=403)
 def hostdelete(hostid):
 	try:
 		delete_host(hostid)
@@ -196,6 +207,7 @@ def hostdelete(hostid):
 
 @mod_item.route('/itemtype/', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def itemtype():
 	areas = Area.query.all()
 	services = Service.query.all()
@@ -230,6 +242,7 @@ def itemtype():
 
 @mod_item.route('/itemtype/delete/<itemtypeid>', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def itemtypedelete(itemtypeid):
 	zabbix = zabbix_api()
 	try:
@@ -260,6 +273,7 @@ def itemtypedelete(itemtypeid):
 
 @mod_item.route('/trigger_action/', methods=['GET', 'POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def trigger_action():
 	area = Area.query.all()
 	service = Service.query.all()
@@ -293,31 +307,11 @@ def trigger_action():
 			if len(emailaddress) == 0:
 				flash('Emailaddress is empty', 'error')
 				return redirect(url_for('item.trigger_action'))
-			command = EMAIL_NOTIFICATION_COMMAND_PATH + ' ' + emailaddress
+			command = EMAIL_NOTIFICATION_COMMAND_PATH + " '" + emailaddress + "'"
 
 		zabbix = zabbix_api()
 
-		# print "formula",formula
-		# print "triggerfunction",triggerfunction
-		# print "triggervalue",triggervalue
-		# print "timeshift",timeshift
-		# print "comparetype",comparetype
-		# print "command",command
-		# print "asgname",asgname
-		# print "asgtype",asgtype
-		# print "areaid",areaid
-
 		try:
-
-			# print "formula",formula
-			# print "triggerfunction",triggerfunction
-			# print "triggervalue",triggervalue
-			# print "timeshift",timeshift
-			# print "comparetype",comparetype
-			# print "command",command
-			# print "asgname",asgname
-			# print "asgtype",asgtype
-			# print "areaid",areaid
 
 
 			result = create_calcitem_trigger_action(zabbix,formula,triggerfunction,triggervalue,timeshift,comparetype,\
@@ -367,6 +361,7 @@ def trigger_action():
 
 @mod_item.route('/trigger/delete/<triggerid>',methods=['GET','POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def trigger_delete(triggerid):
 	zabbix = zabbix_api()
 	try:
@@ -416,6 +411,7 @@ def generateformula():
 
 @mod_item.route('/autoscalegroup',methods=['GET','POST'])
 @login_required
+@admin_permission.require(http_exception=403)
 def autoscalegroup():
 
 	areaid = request.args.get('areaid')

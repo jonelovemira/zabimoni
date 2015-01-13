@@ -43,7 +43,7 @@ SCHEDULE_ALL_FILENAME = 'all'
 XML_EXPORT_PATH = 'monitor-server/monitor.xml'
 
 AUTOSCALE_COMMAND_PATH = basedir + '/autoscale_group.py'
-EMAIL_NOTIFICATION_COMMAND_PATH = basedir + '/sendemail.py'
+EMAIL_NOTIFICATION_COMMAND_PATH = basedir + '/sendemail'
 
 # chart init timelength in seconds
 CHART_INIT_TIME = 86400

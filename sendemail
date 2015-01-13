@@ -1,0 +1,15 @@
+#! /bin/bash
+
+receivers=$1
+
+content=$2
+
+# echo 'content' $content
+
+#var=`echo $content|awk -F ',' '{print $2}'`
+rvs=`echo $receivers | awk -F';' '{print $0}' | sed "s/;/ /g"`
+
+for r in $rvs
+do
+	echo $content | mail -s 'Monitor trigger notifications' $r
+done
