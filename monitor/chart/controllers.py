@@ -32,8 +32,19 @@ def window():
 	windows = g.user.windows.filter_by(type=0).all()
 	return render_template("chart/window.html",title='Window',area=area,service=service,host=host,aws=aws,idt=idt,windows=windows)
 	
+@mod_chart.route('/window/delete/<windowid>', methods=['GET', 'POST'])
+@login_required
+def window_delete(windowid):
+	try:
+		delete_window(windowid)
+		db.session.commit()
+		return json.dumps(1)
+	except Exception, e:
+		db.session.rollback()
+	finally:
+		db.session.remove()
 
-	
+	return json.dumps(0)
 
 @mod_chart.route('/page/', methods=['GET', 'POST'])
 @login_required
@@ -45,6 +56,20 @@ def page():
 	idt = Itemdatatype.query.all()
 	pages = g.user.pages.all()
 	return render_template("chart/page.html",title='Page',area=area,service=service,host=host,aws=aws,idt=idt,pages=pages)
+
+@mod_chart.route('/page/delete/<pageid>', methods=['GET', 'POST'])
+@login_required
+def page_delete(pageid):
+	try:
+		delete_page(pageid)
+		db.session.commit()
+		return json.dumps(1)
+	except Exception, e:
+		db.session.rollback()
+	finally:
+		db.session.remove()
+
+	return json.dumps(0)
 
 @mod_chart.route('/report')
 @login_required
@@ -133,8 +158,10 @@ def addschedule():
 		start_time = request.form['timestart']
 		timezone = request.form['timezone']
 		try:
-			save_emailschedule(subject,reportids,email,period,start_time,u,timezone)
+			es = save_emailschedule(subject,reportids,email,period,start_time,u,timezone)
 			db.session.commit()
+			add_specific_cron(es)
+			update_schedule_data_2_s3()
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'error')
@@ -151,9 +178,10 @@ def addschedule():
 @login_required
 def scheduledelete(emailscheduleid):
 	try:
-		# es = Emailschedule.query.filter_by(emailscheduleid=emailscheduleid).first()
+		es = Emailschedule.query.filter_by(emailscheduleid=emailscheduleid).first()
 		delete_schedule(emailscheduleid)
 		db.session.commit()
+		update_schedule_data_2_s3()
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'error')
@@ -177,22 +205,63 @@ def itemtype():
 	itemtype_result = get_all_itemtypes(result['area'],result['service'],result['host'],result['aws'])
 	return json.dumps(itemtype_result)
 
-@mod_chart.route('/init/', methods=['GET', 'POST'])
+@mod_chart.route('/history/',methods=['GET','POST'])
 @login_required
-def init():
+def history():
 	if request.method == 'POST':
 		request_data = json.loads(request.data)
 		current_series_info = request_data['current_series_info']
 		time_frequency = request_data['time_frequency']
-
-		if not current_series_info[0].has_key('series_item_list'):
-			return json.dumps(0)
-
-		data_result = init_result(current_series_info,time_frequency)
-		y_title = get_init_y_title(current_series_info)
-		result = {'data':data_result,'y_title':y_title}
-		return json.dumps(result)
+		for series in current_series_info:
+			if current_series_info[0].has_key('series_item_list'):
+				data_result = history_result(current_series_info)
+				y_title = get_init_y_title(current_series_info)
+				result = {'data':data_result,'y_title':y_title}
+				return json.dumps(result)
 	return json.dumps(0)
+
+@mod_chart.route('/interval/',methods=['GET','POST'])
+@login_required
+def interval():
+	if request.method == 'POST':
+		request_data = json.loads(request.data)
+		current_series_info = request_data['current_series_info']
+		time_since = request_data['time_since']
+		time_till = request_data['time_till']
+
+		for series in current_series_info:
+			if current_series_info[0].has_key('series_item_list'):
+				data_result = interval_result(current_series_info,int(time_till),int(time_since))
+				y_title = get_init_y_title(current_series_info)
+				result = {'data':data_result,'y_title':y_title}
+				return json.dumps(result)
+	return json.dumps(0)
+
+@mod_chart.route('/init/', methods=['GET', 'POST'])
+@login_required
+def init():
+	sortId = 0
+	if request.method == 'POST':
+		request_data = json.loads(request.data)
+		current_series_info = request_data['current_series_info']
+		time_frequency = request_data['time_frequency']
+		sortId = request_data['sortId']
+
+		for series in current_series_info:
+			if series.has_key('series_item_list'):
+				data_result = init_result(current_series_info,time_frequency)
+				y_title = get_init_y_title(current_series_info)
+				result = {'data':data_result,'y_title':y_title,'sortId':sortId}
+				return json.dumps(result)
+
+		# if not current_series_info[0].has_key('series_item_list'):
+		# 	return json.dumps(0)
+
+		# data_result = init_result(current_series_info,time_frequency)
+		# y_title = get_init_y_title(current_series_info)
+		# result = {'data':data_result,'y_title':y_title}
+		# return json.dumps(result)
+	return json.dumps({'data':0,'sortId':sortId})
 
 @mod_chart.route('/update/', methods=['GET', 'POST'])
 @login_required
@@ -374,15 +443,22 @@ def getreportimg(reportimg):
 
 @mod_chart.route('/report/generate/<emailscheduleid>')
 def report_generate(emailscheduleid):
-	gen_report_img(emailscheduleid)
-	return 'success'
+	try:
+		gen_upload_report_img(emailscheduleid)
+		return 'success'
+	except Exception, e:
+		return 'failed'
 
-@mod_chart.route('/schedule/data/')
-def all_schedule_data():
-	return send_schedule_data()
+# @mod_chart.route('/schedule/data/')
+# def all_schedule_data():
+# 	return send_schedule_data()
 
 
-@mod_chart.route('/schedule/data/<esid>')
-def specific_schedule_data(esid):
-	return send_specific_schedule(esid)
+# @mod_chart.route('/schedule/data/<esid>')
+# def specific_schedule_data(esid):
+# 	try:
+# 		pass
+# 	except Exception, e:
+# 		raise e
+# 	return send_specific_schedule(esid)
 

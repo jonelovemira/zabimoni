@@ -1,0 +1,182 @@
+web : 
+------------
+	PV	3	Count
+------------
+	UV	3	Count
+relay : 
+------------------------
+	Throughput_Out	3	Count
+-----------------------
+	Throughput_In	3	Count
+-------------------
+	Throughput	0	Byte
+--------------
+	Conn	3	Count
+---------------------
+	InvalidConn	3	Count
+--------------
+	POST	3	Count
+-------------
+	GET	3	Count
+-----------------------
+	POST_avgTime	0	Second
+-----------------------------
+	POST_avgThroughput	0	Second
+----------------------
+	GET_avgTime	0	Second
+----------------------------
+	GET_avgThroughput	0	Second
+control : 
+----------------------
+	OnlineDevice	3	Count
+--------------------
+	CASRequest	3	Count
+--------------------
+	DBSRequest	3	Count
+----------------------
+	LocalRequest	3	Count
+-----------------------
+	PacketBalance	3	Count
+---------------------------
+	ConnectionBalance	3	Count
+------------------------
+	ServerCoredump	3	Count
+monitor : 
+cas : 
+dbs : 
+--------------
+	IOPS	3	Count
+stun : 
+--------------
+	Conn	3	Count
+------------------
+	NAT_Open	3	Count
+----------------------
+	NAT_FullCone	3	Count
+--------------------
+	NAT_IPCone	3	Count
+----------------------
+	NAT_PortCone	3	Count
+----------------------
+	NAT_Symetric	3	Count
+----------------------
+	Conn_Success	3	Count
+-------------------
+	Conn_Fail	3	Count
+
+zabbix auto monitoring healthy data : 
+------------------------------
+	CPU system time	None	Percent
+-----------------------------
+	CPU steal time	None	Percent
+------------------------
+	Total memory	None	Byte
+--------------------------------
+	Free swap space in %	None	Byte
+----------------------------
+	CPU idle time	None	Percent
+----------------------------
+	CPU user time	None	Percent
+----------------------------
+	Total swap space	None	Byte
+--------------------------------------------------------------
+	Processor load (15 min average per core)	None	Process Counts
+-------------------------------------------------------------
+	Processor load (1 min average per core)	None	Process Counts
+----------------------------
+	Available memory	None	Byte
+-----------------------------------------
+	Context switches per second	None	Counts
+---------------------------
+	Free swap space	None	Byte
+----------------------------
+	CPU nice time	None	Percent
+-----------------------------------
+	Interrupts per second	None	Counts
+-------------------------------
+	CPU softirq time	None	Percent
+-------------------------------------------------------------
+	Processor load (5 min average per core)	None	Process Counts
+------------------------------
+	CPU iowait time	None	Percent
+---------------------------------
+	CPU interrupt time	None	Percent
+--------------------------
+	net.if.in[eth1]	None	Bps
+---------------------------
+	net.if.out[eth1]	None	Bps
+--------------------------
+	net.if.in[eth0]	None	Bps
+---------------------------
+	net.if.out[eth0]	None	Bps
+
+all : 
+----------------
+	Count	3	Counts
+------------
+	ELB	4	None
+---------------------
+	InstanceType	4	None
+------------
+	LVS	4	None
+aws fee items :
+--------------------------------------
+	AmazonElastiCache 102964196778	0	USD
+--------------
+	awskms	0	USD
+------------------------------------
+	AWSQueueService 102964196778	0	USD
+-----------------------
+	AWSQueueService	0	USD
+---------------------------------------
+	AWSSupportBusiness 102964196778	0	USD
+-----------------
+	AmazonSNS	0	USD
+------------------------------
+	AWSConfig 102964196778	0	USD
+----------------
+	AmazonS3	0	USD
+------------------------
+	AmazonCloudFront	0	USD
+--------------------
+	406142820150	0	USD
+------------------------------
+	AmazonRDS 102964196778	0	USD
+----------------------------------
+	AmazonRoute53 102964196778	0	USD
+---------------------------
+	awskms 102964196778	0	USD
+-----------------------
+	AWSDataTransfer	0	USD
+---------------------
+	AmazonRoute53	0	USD
+--------------------
+	102964196778	0	USD
+--------------------
+	018697540155	0	USD
+-------------------------
+	AmazonElastiCache	0	USD
+--------------------------
+	AWSSupportBusiness	0	USD
+-----------
+	All	0	USD
+-------------------------------------
+	AmazonCloudFront 102964196778	0	USD
+-----------------------------------
+	AmazonDynamoDB 102964196778	0	USD
+-----------------
+	AWSConfig	0	USD
+-----------------
+	AmazonRDS	0	USD
+----------------------
+	AmazonDynamoDB	0	USD
+------------------------------
+	AmazonSNS 102964196778	0	USD
+------------------------------------
+	AWSDataTransfer 102964196778	0	USD
+-----------------
+	AmazonEC2	0	USD
+------------------------------
+	AmazonEC2 102964196778	0	USD
+-----------------------------
+	AmazonS3 102964196778	0	USD

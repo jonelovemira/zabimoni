@@ -1,6 +1,6 @@
 #! flask/bin/python
 
-from monitor.zabbix_api import zabbix_api
+from monitor.zabbix.zabbix_api import zabbix_api
 import boto
 from boto.ec2 import cloudwatch
 from monitor import db
@@ -9,13 +9,39 @@ from monitor.auth.models import User
 from monitor.item.models import Area,Service,Host,Item,Itemtype,Aws,Itemdatatype,Normalitemtype,Zbxitemtype
 import boto.ec2
 from constants import *
-from monitor.zabbix import Zabbixapplication,Zabbixitemapplication,Zabbixitems,loadSession,Zabbixhosts,Zabbixinterface
+from monitor.zabbix.models import Zabbixitems,Zabbixhosts,loadSession
 
 from monitor.item.functions import add_update_host
 
 import os,StringIO,ConfigParser,traceback,sys
 
-from config import AREA
+from config import AREA,SERVICE
+from boto.exception import BotoServerError
+
+from crontab import CronTab
+
+from boto.s3.connection import S3Connection
+from tempfile import NamedTemporaryFile
+from config import S3_BUCKET_NAME,XML_EXPORT_PATH
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import xml.etree.ElementTree as ET
+
+
+def init_aws_update_crontab(command,crontab_time):
+	try:
+		cron = CronTab()
+		iter_cron = cron.find_command(command)
+		res = next(iter_cron,None)
+		if res is None:
+			job = cron.new(command)
+			job.setall(crontab_time)
+			cron.write()
+	except Exception, e:
+		raise e
+	
+
 
 ################################           add aws            ####################################
 def init_aws():
@@ -79,13 +105,16 @@ def init_aws_itemtype(dimension,idt,hostid,area,zabbix):
 		
 		itkey = area.areaname + '_' + itkey
 		itemid = None
-
 		session = loadSession()
 		chechi = session.query(Zabbixitems).filter_by(hostid=hostid,key_=itkey).first()
 		session.close()
 		create_results = None
+		
 		if chechi == None:
 			create_results = zabbix.item_create(itkey,hostid)
+		else:
+			create_results = chechi.itemid
+
 		if create_results != None:
 			print 'create_results',create_results
 			itemid = create_results
@@ -93,10 +122,11 @@ def init_aws_itemtype(dimension,idt,hostid,area,zabbix):
 		if itemid == None:
 			return
 		
+		host = Host.query.filter_by(hostid=hostid).first()
 		
 		itmp = Item.query.filter_by(itemname=itkey).first()
 		if itmp == None:
-			ni = Item(itemid,itkey,None,it_tmp)
+			ni = Item(itemid,itkey,host,it_tmp)
 			db.session.add(ni)
 			t = ni.set_belong_to_area(area)
 			if t != None:
@@ -123,9 +153,10 @@ def init_aws_item():
 		if tmphost != None:
 			hostid = tmphost.hostid
 		if hostid == None:
-			host_group_name = ['AWS servers']
-			template_name = ['Template OS Linux']
-			zabbix.host_create(host_name,host_name,host_group_name,template_name)
+			pass
+			#host_group_name = ['AWS servers']
+			#template_name = ['Template OS Linux']
+			#zabbix.host_create(host_name,host_name,host_group_name,template_name)
 		print "hostid",hostid
 
 		# get all regions for aws
@@ -150,18 +181,18 @@ def init_aws_item():
 			for lm in lms:
 				init_aws_itemtype(lm.dimensions,idt,hostid,a,zabbix)
 		db.session.commit()
+	except BotoServerError, e:
+		db.session.commit()
+		pass
 	except Exception, e:
 		print "Exception in user code:"
 		print '-'*60
 		traceback.print_exc(file=sys.stdout)
 		print '-'*60
 		db.session.rollback()
-		# zabbix.rollback()		
+		zabbix.rollback()		
 	finally:
 		db.session.remove()
-		# zabbix.item_delete(additembyapi)
-		# zabbix.host_delete(addhostbyapi)
-		# db.session.rollback()
 
 ################################           add aws            ####################################
 
@@ -176,9 +207,10 @@ def init_area():
 			db.session.add(a)
 	db.session.commit()
 
-def init_service():
+def init_service(names=[]):
 
-	names = ['nat','web','relay','control','database']
+	if len(names) == 0:
+		names = ['nat','web','relay','control','database','monitor']
 
 	for n in names:
 		s = Service.query.filter_by(servicename=n).first()
@@ -222,269 +254,158 @@ def init_zbxitemtype():
 		db.session.add(zit)
 	db.session.commit() 
 
-def init_itemtype():
+def init_itemtype(it_keys=[]):
 
-	idtnames = ["Application data","CPU data","Memory data","Connections","AWS fee data","Counting","Other"]
-	idt = []
-	for n in idtnames:
-		i = Itemdatatype.query.filter_by(itemdatatypename=n).first()
-		if i == None:
-			tmp = Itemdatatype(itemdatatypename=n)
-			db.session.add(tmp)
-			idt.append(tmp)
-		else:
-			idt.append(i)
+	if len(it_keys) == 0:
+		idtnames = ["Application data","CPU data","Memory data","Connections","AWS fee data","Counting","Other"]
+		idt = []
+		for n in idtnames:
+			i = Itemdatatype.query.filter_by(itemdatatypename=n).first()
+			if i == None:
+				tmp = Itemdatatype(itemdatatypename=n)
+				db.session.add(tmp)
+				idt.append(tmp)
+			else:
+				idt.append(i)
 
-	servicenames = ['nat','web','relay','control','databse']
-	svs = []
-	for sn in servicenames:
-		stmp = Service.query.filter_by(servicename=sn).first()
-		if stmp == None:
-			stmp = Service(servicename=sn)
-			db.session.add(stmp)
-		svs.append(stmp)
+		servicenames = ['nat','web','relay','control','database']
+		svs = []
+		for sn in servicenames:
+			stmp = Service.query.filter_by(servicename=sn).first()
+			if stmp == None:
+				stmp = Service(servicename=sn)
+				db.session.add(stmp)
+			svs.append(stmp)
 
-	nit = Normalitemtype.query.first()
-	if nit == None:
-		init_normalitemtype()
 		nit = Normalitemtype.query.first()
+		if nit == None:
+			init_normalitemtype()
+			nit = Normalitemtype.query.first()
 
-	zit = Zbxitemtype.query.first()
-	if zit == None:
-		init_zbxitemtype()
 		zit = Zbxitemtype.query.first()
+		if zit == None:
+			init_zbxitemtype()
+			zit = Zbxitemtype.query.first()
 
 
-	# for x in xrange(1,35):
+		# for x in xrange(1,35):
 
-	normalitems = {'InstanceType':[idt[5],None,TEXT],'Count':[idt[5],'Counts',NUMERIC_UNSIGNED],'ELB':[idt[6],None,TEXT],'LVS':[idt[6],None,TEXT]}
+		normalitems = {'InstanceType':[idt[5],None,TEXT],'Count':[idt[5],'Counts',NUMERIC_UNSIGNED],'ELB':[idt[6],None,TEXT],'LVS':[idt[6],None,TEXT]}
 
-	serviceitems ={'PV':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[1]],'UV':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[1]], \
-				'OnlineDevice':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[3]],'Throughput':[idt[0],'Byte',NUMERIC_FLOAT,svs[2]], \
-				'POSTGET':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[2]],'Sum[Success:Failed]':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[0]],\
-				'NATTypes':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[0]],'IOPS':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[4]]}
+		serviceitems ={'PV':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[1]],'UV':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[1]], \
+					'OnlineDevice':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[3]],'Throughput':[idt[0],'Byte',NUMERIC_FLOAT,svs[2]], \
+					'POSTGET':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[2]],'Sum[Success:Failed]':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[0]],\
+					'NATTypes':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[0]],'IOPS':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[4]]}
 
-	zabbixitems = { 'system.cpu.intr': ['Interrupts per second' ,idt[1],'Counts'],\
-				'system.cpu.load[percpu,avg15]':['Processor load (15 min average per core)',idt[1],'Process Counts'],\
-				'system.cpu.load[percpu,avg1]':['Processor load (1 min average per core)',idt[1],'Process Counts'],\
-				'system.cpu.load[percpu,avg5]':['Processor load (5 min average per core)',idt[1],'Process Counts'],\
-				'system.cpu.switches':['Context switches per second',idt[1],'Counts'],\
-				'system.cpu.util[,idle]':['CPU idle time',idt[1],'Percent'],\
-				'system.cpu.util[,interrupt]':['CPU interrupt time',idt[1],'Percent'],\
-				'system.cpu.util[,iowait]':['CPU iowait time',idt[1],'Percent'],\
-				'system.cpu.util[,nice]':['CPU nice time',idt[1],'Percent'],\
-				'system.cpu.util[,softirq]':['CPU softirq time',idt[1],'Percent'],\
-				'system.cpu.util[,steal]':['CPU steal time',idt[1],'Percent'],\
-				'system.cpu.util[,system]':['CPU system time',idt[1],'Percent'],\
-				'system.cpu.util[,user]':['CPU user time',idt[1],'Percent'],\
-				'system.swap.size[,free]':['Free swap space',idt[2],'Byte'],\
-				'system.swap.size[,pfree]':['Free swap space in %',idt[2],'Byte'],\
-				'system.swap.size[,total]':['Total swap space',idt[2],'Byte'],\
-				'vm.memory.size[available]':['Available memory',idt[2],'Byte'],\
-				'vm.memory.size[total]':['Total memory',idt[2],'Byte']}
+		zabbixitems = { 'system.cpu.intr': ['Interrupts per second' ,idt[1],'Counts'],\
+					'system.cpu.load[percpu,avg15]':['Processor load (15 min average per core)',idt[1],'Process Counts'],\
+					'system.cpu.load[percpu,avg1]':['Processor load (1 min average per core)',idt[1],'Process Counts'],\
+					'system.cpu.load[percpu,avg5]':['Processor load (5 min average per core)',idt[1],'Process Counts'],\
+					'system.cpu.switches':['Context switches per second',idt[1],'Counts'],\
+					'system.cpu.util[,idle]':['CPU idle time',idt[1],'Percent'],\
+					'system.cpu.util[,interrupt]':['CPU interrupt time',idt[1],'Percent'],\
+					'system.cpu.util[,iowait]':['CPU iowait time',idt[1],'Percent'],\
+					'system.cpu.util[,nice]':['CPU nice time',idt[1],'Percent'],\
+					'system.cpu.util[,softirq]':['CPU softirq time',idt[1],'Percent'],\
+					'system.cpu.util[,steal]':['CPU steal time',idt[1],'Percent'],\
+					'system.cpu.util[,system]':['CPU system time',idt[1],'Percent'],\
+					'system.cpu.util[,user]':['CPU user time',idt[1],'Percent'],\
+					'system.swap.size[,free]':['Free swap space',idt[2],'Byte'],\
+					'system.swap.size[,pfree]':['Free swap space in %',idt[2],'Byte'],\
+					'system.swap.size[,total]':['Total swap space',idt[2],'Byte'],\
+					'vm.memory.size[available]':['Available memory',idt[2],'Byte'],\
+					'vm.memory.size[total]':['Total memory',idt[2],'Byte']}
 
-	for ni in normalitems:
-		nitmp = Itemtype.query.filter_by(itemtypename=ni).first()
-		if nitmp == None:
-			nitmp = Itemtype(ni,ni,None,normalitems[ni][0],normalitems[ni][1],normalitems[ni][2])
-			nitmp.nit = nit
-		else:
-			nitmp.itemtypename = ni
-			nitmp.itemkey = ni
-			nitmp.aws = None
-			nitmp.itemdatatype = normalitems[ni][0]
-			nitmp.itemunit = normalitems[ni][1]
-			nitmp.zabbixvaluetype = normalitems[ni][2]
-			nitmp.nit = nit
-		db.session.add(nitmp)
+		for ni in normalitems:
+			nitmp = Itemtype.query.filter_by(itemtypename=ni).first()
+			if nitmp == None:
+				nitmp = Itemtype(ni,ni,None,normalitems[ni][0],normalitems[ni][1],normalitems[ni][2])
+				nitmp.nit = nit
+			else:
+				nitmp.itemtypename = ni
+				nitmp.itemkey = ni
+				nitmp.aws = None
+				nitmp.itemdatatype = normalitems[ni][0]
+				nitmp.itemunit = normalitems[ni][1]
+				nitmp.zabbixvaluetype = normalitems[ni][2]
+				nitmp.nit = nit
+			db.session.add(nitmp)
 
-	for si in serviceitems:
-		sitmp = Itemtype.query.filter_by(itemtypename=si).first()
-		if sitmp == None:
-			sitmp = Itemtype(si,si,None,serviceitems[si][0],serviceitems[si][1],serviceitems[si][2])
-			db.session.add(sitmp)
-		else:
-			sitmp.itemtypename = si
-			sitmp.itemkey = si
-			sitmp.aws = None
-			sitmp.itemdatatype = serviceitems[si][0]
-			sitmp.itemunit = serviceitems[si][1]
-			sitmp.zabbixvaluetype = serviceitems[si][2]
-			db.session.add(sitmp)
+		for si in serviceitems:
+			sitmp = Itemtype.query.filter_by(itemtypename=si).first()
+			if sitmp == None:
+				sitmp = Itemtype(si,si,None,serviceitems[si][0],serviceitems[si][1],serviceitems[si][2])
+				db.session.add(sitmp)
+			else:
+				sitmp.itemtypename = si
+				sitmp.itemkey = si
+				sitmp.aws = None
+				sitmp.itemdatatype = serviceitems[si][0]
+				sitmp.itemunit = serviceitems[si][1]
+				sitmp.zabbixvaluetype = serviceitems[si][2]
+				db.session.add(sitmp)
 
-		addittmp = serviceitems[si][3].add_itemtype(sitmp)
-		if addittmp != None:
-			db.session.add(addittmp)
+			addittmp = serviceitems[si][3].add_itemtype(sitmp)
+			if addittmp != None:
+				db.session.add(addittmp)
 
-	for zi in zabbixitems:
-		zitmp = Itemtype.query.filter_by(itemtypename=zabbixitems[zi][0]).first()
-		if zitmp == None:
-			zitmp = Itemtype(zabbixitems[zi][0],zi,None,zabbixitems[zi][1],zabbixitems[zi][2])
-			zitmp.zit = zit
-		else:
-			zitmp.itemtypename = zabbixitems[zi][0]
-			zitmp.itemkey = zi
-			zitmp.aws = None
-			zitmp.itemdatatype = zabbixitems[zi][1]
-			zitmp.itemunit = zabbixitems[zi][2]
-			zitmp.zit = zit
-		db.session.add(zitmp)
+		for zi in zabbixitems:
+			zitmp = Itemtype.query.filter_by(itemtypename=zabbixitems[zi][0]).first()
+			if zitmp == None:
+				zitmp = Itemtype(zabbixitems[zi][0],zi,None,zabbixitems[zi][1],zabbixitems[zi][2])
+				zitmp.zit = zit
+			else:
+				zitmp.itemtypename = zabbixitems[zi][0]
+				zitmp.itemkey = zi
+				zitmp.aws = None
+				zitmp.itemdatatype = zabbixitems[zi][1]
+				zitmp.itemunit = zabbixitems[zi][2]
+				zitmp.zit = zit
+			db.session.add(zitmp)
 
-	db.session.commit()
+		db.session.commit()
+	else:
+		zit = Zbxitemtype.query.first()
+		nit = Normalitemtype.query.first()
+		for it in it_keys:
+			ittmp = Itemtype.query.filter_by(itemtypename=it['itemtypename']).first()
+			itemunit = None
+			if it.has_key('itemunit'):
+				itemunit = it['itemunit']
+			zabbixvaluetype = None
+			if it.has_key('zabbixvaluetype'):
+				zabbixvaluetype = it['zabbixvaluetype']
+			itemdatatype = Itemdatatype.query.filter_by(itemdatatypename=it['itemdatatypename']).first()
+			function_type = 0
+			if it['function_type'] != "None":
+				function_type = int(it['function_type'])
+			if ittmp == None:
+				ittmp = Itemtype(it['itemtypename'],it['itemkey'],None,itemdatatype,itemunit,zabbixvaluetype,it['time_frequency'],function_type)
+			else:
+				ittmp.itemtypename = it['itemtypename']
+				ittmp.itemkey = it['itemkey']
+				ittmp.itemdatatype = itemdatatype
+				ittmp.itemunit = itemunit
+				ittmp.zabbixvaluetype =zabbixvaluetype
+				ittmp.time_frequency = it['time_frequency']
+				ittmp.function_type = function_type
 
-# preconditions : service exists, area exists, zabbixitemtype exists, normal itemtype exists, service itemtype exists 
-#       
-# def add_host(hostname, servicename,host_ip,areaname):
+			if len(it['services']) == 0:
+				if zabbixvaluetype != None:
+					ittmp.nit = nit
+			else:
+				for servicename in it['services']:
+					s = Service.query.filter_by(servicename=servicename).first()
+					stmp = s.add_itemtype(ittmp)
+					if stmp != None:
+						db.session.add(stmp)
 
-# 	zabbix = zabbix_api()
+			if zabbixvaluetype == None:
+				ittmp.zit = zit
 
-# 	print '.'*6 , " Checking for preconditions " , '.'*6
-# 	area = Area.query.filter_by(areaname=areaname).first()
-# 	if area == None:
-# 		print " area ", areaname ," is not exists .."
-# 		return None
+			db.session.add(ittmp)
 
-# 	itemnamelist=['PV','UV','InstanceType',\
-# 				'Count','ELB','LVS','OnlineDevice','Throughput','POSTGET','Sum[Success:Failed]',\
-# 				'NATTypes','IOPS']
-
-# 	zabbixitems = { 'system.cpu.intr': 'Interrupts per second' ,\
-# 				'system.cpu.load[percpu,avg15]':'Processor load (15 min average per core)',\
-# 				'system.cpu.load[percpu,avg1]':'Processor load (1 min average per core)',\
-# 				'system.cpu.load[percpu,avg5]':'Processor load (5 min average per core)',\
-# 				'system.cpu.switches':'Context switches per second',\
-# 				'system.cpu.util[,idle]':'CPU idle time',\
-# 				'system.cpu.util[,interrupt]':'CPU interrupt time',\
-# 				'system.cpu.util[,iowait]':'CPU iowait time',\
-# 				'system.cpu.util[,nice]':'CPU nice time',\
-# 				'system.cpu.util[,softirq]':'CPU softirq time',\
-# 				'system.cpu.util[,steal]':'CPU steal time',\
-# 				'system.cpu.util[,system]':'CPU system time',\
-# 				'system.cpu.util[,user]':'CPU user time',\
-# 				'system.swap.size[,free]':'Free swap space',\
-# 				'system.swap.size[,pfree]':'Free swap space in %',\
-# 				'system.swap.size[,total]':'Total swap space',\
-# 				'vm.memory.size[available]':'Available memory',\
-# 				'vm.memory.size[total]':'Total memory'} 
-
-# 	normalitems = itemnamelist[2:6]
-
-# 	service_item_map = {'NAT':['Sum[Success:Failed]','NATTypes'],\
-# 						'Web_App':['PV','UV'],\
-# 						'Relay':['Throughput','POSTGET'],\
-# 						'Control':['OnlineDevice'],\
-# 						'Database':['IOPS']}
-
-# 	for t in itemnamelist:
-# 		test = Itemtype.query.filter_by(itemtypename=t).first()
-# 		if test == None:
-# 			print " itemtype is not exist ", t
-# 			return None
-
-# 	for t in zabbixitems:
-# 		test = Itemtype.query.filter_by(itemtypename=zabbixitems[t]).first()
-# 		if test == None:
-# 			print " itemtype is not exist ", zabbixitems[t]
-# 			return None
-
-# 	service = Service.query.filter_by(servicename=servicename).first()
-# 	if service == None:
-# 		return None
-
-# 	host_group_name = [HOST_GROUP_NAME]
-# 	template_name = [TEMPLATE_NAME] 
-				
-# 	print "processing host: %s in service: %s ..." %  (hostname,servicename)
-
-# 	#create host via zabbix api
-# 	print "creating host via zabbix_api..."
-# 	hostid = zabbix.host_create(host_ip,host_ip,host_group_name,template_name)
-# 	if hostid == None:
-# 		print " add or get host via api error " , host_ip
-# 		return None
-
-# 	#create host in monitor database
-# 	h1 = Host.query.filter_by(hostid = hostid).first()
-# 	if h1 == None:
-# 		h1 = Host(hostid,hostname,area,service)
-# 		db.session.add(h1)
-
-# 	# update the relationship between area and service
-# 	t = h1.area.add_service(h1.service)
-# 	if t != None:
-# 		db.session.add(t)
-
-# 	# add template item into monitor database
-# 	print "add template item into monitor database..."
-# 	session = loadSession()
-# 	for key in zabbixitems:
-# 		zi = session.query(Zabbixitems).filter_by(key_=key,hostid=hostid).first()
-# 		it = Itemtype.query.filter_by(itemkey=key).first()
-# 		ni = Item.query.filter_by(itemid = zi.itemid).first()
-# 		if ni == None:
-# 			ni = Item(zi.itemid,it.itemtypename,h1,it)
-# 			db.session.add(ni)
-# 	session.close()
-
-# 	# add service item into monitor database
-# 	print "add service item into monitor database..."
-# 	additemtypes = service_item_map.get(servicename,None)
-# 	for key in additemtypes:
-# 		itemid = zabbix.item_create(key,hostid)
-# 		print key
-# 		it = Itemtype.query.filter_by(itemkey=key).first()
-# 		ni = Item.query.filter_by(itemid = itemid).first()
-# 		if ni == None:
-# 			ni = Item(itemid,it.itemtypename,h1,it)
-# 			db.session.add(ni)
-
-# 	# add normal item into monitor database
-# 	print "add normal item into monitor database..."
-# 	for key in normalitems:
-# 		itemid = zabbix.item_create(key,hostid)
-# 		if itemid == None:
-# 			print " add or get itemid failed ", host_ip, key
-# 		it = Itemtype.query.filter_by(itemkey=key).first()
-# 		ni = Item.query.filter_by(itemid = itemid).first()
-# 		if ni == None:
-# 			ni = Item(itemid,it.itemtypename,h1,it)
-# 			db.session.add(ni)
-
-# 	db.session.commit()
-
-# 	print "host: %s in service: %s add items complete!" %  (hostname,servicename)
-
-# 	return hostid
-
-
-def mass_add_host_item_for_area(areaname):
-
-	con = boto.ec2.connect_to_region(areaname)
-	reservations = con.get_all_instances()
-	
-	for res in reservations:
-		for inst in res.instances:
-			if 'ServiceType' in inst.tags: 
-
-				hostname = inst.tags['Name']
-				servicename = inst.tags['ServiceType']
-				host_ip = inst.private_ip_address
-				if host_ip == None:
-					continue
-				try:
-					hostid = add_update_host(hostname, servicename,host_ip,areaname)
-					if hostid == None:
-						print " add host item failed ", host_ip
-					else:
-						print " add host item Success ", host_ip					
-				except Exception, e:
-					db.session.rollback()
-					raise Exception(' failed ',str(e))
-				else:
-					db.session.commit()
-				finally:
-					db.session.remove()
-
+		db.session.commit()
 
 if __name__ == '__main__':
 
@@ -493,27 +414,130 @@ if __name__ == '__main__':
 		u = User('root','root',0,1,'root@localhost')
 		db.session.add(u)
 		db.session.commit()
+	
 
-	print 'process aws'
-	init_aws_item()
-	print 'process area'
-	init_area()
-	print 'process service'
-	init_service()
-	print 'process itemdatatype'
-	init_itemdatatype()
-	print 'process normalitemtype'
-	init_normalitemtype()
-	print 'process zbxitemtype'
-	init_zbxitemtype()
-	print 'process itemtype'
-	init_itemtype()
+	con = S3Connection()
+	bucket = con.get_bucket(S3_BUCKET_NAME)
+	key = bucket.get_key(XML_EXPORT_PATH)
+	if key == None:
+		print 'can not load xml file in s3, use default env instead'
+		print 'process area'
+		init_area()
+		print 'process service'
+		init_service()
 
-	print 'add current host'
-	add_update_host(get_zabbix_server_ip(), 'web_app',get_zabbix_server_ip(),AREA)
-	db.session.commit()
-	# print 'process host item'
-	# mass_add_host_item_for_area('ap-southeast-1')
+		zabbix = zabbix_api()
+		try:
+			session = loadSession()
+			h = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
+			session.close()
+			if h == None:
+				result = zabbix.host_create(get_zabbix_server_ip() , '127.0.0.1' , ['AWS servers'], [])
+			else:
+				result = h.hostid
+			area = Area.query.filter_by(areaname=AREA).first()
+			service = Service.query.filter_by(servicename=SERVICE).first()
+			h = Host(result,get_zabbix_server_ip(),area,service)
+			print "hostid",result
+			db.session.add(h)
+			db.session.commit()
+		except Exception, e:
+			db.session.rollback()
+			zabbix.rollback()
+
+		if os.environ.get('aws_cron_command') is None:
+			aws_cron_command = os.path.abspath(os.path.dirname(__file__)) + '/aws_update.py'
+		else:
+			aws_cron_command = os.environ['aws_cron_command']
+
+		if os.environ.get('aws_cron_time') is None:
+			aws_cron_time = '0 */4 * * *'
+		else:
+			aws_cron_time = os.environ['aws_cron_time']
+
+		init_aws_update_crontab(aws_cron_command,aws_cron_time)
+
+		print 'process aws'
+		init_aws_item()
+		print 'process itemdatatype'
+		init_itemdatatype()
+		print 'process normalitemtype'
+		init_normalitemtype()
+		print 'process zbxitemtype'
+		init_zbxitemtype()
+		print 'process itemtype'
+		init_itemtype()
+	else:
+		print "get contents from s3"
+		f = NamedTemporaryFile(delete=False)
+		key.get_contents_to_filename(f.name)
+		tree = ET.ElementTree(file=f.name)
+		root = tree.getroot()
+		services = root.findall('service')
+		names = []
+		for s in services:
+			names.append(s.attrib['servicename'])
+
+		itemtypes = root.findall('itemtype')
+		it_keys = []
+		for it in itemtypes:
+			it_services = it.findall('itservice')
+			it_s = []
+			for i_s in it_services:
+				it_s.append(i_s.attrib['servicename'])
+
+			it.attrib['services'] = it_s
+			it_keys.append(it.attrib)
+
+		os.unlink(f.name)
+		
+		print 'process area'
+		init_area()
+		print 'process service'
+		init_service(names)
+
+		print 'process host'
+		zabbix = zabbix_api()
+		try:
+			session = loadSession()
+			h = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
+			session.close()
+			if h == None:
+				result = zabbix.host_create(get_zabbix_server_ip() , '127.0.0.1' , ['AWS servers'], [])
+			else:
+				result = h.hostid
+			area = Area.query.filter_by(areaname=AREA).first()
+			service = Service.query.filter_by(servicename=SERVICE).first()
+			h = Host(result,get_zabbix_server_ip(),area,service)
+			print "hostid",result
+			db.session.add(h)
+			db.session.commit()
+		except Exception, e:
+			db.session.rollback()
+			zabbix.rollback()
+
+		if os.environ.get('aws_cron_command') is None:
+			aws_cron_command = os.path.abspath(os.path.dirname(__file__)) + '/aws_update.py'
+		else:
+			aws_cron_command = os.environ['aws_cron_command']
+
+		if os.environ.get('aws_cron_time') is None:
+			aws_cron_time = '0 */4 * * *'
+		else:
+			aws_cron_time = os.environ['aws_cron_time']
+
+		init_aws_update_crontab(aws_cron_command,aws_cron_time)
+
+		print 'process aws'
+		init_aws_item()
+		print 'process itemdatatype'
+		init_itemdatatype()
+		print 'process normalitemtype'
+		init_normalitemtype()
+		print 'process zbxitemtype'
+		init_zbxitemtype()
+		print 'process itemtype'
+		init_itemtype(it_keys)
 
 
 

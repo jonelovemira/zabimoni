@@ -1,9 +1,9 @@
-#! /home/jone/flask_project/monitor-0.3.7/flask/bin/python
+#! /home/monitor/project/monitor-0.3.7/flask/bin/python
 
 from monitor.item.models import Host,Item,Itemtype,Itemdatatype
 from monitor.item.functions import update_host
-from monitor.zabbix_api import zabbix_api
-from monitor.zabbix import loadSession,Zabbixinterface,Zabbixitems,Zabbixfunctions, Zabbixtriggers,Zabbixhosts
+from monitor.zabbix.zabbix_api import zabbix_api
+from monitor.zabbix.models import Zabbixinterface,Zabbixitems,Zabbixfunctions, Zabbixtriggers,Zabbixhosts,loadSession
 from monitor import db
 import sys,traceback
 import boto.ec2
@@ -11,52 +11,18 @@ from monitor.item.functions import add_update_host
 from monitor.MonitorException import *
 from datetime import datetime
 from monitor.item.functions import add_key
-
-# def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype):
-# 	idt = Itemdatatype.query.filter_by(itemdatatypeid=itemdatatypeid).first()
-# 	if idt == None:
-# 		raise MonitorException('data type do not exists')
-# 	it = Itemtype.query.filter_by(itemtypename=key).first()
-# 	if it == None:
-# 		it = Itemtype(key,key,None,idt,unitname,zabbixvaluetype)
-# 		db.session.add(it)
-
-# 	htmp = o.add_itemtype(it)
-# 	if htmp != None:
-# 		db.session.add(htmp)
-
-# def update_key_to_host(kinds,o):
-# 	hosts = None
-# 	if kinds == 1:
-# 		hosts = Host.query.all()
-# 	elif kinds == 4:
-# 		hosts = [o]
-# 	else:
-# 		hosts = o.hosts.all()
-
-# 	for h in hosts:
-# 		update_host(h.hostid,h.hostname,h.area.areaid,h.service.serviceid)
-
-# def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype):
-# 	kinds = int(kinds)
-# 	if indexid == None:
-# 		indexid = 1
-# 	o = Host.query.filter_by(hostid=indexid).first()
-# 	# print o
-# 	add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype)
-
-# 	# update_key_to_host(kinds,o)
+from config import REMOTE_COMMAND_LOG
 
 if __name__ == '__main__':
-	session = None
 	zabbix = zabbix_api()
+	session = loadSession()
 	try:
 
 		content = 'new content'
 		if len(sys.argv) > 1:
 			content = 	sys.argv[1]
 		today = datetime.today()
-		output = open('/home/jone/flask_project/monitor-0.3.7/remote_command','a')
+		output = open(REMOTE_COMMAND_LOG,'a')
 		output.write('\n')
 		output.write(str(today))
 		output.write(' ' + 'add net key' + ' ')
@@ -65,9 +31,7 @@ if __name__ == '__main__':
 
 		hostname = sys.argv[1]
 		in_key = sys.argv[2]
-		session = loadSession()
 
-		# interface1 = session.query(Zabbixinterface).filter_by(ip=hostip).first()
 		h1 = session.query(Zabbixhosts).filter_by(name=hostname).first()
 		kinds = 4
 		indexid = h1.hostid
@@ -95,16 +59,13 @@ if __name__ == '__main__':
 		add_key(kinds,indexid,out_key,it.itemdatatypeid,unitname,zabbixvaluetype,zabbix)
 		
 		db.session.commit()
+		session.close()
 	except Exception, e:
-		# output = open('/home/jone/flask_project/monitor-0.3.7/remote_command','w')
-		# output.write(str(e))
-		# output.close()
 		traceback.print_exc(file=sys.stdout)
 		db.session.rollback()
 		zabbix.rollback()
 		raise Exception('error',str(e))
 	finally:
-		session.close()
 		db.session.remove()
 
 	

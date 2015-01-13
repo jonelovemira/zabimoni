@@ -128,7 +128,8 @@ function save_window_chart(wc_name,series)
             {
                 id = data.id;
                 name = data.name;
-                $('div[udf=savedlist]').append('<button class="btn btn-sm btn-default savedListItemButton" indexId=' + id + ' name="' + name + '">' + name +  '</button>');
+                $('div[udf=savedlist]').append('<button class="btn btn-sm btn-default savedListItemButton" indexId=' + id + ' name="' + name + '">' + name 
+                    +  '<span class="glyphicon glyphicon-remove" aria-hidden="true" style="margin-left:10px" indexId=' + id + '></span></button>');
             }
             $('#forsaving').modal('hide');
         }  
@@ -149,7 +150,8 @@ function save_page_chart(pagename,series_info)
             if (id != undefined) {
                 id = data.id;
                 name = data.name;
-                $('div[udf=savedlist]').append('<button class="btn btn-sm btn-default savedListItemButton" indexId=' + id + ' name="' + name + '">' + name +  '</button>');
+                $('div[udf=savedlist]').append('<button class="btn btn-sm btn-default savedListItemButton" indexId=' + id + ' name="' + name + '">' + name 
+                    +  '<span class="glyphicon glyphicon-remove" aria-hidden="true" style="margin-left:10px" indexId=' + id + '></span></button>');
             };
             $('#forsaving').modal('hide');
         }  

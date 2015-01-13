@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block body %}
 <script src="{{url_for('static',filename='js/save_load_refresh.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/email.js')}}"></script>
 <script type="text/javascript">
 $(function () {
     load_indexes();
@@ -57,24 +58,11 @@ $(function () {
 
     $('div[case="actiontype"]').hide();
     $('div[udf=at1]').show();
-    $('input[name=kinds]').click(function()
+    $('select[name=kinds]').click(function()
     {
         value = $(this).val();
-        if (value >2 ) {
-            value = 2;
-        }
-        // alert(value);
         $('div[case="actiontype"]').hide();
         $('div[udf=at' + value + ']').show();
-
-        if (value == 2) {
-            history_command = $('select[name="selectedaction"]').val();
-            $('textarea[name="command"]').val(history_command);
-        }
-        else
-        {
-            $('textarea[name="command"]').val('');
-        }
     });
 
     loadfirstareaasg();
@@ -87,6 +75,8 @@ $(function () {
 
     function loadautoscalegroup(areaid)
     {
+        $('select[name="asgname"]').empty();
+        $('select[name="asgname"]').append('<option>loading...</option>');
         $.getJSON('/item/autoscalegroup',{areaid:areaid},function(data)
         {
             $('select[name="asgname"]').empty();
@@ -103,6 +93,29 @@ $(function () {
         loadautoscalegroup(value);
     });
 
+    $(document).on('click','input[name=receivers]',function()
+    {
+        $('#foremailaddress').modal({
+            keyboard: false
+        });
+        $('#foremailaddress').modal('show');
+    });
+
+    $(document).on('click','button.confirmemailaddress',function()
+    {
+        $('#foremailaddress').modal('hide');
+        email_arr = [];
+        $('input[name="email[]"]').each(function(i,d)
+        {
+            if (d.value.length > 0) {
+                email_arr.push(d.value);
+            };
+        });
+        tmp_str = email_arr.join(';');
+        $('input[name="receivers"]').attr('value',tmp_str);
+        // console.log(tmp_str);
+    })
+
 })
 </script>
 
@@ -117,7 +130,7 @@ $(function () {
         <!-- {% include 'item/calculateitem.html'%} -->
             
         <div class="col-sm-2">
-            <input type="text" class="form-control" id="formulascale" placeholder="Scale">
+            <input type="text" class="form-control" id="formulascale" placeholder="Scale" value="1">
         </div>
 
         <div class="col-sm-1">
@@ -130,7 +143,7 @@ $(function () {
         </div>
 
         <div class="col-sm-3">
-            <input type="text" class="form-control" id="formulaitemfirst" >
+            <input type="text" class="form-control" id="formulaitemfirst" placeholder="click to choose" readonly>
         </div>
 
         <div class="col-sm-1">
@@ -143,7 +156,7 @@ $(function () {
         </div>
 
         <div class="col-sm-2">
-            <input type="text" class="form-control" id="formulaitemsecond" >
+            <input type="text" class="form-control" id="formulaitemsecond" placeholder="click to choose" readonly>
         </div>
     </div>
 
@@ -161,7 +174,7 @@ $(function () {
     <div class="form-group">
         <label class="col-sm-2 control-label"> generated items</label>
         <div class="col-sm-7">
-            <textarea type="text" class="form-control" name="formula" rows="4"></textarea>
+            <textarea type="text" class="form-control" name="formula" rows="4" required></textarea>
         </div>
         <div class="col-sm-2">
             <a href="#" class="form-control" udf="generateformula">generate</a>
@@ -210,17 +223,21 @@ $(function () {
     <div class="form-group">
         <label class="col-sm-2 control-label"> action type </label>
         <div class="col-sm-9">
-            <label class="radio-inline">
-                <input type="radio" name="kinds" value="1" checked>auto scale
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="kinds"  value="2">load from history
-            </label>
+            <!-- <label class="radio-inline"> -->
+                <!-- <input type="radio" name="kinds" value="1" checked>auto scale -->
+            <!-- </label> -->
+            <!-- <label class="radio-inline"> -->
+                <!-- <input type="radio" name="kinds"  value="2">load from history -->
+            <!-- </label> -->
+            <select class="form-control" name="kinds">
+                <option value="1">notification by email</option>
+                <option value="2">autoscale</option>
+            </select>
         </div>
     </div>
 
-    <div class="form-group" udf="at1" case="actiontype">
-        <label class="col-sm-2 control-label"> autoscale configuration</label>
+    <div class="form-group" udf="at2" case="actiontype" hidden>
+        <label class="col-sm-2 control-label">asg config</label>
         <div class="col-sm-3">
             <select class="form-control" name="areaid">
                 {% for a in area %}
@@ -240,23 +257,30 @@ $(function () {
         </div>
     </div>
 
-    <div class="form-group" udf="at2" case="actiontype">
-        <label class="col-sm-2 control-label">history</label>
+    <div class="form-group" udf="at1" case="actiontype" hidden>
+        <label class="col-sm-2 control-label">receivers</label>
         <div class="col-sm-9">
-            <select class="form-control" name="selectedaction">
-                {% for a in actions %}
-                    <option value="{{a.command}}">{{a.actionname}}</option>
-                {% endfor %}
-            </select>
+            <input type="text" class="form-control" name="receivers" placeholder="click to add" readonly>
         </div>
     </div>
 
-    <div class="form-group">
-        <label class="col-sm-2 control-label">command</label>
-        <div class="col-sm-9">
-            <textarea class="form-control" name="command" rows="3"></textarea>
-        </div>
-    </div>
+    <!-- <div class="form-group" udf="at2" case="actiontype"> -->
+        <!-- <label class="col-sm-2 control-label">history</label> -->
+        <!-- <div class="col-sm-9"> -->
+            <!-- <select class="form-control" name="selectedaction"> -->
+                <!-- {% for a in actions %} -->
+                    <!-- <option value="{{a.command}}">{{a.actionname}}</option> -->
+                <!-- {% endfor %} -->
+            <!-- </select> -->
+        <!-- </div> -->
+    <!-- </div> -->
+
+    <!-- <div class="form-group" hidden> -->
+        <!-- <label class="col-sm-2 control-label">command</label> -->
+        <!-- <div class="col-sm-9"> -->
+            <!-- <textarea class="form-control" name="command" rows="3"></textarea> -->
+        <!-- </div> -->
+    <!-- </div> -->
         
     <div class="form-group">
         <div class="col-sm-9 col-sm-offset-2">
@@ -270,17 +294,39 @@ $(function () {
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="chooseitem">Choos monitor items</h4>
+        <h4 class="modal-title" id="chooseitem">Choose monitor items</h4>
       </div>
       <div class="modal-body">
         {% include 'chart/index.html'%}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary addchart">Add a chart</button>
+        <button type="button" class="btn btn-primary">Choose</button>
       </div>
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="foremailaddress" tabindex="-1" role="dialog" aria-labelledby="emailaddress" aria-hidden="true">
+  <div class="modal-dialog page">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="emailaddress">Add email address</h4>
+      </div>
+      <div class="modal-body">
+        <form id="fieldIconsForm" class="form-horizontal" method="" action="">
+            {% include 'email.html'%}
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary confirmemailaddress">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 {% endblock %}

@@ -1,4 +1,5 @@
-#! /home/jone/flask_project/monitor-0.3.7/flask/bin/python
+#! /home/monitor/project/monitor-0.3.7/flask/bin/python
+
 from monitor.item.models import Trigger,Area
 import boto.ec2.autoscale
 import sys

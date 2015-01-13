@@ -20,7 +20,7 @@ def get_zabbix_server_ip():
 
 if __name__ == '__main__':
 	esid = sys.argv[1]
-	port = 5001
+	port = 5000
 	protocol = 'http://'
 	route = '/chart/report/generate'
 	url = protocol +  get_zabbix_server_ip() + ':' + str(port) + route + '/' + esid

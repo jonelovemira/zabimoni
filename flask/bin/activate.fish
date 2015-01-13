@@ -32,7 +32,7 @@ end
 # unset irrelevant variables
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/jone/flask_project/monitor-0.3.7/flask"
+set -gx VIRTUAL_ENV "/home/monitor/project/monitor-0.3.7/flask"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

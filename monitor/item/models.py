@@ -14,15 +14,22 @@ class Itemtype(db.Model):
 	Itemdatatype_id = db.Column(db.Integer,db.ForeignKey('itemdatatype.itemdatatypeid'))
 	normalitemtype_id = db.Column(db.Integer,db.ForeignKey('normalitemtype.normalitemtypeid'))
 	zbxitemtype_id = db.Column(db.Integer,db.ForeignKey('zbxitemtype.zbxitemtypeid'))
+	time_frequency = db.Column(db.Integer)
+	function_type = db.Column(db.Integer)
 	# detailitemtypes = db.relationship('Detailitemtype',backref='itemtype',lazy='dynamic')
 
-	def	__init__(self,itemtypename,itemkey,aws=None,itemdatatype=None,itemunit=None,zabbixvaluetype=None):
+	def	__init__(self,itemtypename,itemkey,aws=None,itemdatatype=None,itemunit=None,zabbixvaluetype=None,time_frequency=60,function_type=0):
 		self.itemtypename = itemtypename
 		self.itemkey = itemkey
 		self.aws = aws
 		self.itemdatatype = itemdatatype
 		self.itemunit = itemunit
 		self.zabbixvaluetype = zabbixvaluetype
+		if aws != None:
+			self.time_frequency = 14400
+		else:
+			self.time_frequency = 60
+		self.function_type = function_type
 
 	def __repr__(self):
 		return '<Itemtype %r>' % self.itemtypename
@@ -328,6 +335,7 @@ class Trigger(db.Model):
 	triggername = db.Column(db.String(100))
 	triggervalue = db.Column(db.Float)
 	timeshift = db.Column(db.Integer)
+	triggerfunction = db.Column(db.String(64))
 
 	calculateditem_id = db.Column(db.Integer,db.ForeignKey('calculateditem.calculateditemid'))
 
@@ -342,12 +350,13 @@ class Trigger(db.Model):
 	
 	# serviceid = db.Column(db.In)
 
-	def __init__(self,triggerid,triggername,triggervalue,timeshift,calcitem):
+	def __init__(self,triggerid,triggername,triggervalue,timeshift,calcitem,triggerfunction):
 		self.triggerid = triggerid
 		self.triggername = triggername
 		self.triggervalue = triggervalue
 		self.timeshift = timeshift
 		self.calcitem = calcitem
+		self.triggerfunction = triggerfunction
 
 	def __repr__(self):
 		return '<Trigger %r>' % ( self.triggername )
@@ -364,4 +373,3 @@ class Trigger(db.Model):
 
 	def has_action(self,action):
 		return self.actions.filter_by(actionid = action.actionid).count() > 0
-

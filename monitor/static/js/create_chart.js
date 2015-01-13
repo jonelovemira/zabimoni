@@ -1,4 +1,4 @@
-function create_chart(container,sortId,series_info,chart_title,is_init_empty,time_frequency,callbacks,max_display_count,mychart,si,last_update_time) {
+function create_chart(container,sortId,series_info,chart_title,series_index,time_frequency,callbacks,max_display_count,mychart,si,series_time_frequency) {
 
     function init_clear(container_selector,sortId)
     {
@@ -7,7 +7,6 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
             mychart[sortId].destroy();
             mychart[sortId] = null;
         };
-
         if (si[0] != undefined) {
             clearInterval(si[0]);
                 // console.log("cleared");
@@ -30,20 +29,20 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
     function add_window(container,sortId,chart_title)
     {
         container_selector = 'div[container="' + container + '"][sortId=' + sortId + ']';
-
         add_window_init(container_selector,sortId);
-         $(container_selector).append('<button class="btn btn-lg btn-info"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Loading...</button>');
+        $(container_selector).append('<button class="btn btn-lg btn-info"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Loading...</button>');
         var series_for_current_window = [];
-        var series_counter = 0 ;
         // console.log(chart_title);
-        create_highstock_chart = function(container_selector,sortId,y_title){
+        create_highstock_chart = function(container_selector,sortId,y_title,current_series_data){
                  $(container_selector).highcharts('StockChart',{
                     chart:{
                         ignoredHiddenSeries:false,
                         events : {
                             load : function(){
                                 mychart[sortId] = this;
-                                si[0] = setInterval(update,time_frequency*1000);
+                                if (si[0] == undefined) {
+                                    si[0] = setInterval(update,time_frequency*1000);
+                                };
                             }
                         }
                     },
@@ -65,7 +64,7 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
                     rangeSelector : {
                         // selected : 1,
                         inputEnabled: $(container_selector).width() > 480,
-                        selected : 1,
+                        selected : 0,
                         buttons: [
                             {
                                 type:'hour',
@@ -76,11 +75,6 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
                                 type:'hour',
                                 count:6,
                                 text:'6h'   
-                            },
-                            {
-                                type: 'day',
-                                count: 1,
-                                text: '1d'
                             }, 
                             {
                                 type: 'all',
@@ -110,7 +104,11 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
                     plotOptions:{
                         line:{
                             turboThreshold:1000000,
-                            connectNulls: true
+                            connectNulls: true,
+                            dataGrouping:
+                            {
+                                enabled:false
+                            }
                         }
                     },
                     credits:{
@@ -122,35 +120,35 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
                         valueDecimals: 2
                     },
 
-                    series : series_for_current_window
+                    series : current_series_data
 
                  });
-                
-                if (si[1] != undefined) {
-                    callbacks.add(si[1]);
-                    // console.log("children",callbacks.has(si[1]));
-                    callbacks.fire(sortId);
-                };
         }
-
         var series_name = [];
+        // console.log("init");
         var option = {  
                url: '/chart/init/',  
                type: 'POST',  
-               data: JSON.stringify({'current_series_info':series_info[sortId],'time_frequency':time_frequency}),  
+               data: JSON.stringify({'current_series_info':series_info[sortId],'time_frequency':time_frequency,'sortId':sortId}),  
                dataType: 'json', 
                contentType : 'application/json', 
                success: function (data) {
-                    if (data == 0) {
-                        $(container_selector).empty();
-                        $(container_selector).append('<button class="btn btn-lg btn-info">No Monitor data to display</button>');
+                    current_sortId = data.sortId;
+                    current_container_selector = 'div[container="' + container + '"][sortId=' + current_sortId + ']';
+                    if (data.data == 0) {
+                        console.log(current_sortId);
+                        init_clear(current_container_selector,current_sortId)
+                        $(current_container_selector).append('<button class="btn btn-lg btn-warn">No Monitor data to display</button>');
+                        // console.log("clear");
                     }
                     else
                     {
-                        series_for_current_window = data.data;
+                        current_series_data = data.data;
                         y_title = data.y_title;
-                        create_highstock_chart(container_selector,sortId,y_title);
+                        create_highstock_chart(current_container_selector,current_sortId,y_title,current_series_data);
+                        $(current_container_selector).after('<button class="btn btn-info morehistory" sortId=' + current_sortId + ' style="margin-bottom:0px;margin-top:3px">More history about this chart>></button>');
                     }
+                    $('button.itemtype').removeAttr("disabled");
                 }  
         };  
         $.ajax(option);
@@ -158,6 +156,27 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
 
     function update()
     {
+        // console.log(mychart[sortId].series);
+        navigator_series_index = [];
+        for (var ci = 0; ci < series_info.length;ci ++) {
+            var tmp;
+            navigator_series_index.push(tmp);
+            if (mychart[ci] != undefined) {
+                for (var si = 0; si < mychart[ci].series.length; si++) {
+                    if(mychart[ci].series[si].name == 'Navigator')
+                    {
+                        navigator_series_index[ci] = si;
+                    }
+                };
+            };
+        };
+        // for (var i = mychart[sortId].series.length - 1; i >= 0; i--) {
+        //     if(mychart[sortId].series[i].name == 'Navigator')
+        //     {
+        //         navigator_series_index = i;
+        //         break;
+        //     }
+        // };
         var now = (new Date()).getTime();
         time_till = now;
         time_till = Math.floor(now/1000);
@@ -168,10 +187,15 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
                dataType: 'json', 
                contentType : 'application/json', 
                success: function (data) {
-                    // console.log(data);
                     for (var ci = 0; ci < data.length; ci ++) {
                         for (var si = 0; si < data[ci].length; si++) {
-                            series = mychart[ci].series[si].addPoint(data[ci][si],false,true);
+                            if (si >= navigator_series_index[ci] ) {
+                                series = mychart[ci].series[si + 1].addPoint(data[ci][si],false,true);
+                            }
+                            else
+                            {
+                                series = mychart[ci].series[si].addPoint(data[ci][si],false,true);
+                            }
                         };
                     };
                     for (var i = 0; i < data.length; i++) {
@@ -187,8 +211,41 @@ function create_chart(container,sortId,series_info,chart_title,is_init_empty,tim
 
 
     callbacks = $.Callbacks();
+    // base_series_num = 0;
     // console.log(si);
-    add_window(container,sortId,chart_title);
+    if (mychart[sortId] == undefined) {
+        add_window(container,sortId,chart_title);
+    }
+    else
+    {
+        // console("another init");
+        // console.log(series_info);
+        var series_info_tmp = []
+        series_info_tmp.push(series_info[sortId][series_index])
+        var option = {  
+            url: '/chart/init/',  
+            type: 'POST',  
+            data: JSON.stringify({'current_series_info':series_info_tmp,'time_frequency':series_time_frequency,'sortId':sortId}),  
+            dataType: 'json', 
+            contentType : 'application/json', 
+            success: function (data) {
+                if (data.data != 0) {
+                    clearInterval(si[0]);
+                    mychart[sortId].addSeries(data.data[0])
+                    // console.log(mychart[sortId]);
+                    current_title = mychart[sortId].yAxis[0].axisTitle.textStr;
+                    current_title += ',' + data.y_title; 
+                    //console.log(current_title);
+                    // console.log(mychart[sortId].yAxis.title);
+                    mychart[sortId].yAxis[0].axisTitle.attr({text: current_title });
+                    si[0] = setInterval(update,time_frequency*1000);
+                    $('button.itemtype').removeAttr("disabled");
+                }   
+            }  
+        };  
+        $.ajax(option);
+    }
+    
     
 }
 

@@ -9,8 +9,6 @@ from werkzeug import check_password_hash, generate_password_hash
 # Import the database object from the main app module
 from monitor import db
 
-# Import module forms
-from monitor.auth.forms import LoginForm,AddUserForm
 
 # Import module models (i.e. User)
 from monitor.auth.models import User

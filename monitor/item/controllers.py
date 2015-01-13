@@ -4,13 +4,13 @@ from flask.ext.login import login_required
 from monitor import db
 
 from monitor.item.models import Area,Service,Host,Itemdatatype,Itemtype,Zbxitemtype,Aws,Action
-from monitor.item.forms import addAreaForm,addServiceForm,chooseServiceForm,addHostForm
 # from monitor.item.functions import mass_add_1_level,mass_add_host_item_for_area,mass_add_itemtype,add_host
 from monitor.item.functions import *
-from monitor.zabbix_api import zabbix_api
+from monitor.zabbix.zabbix_api import zabbix_api
 from monitor.MonitorException import *
 import json
 import boto.ec2.autoscale
+from config import AUTOSCALE_COMMAND_PATH ,EMAIL_NOTIFICATION_COMMAND_PATH,AUTOSCALE,EMAILNOTIFICATION
 
 
 mod_item = Blueprint('item', __name__, url_prefix='/item')
@@ -22,7 +22,8 @@ def mainboard():
 	service = Service.query.all()
 	host = Host.query.all()
 	itemtype = Itemtype.query.all()
-	return render_template("item/main.html",area=area,service=service,host=host,itemtype=itemtype)
+	trigger = Trigger.query.all()
+	return render_template("item/main.html",area=area,service=service,host=host,itemtype=itemtype,trigger=trigger)
 
 
 @mod_item.route('/area/', methods=['GET', 'POST'])
@@ -273,7 +274,7 @@ def trigger_action():
 		comparetype = request.form.get('comparetype')
 		triggervalue = request.form.get('triggervalue')
 		timeshift = request.form.get('timeshift')
-		command = request.form.get('command')
+		command = ''
 		kinds = request.form.get('kinds')
 
 		kinds = int(kinds)
@@ -281,10 +282,18 @@ def trigger_action():
 		areaid = None
 		asgname = None
 		asgtype = None
-		if kinds == 1:
+		if kinds == AUTOSCALE:
 			areaid = request.form.get('areaid')
 			asgname = request.form.get('asgname')
 			asgtype = request.form.get('asgtype')
+			command = AUTOSCALE_COMMAND_PATH + ' ' + '{trigger.name}'
+
+		elif kinds == EMAILNOTIFICATION:
+			emailaddress = request.form.get('receivers')
+			if len(emailaddress) == 0:
+				flash('Emailaddress is empty', 'error')
+				return redirect(url_for('item.trigger_action'))
+			command = EMAIL_NOTIFICATION_COMMAND_PATH + ' ' + emailaddress
 
 		zabbix = zabbix_api()
 
@@ -300,19 +309,47 @@ def trigger_action():
 
 		try:
 
-			print "formula",formula
-			print "triggerfunction",triggerfunction
-			print "triggervalue",triggervalue
-			print "timeshift",timeshift
-			print "comparetype",comparetype
-			print "command",command
-			print "asgname",asgname
-			print "asgtype",asgtype
-			print "areaid",areaid
+			# print "formula",formula
+			# print "triggerfunction",triggerfunction
+			# print "triggervalue",triggervalue
+			# print "timeshift",timeshift
+			# print "comparetype",comparetype
+			# print "command",command
+			# print "asgname",asgname
+			# print "asgtype",asgtype
+			# print "areaid",areaid
 
 
-			create_calcitem_trigger_action(zabbix,formula,triggerfunction,triggervalue,timeshift,comparetype,\
-									command,asgname,asgtype,areaid)
+			result = create_calcitem_trigger_action(zabbix,formula,triggerfunction,triggervalue,timeshift,comparetype,\
+									command)
+
+			name = result['trigger_name']
+			triggerid = result['trigger_id']
+			calcitem = result['calcitem']
+			actionid = result['actionid']
+			trigger = Trigger(triggerid,name,triggervalue,timeshift,calcitem,triggerfunction)
+			db.session.add(trigger)
+
+			if kinds == EMAILNOTIFICATION:
+				asgname = ''
+				asgtype = 1
+				areaid = 0
+				# print result
+				# name = result['trigger_name']
+				# triggerid = result['trigger_id']
+				# calcitem = result['calcitem']
+				# actionid = result['actionid']
+				# trigger = Trigger(triggerid,name,triggervalue,timeshift,calcitem)
+				# db.session.add(trigger)
+			actionname = get_action_name(command)
+			action =  Action(actionid,asgname,asgtype,areaid,command,actionname)
+			db.session.add(action)
+
+				# add relationship between trigger and action
+			ttmp = trigger.add_action(action)
+			if ttmp != None:
+				db.session.add(ttmp)
+				
 			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
@@ -322,11 +359,42 @@ def trigger_action():
 			return redirect(url_for('item.trigger_action'))
 		else:
 			flash('add calcitem trigger and action successfully')
-			return redirect(url_for('item.trigger_action'))
+			return redirect(url_for('item.mainboard'))
 		finally:
 			db.session.remove()
 
 	return render_template('item/trigger_action.html',title='trigger',area=area,service=service,host=host,aws=aws,idt=idt,actions=actions)
+
+@mod_item.route('/trigger/delete/<triggerid>',methods=['GET','POST'])
+@login_required
+def trigger_delete(triggerid):
+	zabbix = zabbix_api()
+	try:
+		t = Trigger.query.get(triggerid)
+		if t != None:
+			zabbix.item_delete([t.calcitem.calculateditemid])
+			cali = Calculateditem.query.get(t.calcitem.calculateditemid)
+			if cali != None:
+				db.session.delete(cali)
+
+			zabbix.trigger_delete([t.triggerid])
+			actionids = []
+			for a in t.actions.all():
+				actionids.append(a.actionid)
+				db.session.delete(a)
+			zabbix.action_delete(actionids)
+			db.session.delete(t)
+			db.session.commit()
+	except Exception, e:
+		db.session.rollback()
+		zabbix.rollback()
+		flash(str(e),'error')
+	else:
+		flash('delete a trigger')
+	# finally:
+	# 	db.session.remove()
+	
+	return redirect(url_for('item.mainboard'))
 
 @mod_item.route('/generateformula',methods=['GET','POST'])
 @login_required
