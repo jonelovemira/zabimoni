@@ -36,7 +36,7 @@ function find_all_checked(check_result)
         //find all area checked
         $("input[indextype=area]").each(function(i,d){
             // console.log("D.VALUE",d.value);
-            if (d.checked) {
+            if ($(this).attr("checked") == 'checked'){
                 // console.log("D.VALUE",d.value);
                 current_area_id_list.push(d.value);
                 current_area_name_list.push(d.name);
@@ -45,7 +45,7 @@ function find_all_checked(check_result)
 
         //find all service checked
         $("input[indextype=service]").each(function(i,d){
-            if (d.checked) {
+            if ($(this).attr("checked") == 'checked'){
                 current_service_id_list.push(d.value);
                 current_service_name_list.push(d.name);
             }
@@ -54,7 +54,8 @@ function find_all_checked(check_result)
         //find all host checked
         $('div[info=servicepopover]').find('input[indextype=host][locate=popover]').each(function(i,d)
         {
-            if (d.checked) {
+            // console.log($(this).attr("checked"));
+            if ($(this).attr("checked") == 'checked') {
                 current_host_name_list.push(d.name);
                 current_host_id_list.push(d.value);
             }
@@ -69,13 +70,13 @@ function find_all_checked(check_result)
 
         //find all aws checked
         $("input[indextype=aws]").each(function(i,d){
-            if (d.checked) {
+            if ($(this).attr("checked") == 'checked'){
                 current_aws_name_list.push(d.name);
                 current_aws_id_list.push(d.value);
             }
             
         });
-        // console.log(current_host_id_list);
+        console.log(current_host_id_list);
         check_result['area'] = '';
         check_result['service'] = '';
         check_result['host'] = '';
@@ -326,9 +327,8 @@ $(document).on('click','input[type=checkbox][locate=popover][indextype=host]',fu
     var check_result = {};
     find_and_gen('service');
     check_result = {};
-    find_all_checked(check_result);
+    refresh_item_container(check_result);
     console.log(check_result);
-    // refresh_item_container(check_result);
 });
 
 
