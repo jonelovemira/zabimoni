@@ -21,7 +21,7 @@ ADMINS = ['xuzhongyong@tp-link.net']
 
 
 # area name of 
-AREA = 'ap-southeast-1'
+AREA = 'ap-northeast-1'
 SERVICE = 'monitor'
 
 # different path
@@ -43,7 +43,10 @@ SCHEDULE_ALL_FILENAME = 'all'
 XML_EXPORT_PATH = 'monitor-server/monitor.xml'
 
 AUTOSCALE_COMMAND_PATH = basedir + '/autoscale_group.py'
-EMAIL_NOTIFICATION_COMMAND_PATH = basedir + '/sendemail'
+
+EMAIL_SNS_PATH = basedir + '/sendemail_sns.py'
+
+EMAIL_NORMAL_PATH = basedir + '/sendemail_normal'
 
 # chart init timelength in seconds
 CHART_INIT_TIME = 3600
@@ -96,5 +99,8 @@ AUTHORIZATION_PROTOCAL = 'https://'
 
 # Deploy in local or not
 IN_LOCAL = True
+
+# use SNS or not
+MAIL_USE_SNS = True
 
 

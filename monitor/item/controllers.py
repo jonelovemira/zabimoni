@@ -10,7 +10,7 @@ from monitor.zabbix.zabbix_api import zabbix_api
 from monitor.MonitorException import *
 import json
 import boto.ec2.autoscale
-from config import AUTOSCALE_COMMAND_PATH ,EMAIL_NOTIFICATION_COMMAND_PATH,AUTOSCALE,EMAILNOTIFICATION
+from config import AUTOSCALE_COMMAND_PATH ,AUTOSCALE,EMAILNOTIFICATION,MAIL_USE_SNS,EMAIL_SNS_PATH,EMAIL_NORMAL_PATH
 
 from flask.ext.principal import Permission, RoleNeed
 admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
@@ -376,24 +376,40 @@ def trigger_action():
 		areaid = None
 		asgname = None
 		asgtype = None
-		if kinds == AUTOSCALE:
-			areaid = request.form.get('areaid')
-			asgname = request.form.get('asgname')
-			asgtype = request.form.get('asgtype')
-			command = AUTOSCALE_COMMAND_PATH + ' ' + '{trigger.name}'
-
-		elif kinds == EMAILNOTIFICATION:
-			emailaddress = request.form.get('receivers')
-			if len(emailaddress) == 0:
-				flash('Emailaddress is empty', 'danger')
-				return redirect(url_for('item.trigger_action'))
-			command = EMAIL_NOTIFICATION_COMMAND_PATH + " '" + emailaddress + "'"
 
 		zabbix = zabbix_api()
 
 		try:
+			if kinds == AUTOSCALE:
+				areaid = request.form.get('areaid')
+				asgname = request.form.get('asgname')
+				asgtype = request.form.get('asgtype')
+				command = AUTOSCALE_COMMAND_PATH + ' ' + '{trigger.name}'
+
+			elif kinds == EMAILNOTIFICATION:
+				emailaddress = request.form.get('receivers')
+				if len(emailaddress) == 0:
+					flash('Emailaddress is empty', 'danger')
+					return redirect(url_for('item.trigger_action'))
+				command = EMAIL_NORMAL_PATH + " '" + emailaddress + "'"
+
+				if MAIL_USE_SNS:
+					first_itemids = request.form.get('formulaitemfirst')
+					second_itemids = request.form.get('formulaitemsecond')
+
+					if len(first_itemids) == 0  and len(second_itemids) == 0:
+						flash('Items choosed is empty', 'danger')
+						return redirect(url_for('item.trigger_action'))
+
+					topic_arn = get_topic(first_itemids,second_itemids,emailaddress)
+
+					command = EMAIL_SNS_PATH + ' ' + topic_arn
+				
 
 
+		# zabbix = zabbix_api()
+
+		# try:
 			result = create_calcitem_trigger_action(zabbix,formula,triggerfunction,triggervalue,timeshift,comparetype,\
 									command)
 
@@ -479,7 +495,7 @@ def generateformula():
 	first_itemids = request.args.get('first_itemids')
 	fs_operator = request.args.get('fs_operator')
 	second_itemids = request.args.get('second_itemids')
-	brackets_position = request.args.get('brackets_position')
+	brackets_position = int(request.args.get('brackets_position'))
 
 	first_itemids = arg_2_array(first_itemids)
 	second_itemids = arg_2_array(second_itemids)

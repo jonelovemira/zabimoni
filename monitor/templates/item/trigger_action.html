@@ -26,6 +26,12 @@ $(function () {
         $('#forchooseitem').modal('show');
     });
 
+    $(document).on('click','button.confirmchoose',function()
+    {
+        $('#formulaitem' + index).attr('value','');
+        $('#forchooseitem').modal('hide');
+    })
+
     $(document).on('click','button.itemtype',function()
     {
         var value = $(this).attr('value');
@@ -40,11 +46,11 @@ $(function () {
         first_itemids = $('#formulaitemfirst').val();
         fs_operator = $('select[name="firstsecondoperator"]').val();
         second_itemids = $('#formulaitemsecond').val();
-        brackets_position = $('#bracketsposition').val();
+        brackets_position = $('select[name=bracketsposition]').val();
 
         $.getJSON('/item/generateformula',{scale:scale,scaleoperator:scaleoperator,first_itemids:first_itemids,fs_operator:fs_operator,second_itemids:second_itemids,brackets_position:brackets_position},function(data)
         {
-            console.log(data);
+            //console.log(data);
             $('textarea[name=formula]').val(data);
         });
     });
@@ -146,7 +152,7 @@ $(function () {
         </div>
 
         <div class="col-sm-3">
-            <input type="text" class="form-control" id="formulaitemfirst" placeholder="click to choose" readonly>
+            <input type="text" class="form-control" id="formulaitemfirst" placeholder="click to choose" readonly name="formulaitemfirst">
         </div>
 
         <div class="col-sm-1">
@@ -159,7 +165,7 @@ $(function () {
         </div>
 
         <div class="col-sm-2">
-            <input type="text" class="form-control" id="formulaitemsecond" placeholder="click to choose" readonly>
+            <input type="text" class="form-control" id="formulaitemsecond" placeholder="click to choose" readonly name="formulaitemsecond">
         </div>
     </div>
 
@@ -304,7 +310,7 @@ $(function () {
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Choose</button>
+        <button type="button" class="btn btn-primary confirmchoose">Choose</button>
       </div>
     </div>
   </div>

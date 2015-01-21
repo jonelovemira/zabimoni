@@ -6,12 +6,14 @@ from monitor.item.models import Area,Service,Host,Item,Itemtype,Normalitemtype,Z
 from monitor.chart.models import Series
 import boto.ec2
 import boto.ec2.elb
-from config import HOST_GROUP_NAME,TEMPLATE_NAME,BY_ALL,BY_AREA,BY_SERVICE,BY_HOST
+from config import HOST_GROUP_NAME,TEMPLATE_NAME,BY_ALL,BY_AREA,BY_SERVICE,BY_HOST,AREA
 from monitor.zabbix.models import Zabbixitems,Zabbixinterface,Zabbixhosts,loadSession
 from monitor.chart.functions import construct_random_str
 from monitor.MonitorException import *
 from datetime import datetime
 import sys,traceback
+import boto.sns
+from monitor.decorators import async
 
 #################################################################
 #################################################################
@@ -756,6 +758,54 @@ def host_with_zabbix_data(host_monitor):
 		host.append(tmp)
 
 	return host
+
+@async
+def send_subscriber(con,topic_arn,emailaddress):
+	emails = emailaddress.split(';')
+	for e in emails:
+		con.subscribe(topic_arn,'email', e)
+
+
+
+def get_topic(first_itemids,second_itemids,emailaddress):
+	f_i = []
+	s_i = []
+	if len(first_itemids) > 0:
+		f_i = first_itemids.split('@')
+	if len(second_itemids) > 0:
+		s_i = second_itemids.split('@')
+
+	itemids = f_i + s_i
+
+	it_names = []
+	for iid in itemids:
+		item = Item.query.get(int(iid))
+		name = item.itemtype.itemdatatype.itemdatatypename.replace(' ','')
+		if not name in it_names:
+			it_names.append(name)
+
+	topic_name = '-'.join(it_names)
+	topic_name += '-monitor_alarm'
+
+	con = boto.sns.connect_to_region(AREA)
+
+	res = con.create_topic(topic_name)
+	topic_arn = ''
+	try:
+		topic_arn = res['CreateTopicResponse']['CreateTopicResult']['TopicArn']
+	except Exception, e:
+		raise e
+
+	if topic_arn is not '':
+		send_subscriber(con,topic_arn,emailaddress)
+
+	return topic_arn
+
+
+
+
+
+
 
 # def test_create_calcitem_trigger_action():
 # 	zabbix = zabbix_api()
