@@ -32,7 +32,8 @@ class zabbix_api:
 	#### server_ip shuould be valid for zabbix_api ###
 	def __init__(self): 
 		server_ip = get_zabbix_server_ip()
-		self.url = 'http://' + server_ip + '/zabbix/api_jsonrpc.php' 
+		port = '5000'
+		self.url = 'http://' + server_ip + ':' + port +  '/zabbix/api_jsonrpc.php' 
 		self.header = {"Content-Type":"application/json"}         
 	     
 	#### get user login the zabbix api id ####

@@ -1,8 +1,23 @@
 function load_indexes()
 {
+    $('div[type=displayname][indextype=service]').each(function(i,d)
+    {
+        indexId = $(this).attr("value");
+        // d.popover({});
+        $('div[type=displayname][indextype=service][value=' + indexId + ']').popover({
+            html:true,
+            trigger:'manual',
+            content: function()
+            {
+                console.log('test');
+                return $('div[serviceid=' + $(this).attr("value") + ']').html();
+            }
+        });
+    });
     
     $('div[class=IndexDiv]').hide();
-    $('div[class=IndexDiv][type=area]').show();
+
+    $('div[class=IndexDiv][type=service]').show();
 }
 
 
@@ -37,12 +52,20 @@ function find_all_checked(check_result)
         });
 
         //find all host checked
-        $("input[indextype=host]").each(function(i,d){
+        $('div[info=servicepopover]').find('input[indextype=host][locate=popover]').each(function(i,d)
+        {
             if (d.checked) {
                 current_host_name_list.push(d.name);
                 current_host_id_list.push(d.value);
             }
         });
+
+        // $("input[indextype=host]").each(function(i,d){
+        //     if (d.checked) {
+        //         current_host_name_list.push(d.name);
+        //         current_host_id_list.push(d.value);
+        //     }
+        // });
 
         //find all aws checked
         $("input[indextype=aws]").each(function(i,d){
@@ -52,6 +75,7 @@ function find_all_checked(check_result)
             }
             
         });
+        // console.log(current_host_id_list);
         check_result['area'] = '';
         check_result['service'] = '';
         check_result['host'] = '';
@@ -98,17 +122,28 @@ function refresh_item_container(check_result)
     {
         clear_panel();
         // console.log(data);
-        for (data_it in data) {
-            // console.log(data[data_it].items);
-            value = data[data_it].items.join('@');
-            name = data[data_it].name;
-            itemdatatype = data[data_it].itemdatatypename;
-            time_frequency = data[data_it].time_frequency;
-            // console.log(itemdatatypename);
-            // $('div[class=itemContainer]').append('<div typename='+);
-            html_tag = '<button class="btn btn-sm btn-default itemtype" value=' + value + ' itemtypeid=' + data_it + ' name="' + name + '" time_frequency=' + time_frequency + '>' + name + '</button>' ;
-            $('div[itemdatatype="' + itemdatatype + '"]').append(html_tag);
+        if (data.itemtype != undefined) {
+            for (data_it in data.itemtype) {
+                // console.log(data.itemtype[data_it]);
+                // console.log(data[data_it].items);
+                value = data.itemtype[data_it].items.join('@');
+                name = data.itemtype[data_it].name;
+                itemdatatype = data.itemtype[data_it].itemdatatypename;
+                time_frequency = data.itemtype[data_it].time_frequency;
+                // console.log(itemdatatypename);
+                // $('div[class=itemContainer]').append('<div typename='+);
+                html_tag = '<button class="btn btn-sm btn-default itemtype" value=' + value + ' itemtypeid=' + data_it + ' name="' + name + '" time_frequency=' + time_frequency + '>' + name + '</button>' ;
+                $('div[itemdatatype="' + itemdatatype + '"]').append(html_tag);
+            };
+            // $('input[type=checkbox][locate=index][indextype=host]')[0].parentNode.hide();
+            // console.log($('input[type=checkbox][locate=index][indextype=host]'));
+            $('div[class=col-sm-3][indextype=host]').hide();
+            for (var i = data.hostids.length - 1; i >= 0; i--) {
+                $('div[class=col-sm-3][indextype=host][value=' + data.hostids[i] + ']').show();
+            }
         };
+        
+        // $('div[input=checkbox][locate=index][indextype=host][value=' +  + ']')
     })
 }
 
@@ -215,21 +250,111 @@ $(document).on('click','a.indexbutton',function()
 
 $(document).on('click','button[class=checkbutton]',function()
 {
-        type = $(this).attr("type");
-        value = $(this).attr("value");
-        shaixuan = 'input[type=checkbox][class=' + type + '][value=' + value
+    type = $(this).attr("type");
+    value = $(this).attr("value");
+    shaixuan = 'input[type=checkbox][class=' + type + '][value=' + value
              + ']';
-        $('input[type=checkbox][class=' + type + '][value=' + value + ']').attr("checked",false);
-        $(this).remove();
-        
+    $('input[type=checkbox][class=' + type + '][value=' + value + ']').attr("checked",false);
+    $(this).remove();
+    
 });
 
-$(document).on('click','input[type=checkbox]',function()
+$(document).on('change','input[type=checkbox][locate=index]',function()
 {
-        classname = $(this).attr("indextype");
-        // console.log(classname);
+    classname = $(this).attr("indextype");
+    value = $(this).attr("value");
+    checked_value = $(this)[0].checked;
+    if (classname == 'service') {
+        $('input[locate=popover][indextype=host][serviceid=' + value + ']').attr("checked",checked_value);
+        $('input[locate=popover][indextype=host][serviceid=' + value + ']').prop("checked",checked_value);
+        
+    };
+        // console.log('change');
         find_and_gen(classname);
         check_result = {};
         refresh_item_container(check_result);
 });
+
+
+
+$(document).on('click','div[type=displayname]',function(e)
+{
+    // $(this).popover({
+    //     html:true,
+    //     content:function()
+    //     {
+    //         return $('div[serviceid=' + $(this).attr("value") + ']').html();
+    //     }
+    // })
+    // $(this).popover('hide');
+
+    $(this).popover('toggle');
+    return false;
+});
+
+$(document).on('click','input[type=checkbox][locate=popover][indextype=host]',function()
+{
+    hostid = $(this).attr("value");
+    serviceid = $(this).attr("serviceid");
+    var orig = $('div[info=servicepopover][serviceid=' + serviceid + ']').find('input[locate=popover][value=' + hostid + ']');
+    checked_value = $(this)[0].checked;
+    orig.attr("checked",checked_value);
+    // orig.prop("checked",checked_value);
+    
+    
+    var all_host_checked_value = false;
+    {
+        
+        $('input[indextype=host][locate=popover][serviceid=' + serviceid + ']').each(function(i,d)
+        {
+            // console.log(d);
+            // console.log($(this).prop("checked"));
+            // console.log($(this).prop("checked"));
+            // console.log($(this)[0].checked);
+            if ($(this).prop("checked")) {
+                // console.log(d);
+                all_host_checked_value = true;
+            };
+        })
+    }
+
+    // console.log(all_host_checked_value);
+
+    $('input[indextype=service][locate=index][value=' + serviceid + ']').attr("checked",all_host_checked_value);
+    $('input[indextype=service][locate=index][value=' + serviceid + ']').prop("checked",all_host_checked_value);
+
+    var check_result = {};
+    find_and_gen('service');
+    check_result = {};
+    find_all_checked(check_result);
+    console.log(check_result);
+    // refresh_item_container(check_result);
+});
+
+
+
+
+
+// $(document).on('click','input[type=checkbox][locate=tooltip]',function()
+// {
+//     hostid = $(this).attr("hostid");
+//     // $(this).attr("checked","true");
+//     checked_value = $(this)[0].checked;
+//     // console.log('bind');
+//     console.log("checked_value",checked_value);
+//     // console.log($(this));
+//     // if (checked_value) {
+//     //     $('input[type=checkbox][indextype=host][value=' + hostid + ']').attr("checked",checked_value);
+//     // }
+//     // else
+//     // {
+//     //     console.log("remove");
+//     //     $('input[type=checkbox][indextype=host][value=' + hostid + ']').removeAttr("checked");
+//     // }
+//     $('input[type=checkbox][indextype=host][value=' + hostid + ']').prop('checked',checked_value);
+//     // change_value = $('input[type=checkbox][indextype=host][value=' + hostid + ']').attr("checked");
+//     // console.log("after_change",change_value);
+// });
+
+
 

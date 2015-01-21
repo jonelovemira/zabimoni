@@ -202,10 +202,13 @@ $(function () {
         var itemtypeid = $(this).attr('itemtypeid');
         var display_name = generate_display_name(name,check_result);
         value = value.split('@');
-        time_frequency_tmp = parseInt($(this).attr('time_frequency'),10);
-        if (time_frequency_tmp < time_frequency) {
-            time_frequency = time_frequency_tmp;
-        };
+        // time_frequency_tmp = parseInt($(this).attr('time_frequency'),10);
+        // if (time_frequency_tmp < time_frequency) {
+        //     time_frequency = time_frequency_tmp;
+        // };
+
+        $('div[class=chooseresult]').append('<label class="chooseditem">'+display_name+';</label>');
+
         create_new_series(series_info,current_window_index,check_result,itemtypeid,value,display_name);
         $(this).attr("disabled","disabled");
     });
@@ -244,16 +247,17 @@ $(function () {
 
     $(document).on('click','button.savedListItemButton',function()
     {
-        if (spanclick == 0) {
-            var pageid = $(this).attr("indexId");
-            var pagename = $(this).attr("name");
-            load_saved_in_page(pageid,pagename);
-        };
+        // if (spanclick == 0) {
+        var pageid = $(this).attr("indexId");
+        var pagename = $(this).attr("name");
+        load_saved_in_page(pageid,pagename);
+        // };
     });
 
     $(document).on('click','button.center-block.page',function()
     {
         current_window_index = $(this).attr("sortId");
+        $('div[class=chooseresult]').empty();
         $('button.itemtype').removeAttr("disabled");
         // console.log()
         $('#myModal').modal({
@@ -302,11 +306,11 @@ $(function () {
     });
     
 
-    var spanclick = 0;
+    // var spanclick = 0;
 
     $(document).on('click','span.glyphicon-remove',function()
     {
-        spanclick = 1;
+        // spanclick = 1;
         indexId = $(this).attr("indexId");
         info = 'Page:' + $('button.savedListItemButton[indexId=' + indexId + ']').attr("name")
 
@@ -326,13 +330,14 @@ $(function () {
                 {
                     alert('delete failed');
                 }
-                spanclick = 0;
+                // spanclick = 0;
             })
         }
-        else
-        {
-            spanclick = 0;
-        }
+        // else
+        // {
+        //     spanclick = 0;
+        // }
+        return false;
     });
     
     ///************end of register********

@@ -24,6 +24,32 @@ function create_chart(container,sortId,series_info,chart_title,series_index,time
         init_clear(container_selector,sortId);
     }
 
+    $(document).on('click','button.change',function(){
+        value = parseInt($('input[name=newfrequency]').val());
+        // alert(value);
+        // console.log(time_frequency);
+        // console.log(si[0]);
+        if (si[0] != undefined && value >= 10) {
+            // console.log(mychart[sortId]);
+            clearInterval(si[0]);
+            time_frequency = value;
+            si[0] = setInterval(update,value*1000);
+            if (si.length == 1) {
+                si.push(value);
+            }else
+            {
+                si[1] = value;
+            }
+            // mychart[sortId].options.exporting.buttons.customButton.attr({text : "frequency:" + value});
+            //console.log(mychart[sortId].options.exporting.buttons.customButton);
+            // button = mychart[sortId].options.exporting.buttons.customButton;
+            // console.log(button);
+            // button.text = "frequency:" + value;
+            // mychart[sortId].redraw()
+            // button.attr({'text':'nihao'});
+        };
+        $('#changefrequency').modal('hide');
+    });
     
 
     function add_window(container,sortId,chart_title)
@@ -61,20 +87,59 @@ function create_chart(container,sortId,series_info,chart_title,series_index,time
                             return this.name;
                         }
                     },
+                    exporting:{
+                        buttons:{
+                            customButton:{
+                                x:-62,
+                                onclick:function(){
+                                    $('#changefrequency').modal({
+                                        keyboard: false
+                                    });
+                                    $('#changefrequency').modal('show');
+                                },
+                                text: 'frequency:' + time_frequency
+                            },
+                            customButton2:{
+                                x:-180,
+                                text: 'function: avg',
+                                menuItems: [{
+                                    text: 'count',
+                                    // onclick: function () {
+                                    //     alert("count");
+                                    // }
+                                }, {
+                                    text: 'avg',
+                                    // onclick: function () {
+                                    //     alert("avg");
+                                    // }
+                                },{
+                                    text: 'max',
+                                    // onclick: function () {
+                                    //     alert("min");
+                                    // }
+                                },{
+                                    text: 'min',
+                                    // onclick: function () {
+                                    //     alert("max");
+                                    // },
+                                }]
+                            }
+                        }
+                    },
                     rangeSelector : {
                         // selected : 1,
                         inputEnabled: $(container_selector).width() > 480,
                         selected : 0,
                         buttons: [
                             {
-                                type:'hour',
-                                count:1,
-                                text:'1h'   
+                                type:'minute',
+                                count:10,
+                                text:'10m'   
                             },
                             {
-                                type:'hour',
-                                count:6,
-                                text:'6h'   
+                                type:'minute',
+                                count:30,
+                                text:'30m'   
                             }, 
                             {
                                 type: 'all',
@@ -232,6 +297,7 @@ function create_chart(container,sortId,series_info,chart_title,series_index,time
                 if (data.data != 0) {
                     clearInterval(si[0]);
                     mychart[sortId].addSeries(data.data[0])
+                    //console.log(data)
                     // console.log(mychart[sortId]);
                     current_title = mychart[sortId].yAxis[0].axisTitle.textStr;
                     current_title += ',' + data.y_title; 

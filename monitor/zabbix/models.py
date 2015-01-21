@@ -1,5 +1,6 @@
 # from monitor import db,app
 from monitor import app,db
+from monitor.item.models import Item
 
 engine = db.get_engine(app,bind='zabbix')
 
@@ -56,15 +57,6 @@ class Zabbixhistory(db.Model):
 			if same_count > 1:
 				s1[len(s1) - 1][2] = s1[len(s1) - 1][2]/same_count
 
-			s1 = db.session.query(cls.itemid,\
-				db.func.count(cls.itemid).label('count'),\
-				db.func.avg(cls.value).label('avg'),\
-				db.func.max(cls.value).label('max'),\
-				db.func.min(cls.value).label('min'),\
-				db.func.floor((cls.clock)/ground).label('minute') ). \
-			filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
-			group_by('minute').all()
-
 			# print s1
 			tmp_s += s1
 
@@ -100,13 +92,14 @@ class Zabbixhistory(db.Model):
 	def get_interval_history(cls,query_itemids,ground,time_since,time_till):
 		tmp_s = []
 		for qi in query_itemids:
+			time_frequency = Item.query.get(qi).itemtype.time_frequency
 			s1 = db.session.query(cls.itemid,\
 				db.func.count(cls.itemid).label('count'),\
 				db.func.avg(cls.value).label('avg'),\
 				db.func.max(cls.value).label('max'),\
 				db.func.min(cls.value).label('min'),\
 				db.func.floor((cls.clock)/ground).label('minute') ). \
-			filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
+			filter_by(itemid = qi).filter('clock >=' + str(time_since - 2 * time_frequency)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
 			# print s1
@@ -136,6 +129,7 @@ class Zabbixhistory(db.Model):
 		if last_count > 1:
 			result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
 		
+		# print result
 		if len(result) != 0:
 			return result		
 		return None
@@ -228,13 +222,14 @@ class Zabbixhistoryuint(db.Model):
 	def get_interval_history(cls,query_itemids,ground,time_since,time_till):
 		tmp_s = []
 		for qi in query_itemids:
+			time_frequency = Item.query.get(qi).itemtype.time_frequency
 			s1 = db.session.query(cls.itemid,\
 				db.func.count(cls.itemid).label('count'),\
 				db.func.avg(cls.value).label('avg'),\
 				db.func.max(cls.value).label('max'),\
 				db.func.min(cls.value).label('min'),\
 				db.func.floor((cls.clock)/ground).label('minute') ). \
-			filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
+			filter_by(itemid = qi).filter('clock >=' + str(time_since - 2 * time_frequency)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
 			# print s1
@@ -264,6 +259,7 @@ class Zabbixhistoryuint(db.Model):
 		if last_count > 1:
 			result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
 		
+
 		if len(result) != 0:
 			return result		
 		return None

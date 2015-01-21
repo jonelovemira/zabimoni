@@ -133,10 +133,10 @@ $(function () {
                 series_info[0][i]['series_type'] = data[i]['series_type'];
                 series_info[0][i]['series_item_list'] = data[i]['series_item_list'];
                 series_info[0][i]['series_name'] = data[i]['series_name'];
-                time_frequency_tmp = data[i]['time_frequency'];
-                if (time_frequency_tmp < min_tf) {
-                    min_tf = time_frequency_tmp;
-                }; 
+                // time_frequency_tmp = data[i]['time_frequency'];
+                // if (time_frequency_tmp < min_tf) {
+                //     min_tf = time_frequency_tmp;
+                // }; 
             };
 
 
@@ -181,18 +181,18 @@ $(function () {
         // console.log(name);
         var display_name = generate_display_name(name,check_result);
         var itemtypeid = $(this).attr('itemtypeid');
-        time_frequency_tmp = parseInt($(this).attr('time_frequency'),10);
-        if (time_frequency_tmp < time_frequency) {
-            time_frequency = time_frequency_tmp;
-        };
+        // time_frequency_tmp = parseInt($(this).attr('time_frequency'),10);
+        // if (time_frequency_tmp < time_frequency) {
+        //     time_frequency = time_frequency_tmp;
+        // };
         // if (itemtypeid <= 28 ) {time_frequency = 14400;}
         // else time_frequency=60;
         value = value.split('@');
-
+        
         // console.log(series_info);
         
         
-        create_series_chart(itemtypeid,value,display_name,time_frequency_tmp);
+        create_series_chart(itemtypeid,value,display_name,time_frequency);
         $('button.itemtype').attr('disabled','true');
           
     });
@@ -218,12 +218,13 @@ $(function () {
 
     $(document).on('click','button.savedListItemButton',function()
     {
-        if (spanclick == 0) {
+        console.log("savedbutton");
+        // if (spanclick == 0) {
             init_clear(si);
             var windowid = $(this).attr("indexId");
             var windowname = $(this).attr("name");
             load_saved_in_window(windowid,windowname);
-        };
+        // };
     });
 
     $(document).on('click','button.clear',function()
@@ -246,10 +247,18 @@ $(function () {
                 backdrop:'static'
         });
         $('#history').modal('show');
+
+        current_time_frequency = time_frequency;
+        if (si.length > 1) {
+            current_time_frequency = si[1];
+        };
+
+        console.log(current_time_frequency);
+
         for (var i = series_info.length - 1; i >= 0; i--) {
             if (series_info[i].length > 0)
             {
-                history(history_container,series_info[0],"chart_title",60,max_display_count,historychart);
+                history(history_container,series_info[0],"History",current_time_frequency,max_display_count,historychart);
                 break;
             }
         };
@@ -265,14 +274,15 @@ $(function () {
         };
     });
 
-    var spanclick = 0;
+    // var spanclick = 0;
 
     $(document).on('click','span.glyphicon-remove',function()
     {
-        spanclick = 1;
+        // spanclick = 1;
         indexId = $(this).attr("indexId");
         info = 'Window:' + $('button[indexId=' + indexId + ']').attr("name")
-
+        
+        
         if (confirm('You want to delete ' + info)) {
             // href = '/chart/window/delete/' + indexId;
             // window.location.href=href;
@@ -288,14 +298,25 @@ $(function () {
                 {
                     alert('delete failed');
                 }
-                spanclick = 0;
+                // spanclick = 0;
             })
         }
-        else
-        {
-            spanclick = 0;
-        }
+        // else
+        // {
+        //     spanclick = 0;
+        // }
+        return false;
+
     });
+
+    // $(document).on('click','a[tabindex=0]',function()
+    // {
+    //     $('a[tabindex=0][role=button]').popover({});
+    //     $('a[tabindex=0][role=button]').popover('show');
+
+    // });
+
+    
 
 });
 </script>
@@ -311,4 +332,5 @@ $(function () {
 {% include 'chart/index.html' %}
 {% include 'chart/morehistory.html' %}
 {% include 'saving.html' %}
+{% include 'chart/change_frequency.html' %}
 {% endblock %}

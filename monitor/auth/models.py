@@ -6,22 +6,23 @@ from werkzeug.security import generate_password_hash, \
 
 class User(db.Model):
 
-	userid = db.Column(db.Integer, primary_key=True)
+	userid = db.Column(db.Integer, primary_key=True,autoincrement=False)
 	username = db.Column(db.String(80), unique=True)
-	pw_hash = db.Column(db.String(200))
+	# pw_hash = db.Column(db.String(200))
 	role = db.Column(db.Integer)
-	loginpermission = db.Column(db.Integer)
-	email = db.Column(db.String(120), unique=True)
+	# loginpermission = db.Column(db.Integer)
+	email = db.Column(db.String(120))
 	windows = db.relationship('Window',backref='owner',lazy = 'dynamic')
 	pages = db.relationship('Page',backref='owner', lazy='dynamic')
 	reports = db.relationship('Report',backref='owner',lazy='dynamic')
 	schedules = db.relationship('Emailschedule',backref='owner',lazy='dynamic')
 
-	def __init__(self, username, password,role,loginpermission,email):
+	def __init__(self,userid, username, role,email):
+		self.userid = userid
 		self.username = username
-		self.set_password(password)
+		# self.set_password(password)
 		self.role = role
-		self.loginpermission = loginpermission
+		# self.loginpermission = loginpermission
 		self.email = email
 
 	def is_authenticated(self):
@@ -40,11 +41,11 @@ class User(db.Model):
 			return str(self.userid)  # python 3
 
 
-	def set_password(self, password):
-		self.pw_hash = generate_password_hash(password)
+	# def set_password(self, password):
+	# 	self.pw_hash = generate_password_hash(password)
 
-	def check_password(self, password):
-		return check_password_hash(self.pw_hash, password)
+	# def check_password(self, password):
+	# 	return check_password_hash(self.pw_hash, password)
 
 
 	def __repr__(self):

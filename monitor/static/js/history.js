@@ -31,7 +31,7 @@ function history(container,current_series_info,chart_title,time_frequency,max_di
         var option = {  
                url: '/chart/interval/',  
                type: 'POST',  
-               data: JSON.stringify({'current_series_info':current_series_info,'time_till':Math.round(e.max/1000),'time_since':Math.round(e.min/1000)}),  
+               data: JSON.stringify({'current_series_info':current_series_info,'time_till':Math.round(e.max/1000),'time_since':Math.round(e.min/1000),'time_frequency':time_frequency}),  
                dataType: 'json', 
                contentType : 'application/json', 
                success: function (data) {
@@ -104,8 +104,19 @@ function history(container,current_series_info,chart_title,time_frequency,max_di
                     rangeSelector : {
                         // selected : 1,
                         inputEnabled: $(container_selector).width() > 480,
-                        selected : 3,
+                        selected : 0,
                         buttons: [
+
+                            {
+                                type:'minute',
+                                count:10,
+                                text:'10m'
+                            },
+                            {
+                                type:'minute',
+                                count:30,
+                                text:'30m'
+                            },
                             {
                                 type:'hour',
                                 count:1,
@@ -134,7 +145,7 @@ function history(container,current_series_info,chart_title,time_frequency,max_di
                         events : {
                             afterSetExtremes : afterSetExtremes
                         },
-                        minRange: 9000 * 1000
+                        minRange: 600 * 1000
                     },
                     yAxis: {
                         // title: {

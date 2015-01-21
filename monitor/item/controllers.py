@@ -15,8 +15,66 @@ from config import AUTOSCALE_COMMAND_PATH ,EMAIL_NOTIFICATION_COMMAND_PATH,AUTOS
 from flask.ext.principal import Permission, RoleNeed
 admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
 
+from monitor.zabbix.models import Zabbixhosts,Zabbixinterface
+
 
 mod_item = Blueprint('item', __name__, url_prefix='/item')
+
+from flask.views import View
+
+class ItemTypeListView(View):
+
+	def __init__(self,template_name,objectytpe,objectname):
+		self.template_name = template_name
+		self.objecttype = objectytpe
+		self.objectname = objectname
+
+	def render_template(self,context):
+		return render_template(self.template_name,**context)
+
+	def dispatch_request(self,objectid):
+		objects = self.objecttype.query.get(objectid).itemtypes.all()
+		context = {'itemtype':objects,'name':self.objectname}
+		return self.render_template(context)
+
+class HostItemView(View):
+
+	def __init__(self,template_name):
+		self.template_name = template_name
+
+	def render_template(self,context):
+		return render_template(self.template_name,**context)
+
+	def dispatch_request(self,hostid):
+		items = Host.query.get(hostid).items.all()
+		context = {'objects':items,'name':Host.query.get(hostid).hostname}
+		return self.render_template(context)
+
+class HostListView(View):
+
+	def __init__(self,template_name,objectytpe,objectname):
+		self.template_name = template_name
+		self.objecttype = objectytpe
+		self.objectname = objectname
+
+	def render_template(self,context):
+		return render_template(self.template_name,**context)
+
+	def dispatch_request(self,objectid):
+		host_monitor = self.objecttype.query.get(objectid).hosts.all()
+		host = host_with_zabbix_data(host_monitor)
+		context = {'host':host,'name':self.objectname}
+		return self.render_template(context)
+
+
+
+mod_item.add_url_rule('/host/itemtype/<objectid>',view_func=ItemTypeListView.as_view('host_it',template_name='item/it.html',objectytpe=Host,objectname='Host'))
+mod_item.add_url_rule('/host/item/<hostid>',view_func=HostItemView.as_view('host_i',template_name='item/item.html'))
+mod_item.add_url_rule('/service/itemtype/<objectid>',view_func=ItemTypeListView.as_view('service_it',template_name='item/it.html',objectytpe=Service,objectname='Service'))
+mod_item.add_url_rule('/service/host/<objectid>',view_func=HostListView.as_view('service_host',template_name='item/hostall.html',objectytpe=Service,objectname='Service'))
+mod_item.add_url_rule('/area/itemtype/<objectid>',view_func=ItemTypeListView.as_view('area_it',template_name='item/it.html',objectytpe=Area,objectname='Area'))
+mod_item.add_url_rule('/area/host/<objectid>',view_func=HostListView.as_view('area_host',template_name='item/hostall.html',objectytpe=Area,objectname='Area'))
+
 
 
 @mod_item.route('/')
@@ -24,7 +82,8 @@ mod_item = Blueprint('item', __name__, url_prefix='/item')
 def mainboard():
 	area = Area.query.all()
 	service = Service.query.all()
-	host = Host.query.all()
+	host_monitor = Host.query.all()
+	host = host_with_zabbix_data(host_monitor)
 	itemtype = Itemtype.query.all()
 	trigger = Trigger.query.all()
 	return render_template("item/main.html",area=area,service=service,host=host,itemtype=itemtype,trigger=trigger)
@@ -57,10 +116,10 @@ def area():
 			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
-			flash(str(e),'error')
+			flash(str(e),'danger')
 			return redirect(url_for('item.area'))
 		else:
-			flash('You add an area')
+			flash('You add an area','success')
 			return redirect(url_for('item.mainboard'))
 		finally:
 			db.session.remove()		
@@ -77,9 +136,9 @@ def areadelete(areaid):
 		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
-		flash(str(e),'error')
+		flash(str(e),'danger')
 	else:
-		flash('you delete an area')
+		flash('you delete an area','success')
 	finally:
 		db.session.remove()
 
@@ -111,16 +170,38 @@ def service():
 			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
-			flash(str(e),'error')
+			flash(str(e),'danger')
 			db.session.remove()
 			return redirect(url_for('item.service'))
 		else:
-			flash('You add a service')
+			flash('You add a service','success')
 			db.session.remove()
 			return redirect(url_for('item.mainboard'))
 			
 	# return render_template('item/service.html')
 	return render_template('item/service.html',area = area)
+
+@mod_item.route('/service/host_json/<serviceid>',methods=['POST','GET'])
+@login_required
+def service_host_json(serviceid):
+	service = Service.query.get(serviceid)
+	if service == None:
+		return json.dumps(0)
+	host_monitor = service.hosts.all()
+	host = []
+	for h in host_monitor:
+		tmp = {}
+		tmp['hostid'] = h.hostid
+		tmp['hostname'] = h.hostname
+		zh = Zabbixhosts.query.get(h.hostid)
+		zi = Zabbixinterface.query.filter_by(hostid=h.hostid).first()
+		tmp['ip'] = zi.ip
+		tmp['available'] = zh.available
+		tmp['error'] = zh.error
+		host.append(tmp)
+	if len(host) == 0:
+		return json.dumps(0)
+	return json.dumps({'host':host,'indexId':service.serviceid,'servicename':service.servicename})
 
 @mod_item.route('/elbforarea/', methods=['GET', 'POST'])
 @login_required
@@ -147,9 +228,9 @@ def servicedelete(serviceid):
 		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
-		flash(str(e),'error')
+		flash(str(e),'danger')
 	else:
-		flash('you delete a service type')
+		flash('you delete a service type','success')
 	finally:
 		db.session.remove()
 
@@ -177,10 +258,10 @@ def host():
 			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
-			flash(str(e),'error')
+			flash(str(e),'danger')
 			return redirect(url_for('item.host'))
 		else:
-			flash('You add a host')
+			flash('You add a host','success')
 			return redirect(url_for('item.mainboard'))
 		finally:
 			db.session.remove()		
@@ -196,9 +277,9 @@ def hostdelete(hostid):
 		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
-		flash(str(e),'error')
+		flash(str(e),'danger')
 	else:
-		flash('You delete a host')
+		flash('You delete a host','success')
 	finally:
 		db.session.remove()
 
@@ -229,11 +310,11 @@ def itemtype():
 		except Exception, e:
 			zabbix.rollback()
 			db.session.rollback()
-			flash(str(e),'error')
+			flash(str(e),'danger')
 			return redirect(url_for('item.itemtype'))
 			# return redirect(url_for('item.itemtype',areas=areas,services=services,hosts=hosts,idts=idts))
 		else:
-			flash(' you add an item ')
+			flash(' you add an item ','success')
 			return redirect(url_for('item.mainboard'))
 		finally:
 			db.session.remove()		
@@ -262,9 +343,9 @@ def itemtypedelete(itemtypeid):
 	except Exception, e:
 		db.session.rollback()
 		zabbix.rollback()
-		flash(str(e),'error')
+		flash(str(e),'danger')
 	else:
-		flash('delete an item')
+		flash('delete an item','success')
 	# finally:
 	# 	db.session.remove()
 	
@@ -275,10 +356,9 @@ def itemtypedelete(itemtypeid):
 @login_required
 @admin_permission.require(http_exception=403)
 def trigger_action():
-	area = Area.query.all()
-	service = Service.query.all()
-	host = Host.query.all()
-	aws = Aws.query.all()
+	from monitor.chart.functions import result_for_index
+	index_result = {}
+	index_result = result_for_index()
 	idt = Itemdatatype.query.all()
 	actions = Action.query.all()
 
@@ -305,7 +385,7 @@ def trigger_action():
 		elif kinds == EMAILNOTIFICATION:
 			emailaddress = request.form.get('receivers')
 			if len(emailaddress) == 0:
-				flash('Emailaddress is empty', 'error')
+				flash('Emailaddress is empty', 'danger')
 				return redirect(url_for('item.trigger_action'))
 			command = EMAIL_NOTIFICATION_COMMAND_PATH + " '" + emailaddress + "'"
 
@@ -349,15 +429,15 @@ def trigger_action():
 			db.session.rollback()
 			zabbix.rollback()
 			# raise MonitorException('can not create calcitem trigger and action')
-			flash('can not create calcitem trigger and action' + str(e), 'error')
+			flash('can not create calcitem trigger and action' + str(e), 'danger')
 			return redirect(url_for('item.trigger_action'))
 		else:
-			flash('add calcitem trigger and action successfully')
+			flash('add calcitem trigger and action successfully','success')
 			return redirect(url_for('item.mainboard'))
 		finally:
 			db.session.remove()
 
-	return render_template('item/trigger_action.html',title='trigger',area=area,service=service,host=host,aws=aws,idt=idt,actions=actions)
+	return render_template('item/trigger_action.html',title='trigger',index_result=index_result,idt=idt,actions=actions)
 
 @mod_item.route('/trigger/delete/<triggerid>',methods=['GET','POST'])
 @login_required
@@ -383,9 +463,9 @@ def trigger_delete(triggerid):
 	except Exception, e:
 		db.session.rollback()
 		zabbix.rollback()
-		flash(str(e),'error')
+		flash(str(e),'danger')
 	else:
-		flash('delete a trigger')
+		flash('delete a trigger','success')
 	# finally:
 	# 	db.session.remove()
 	

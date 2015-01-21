@@ -1,7 +1,7 @@
 from monitor.item.models import Area,Service,Host,Aws,Itemtype,Item,Itemtype
 from monitor.chart.models import *
 from sqlalchemy.sql import func,union
-from monitor.zabbix.models import Zabbixhistory,Zabbixhistoryuint
+from monitor.zabbix.models import Zabbixhistory,Zabbixhistoryuint,Zabbixhosts
 import time,json,os
 from monitor import db
 from subprocess import call
@@ -103,8 +103,12 @@ def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
 		return result
 
 	#collect normal monitor items
+	hostids = []
 	for h in finalhost:
+		hostids.append(h.hostid);
 		for item in h.items.all():
+			if item.itemtype.aws != None:
+				continue
 			if result.has_key(item.itemtype_id):
 				result[item.itemtype_id]['items'].append(item.itemid)
 			else :
@@ -115,7 +119,7 @@ def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
 				result[item.itemtype_id]['items'] = [item.itemid]
 				result[item.itemtype_id]['time_frequency'] = itemtype.time_frequency
 	if len(result) != 0:
-		return result
+		return {'itemtype':result,'hostids':hostids}
 
 	# have no aws items
 	if len(area) == 0 and len(aws) == 0:
@@ -139,7 +143,7 @@ def get_all_itemtypes(area=[],service=[],host=[],aws=[]):
 				result[it.itemtypeid]['items'].append(i.itemid)
 			result[it.itemtypeid]['time_frequency'] = it.time_frequency
 
-	return result
+	return {'itemtype':result}
 
 ########################################################################################
 ###222222222222222222222222222222222222222222222222222222222222222222222222222222#######
@@ -621,9 +625,13 @@ def init_series_data(init_data,data,s_s,t_s,time_frequency,functiontype):
 		to_t = t_s/time_frequency*time_frequency
 		data_index = 0;
 
-		while from_t < to_t:
+		origin = from_t
 
+		last_value = None
+
+		while from_t < to_t:
 			if data_index < len(data) and from_t > data[data_index][4]:
+				last_value = data[data_index][functiontype]
 				data_index += 1
 				continue
 
@@ -633,15 +641,39 @@ def init_series_data(init_data,data,s_s,t_s,time_frequency,functiontype):
 				arr.append(int(tmp*1000))
 				arr.append(data[data_index][functiontype])
 				init_data.append(arr)
+				last_value = data[data_index][functiontype]
 				data_index += 1
 			else:
 				tmp = from_t
 				arr = []
 				arr.append(int(tmp*1000))
-				arr.append(None)
+				arr.append(last_value)
 				init_data.append(arr)
 
 			from_t += time_frequency
+
+
+		# while from_t < to_t:
+
+		# 	if data_index < len(data) and from_t > data[data_index][4]:
+		# 		data_index += 1
+		# 		continue
+
+		# 	if data_index < len(data) and from_t == data[data_index][4]:
+		# 		tmp = from_t
+		# 		arr = []
+		# 		arr.append(int(tmp*1000))
+		# 		arr.append(data[data_index][functiontype])
+		# 		init_data.append(arr)
+		# 		data_index += 1
+		# 	else:
+		# 		tmp = from_t
+		# 		arr = []
+		# 		arr.append(int(tmp*1000))
+		# 		arr.append(None)
+		# 		init_data.append(arr)
+
+		# 	from_t += time_frequency
 
 def update_series_data(update_data,data,s_s,functiontype):
 
@@ -753,7 +785,7 @@ def series_interval_result(item_list,s_s,t_s,ground):
 			result.append(arr)
 			index += 1
 
-	while index <= (g_t + 1):
+	while index <= (g_t + 1) :
 		time = index * ground * SECOND_TO_MILLI
 		arr = [time,None]
 		result.append(arr)
@@ -761,26 +793,27 @@ def series_interval_result(item_list,s_s,t_s,ground):
 
 	return result
 
-def interval_result(current_series_info,t_s,s_s):
+def interval_result(current_series_info,t_s,s_s,time_frequency):
 	result = []
 
 	for series in current_series_info:
 		item_list = series['series_item_list']
-		ground = Itemtype.query.filter_by(itemtypeid=series['series_type']).first().time_frequency
+		# ground = Itemtype.query.filter_by(itemtypeid=series['series_type']).first().time_frequency
+		ground = time_frequency
 		data_result = series_interval_result(item_list,s_s,t_s,int(ground))
 		name = str(series['series_name'])
 		tmp = {'data':data_result,'name':name}
 		result.append(tmp)
 	return result
 
-def history_result(current_series_info):
+def history_result(current_series_info,time_frequency):
 	result = []
 	t_s = int(time.time())
 	s_s = t_s - CHART_HISTORY_TIME
 
 	# print "t_s,s_s",t_s,s_s
 
-	return interval_result(current_series_info,t_s,s_s)
+	return interval_result(current_series_info,t_s,s_s,time_frequency)
 
 
 def update_result(series_info,time_frequency,time_till):
@@ -1036,6 +1069,27 @@ def send_specific_schedule(esid):
 	result = {'reports':report_info,'rvaddress':rvaddress,'subject':subject,'starttime':es.starttime,'frequency':es.frequency}
 	return json.dumps(result)
 
+
+def result_for_index():
+	area = Area.query.all()
+	service = Service.query.all()
+	service_result = []
+	for s in service:
+		tmp = {}
+		tmp['service'] = s
+		host_arr = []
+		for h in s.hosts.all():
+			h_info = {}
+			h_info['hostname'] = h.hostname
+			h_info['hostid'] = h.hostid
+			zh = Zabbixhosts.query.get(h.hostid)
+			h_info['available'] = zh.available
+			host_arr.append(h_info)
+		tmp['host'] = host_arr
+		service_result.append(tmp)
+	host = Host.query.all()
+	aws = Aws.query.all()
+	return {'area':area,'service':service_result,'host':host,'aws':aws}
 
 
 

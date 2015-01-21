@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block body %}
+<script type="text/javascript">
+$(document).ready(function(){
+	$('a[delete=1]').click(function()
+    {
+    	info = $(this).attr("info");
+    	if (confirm('You want to delete ' + info)) {
+    		href = $(this).attr("path")
+    		window.location.href=href;
+    	};
+    });
+});
+</script>
+
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">Items for host:  {{name}}</div>
+		<table class="table table-striped">
+			<thead>
+						<th>#</th>
+						<th>Name</th>
+						<th>Unit</th>
+						<th>DataType</th>
+						<th>DisplayType</th>
+						<th>Delete</th>
+					</thead>
+					<tbody>
+						{% for i in objects %}
+						<tr>
+							<td>{{i.itemid}}</td>
+							<td>{{i.itemtype.itemtypename}}</td>
+							<td>{{i.itemtype.itemunit}}</td>
+							<td>{{i.itemtype.zabbixvaluetype}}</td>
+							<td>{{i.itemtype.itemdatatype.itemdatatypename}}</td>
+							<td><a href="#" path="#" info="key:{{i.itemtype.itemtypename}}" delete="1">delete</a></td>
+						</tr>
+						{% endfor %}
+					</tbody>
+		</table>
+</div>
+{% endblock %}

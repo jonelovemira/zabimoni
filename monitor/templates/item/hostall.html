@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+{% block body %}
+<script type="text/javascript">
+$(document).ready(function(){
+	$('a[delete=1]').click(function()
+    {
+    	info = $(this).attr("info");
+    	if (confirm('You want to delete ' + info)) {
+    		href = $(this).attr("path")
+    		window.location.href=href;
+    	};
+    });
+});
+</script>
+
+<div class="panel panel-default">
+  <!-- Default panel contents -->
+  <div class="panel-heading">Host for {{name}}</div>
+		{% include 'item/hostindex.html' %}
+</div>
+{% endblock %}

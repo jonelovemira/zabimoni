@@ -6,7 +6,7 @@ from monitor.item.models import Area,Service,Host,Item,Itemtype,Normalitemtype,Z
 from monitor.chart.models import Series
 import boto.ec2
 import boto.ec2.elb
-from constants import *
+from config import HOST_GROUP_NAME,TEMPLATE_NAME,BY_ALL,BY_AREA,BY_SERVICE,BY_HOST
 from monitor.zabbix.models import Zabbixitems,Zabbixinterface,Zabbixhosts,loadSession
 from monitor.chart.functions import construct_random_str
 from monitor.MonitorException import *
@@ -742,6 +742,20 @@ def create_calcitem_trigger_action2(zabbix,formula,functiontype,triggervalue,tim
 	ttmp = trigger.add_action(action)
 	if ttmp != None:
 		db.session.add(ttmp)
+
+def host_with_zabbix_data(host_monitor):
+	host = []
+	for h in host_monitor:
+		tmp = {}
+		tmp['host'] = h
+		zh = Zabbixhosts.query.get(h.hostid)
+		zi = Zabbixinterface.query.filter_by(hostid=h.hostid).first()
+		tmp['ip'] = zi.ip
+		tmp['available'] = zh.available
+		tmp['error'] = zh.error
+		host.append(tmp)
+
+	return host
 
 # def test_create_calcitem_trigger_action():
 # 	zabbix = zabbix_api()

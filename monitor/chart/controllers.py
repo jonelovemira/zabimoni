@@ -5,6 +5,7 @@ from flask import Blueprint, request, render_template, \
 from flask.ext.login import login_required
 from monitor import db,app
 from monitor.item.models import Area,Service,Host,Aws,Itemtype,Item,Itemdatatype
+from monitor.zabbix.models import Zabbixhosts
 from monitor.chart.models import *
 from monitor.chart.functions import *
 from monitor.MonitorException import *
@@ -24,13 +25,11 @@ def mainboard():
 @mod_chart.route('/window/', methods=['GET', 'POST'])
 @login_required
 def window():
-	area = Area.query.all()
-	service = Service.query.all()
-	host = Host.query.all()
-	aws = Aws.query.all()
+	index_result = {}
+	index_result = result_for_index()
 	idt = Itemdatatype.query.all()
 	windows = g.user.windows.filter_by(type=0).all()
-	return render_template("chart/window.html",title='Window',area=area,service=service,host=host,aws=aws,idt=idt,windows=windows)
+	return render_template("chart/window.html",title='Window',index_result=index_result,idt=idt,windows=windows)
 	
 @mod_chart.route('/window/delete/<windowid>', methods=['GET', 'POST'])
 @login_required
@@ -49,13 +48,11 @@ def window_delete(windowid):
 @mod_chart.route('/page/', methods=['GET', 'POST'])
 @login_required
 def page():
-	area = Area.query.all()
-	service = Service.query.all()
-	host = Host.query.all()
-	aws = Aws.query.all()
+	index_result = {}
+	index_result = result_for_index()
 	idt = Itemdatatype.query.all()
 	pages = g.user.pages.all()
-	return render_template("chart/page.html",title='Page',area=area,service=service,host=host,aws=aws,idt=idt,pages=pages)
+	return render_template("chart/page.html",title='Page',index_result=index_result,idt=idt,pages=pages)
 
 @mod_chart.route('/page/delete/<pageid>', methods=['GET', 'POST'])
 @login_required
@@ -82,10 +79,8 @@ def report():
 @mod_chart.route('/addreport/', methods=['GET', 'POST'])
 @login_required
 def addreport():
-	area = Area.query.all()
-	service = Service.query.all()
-	host = Host.query.all()
-	aws = Aws.query.all()
+	index_result = {}
+	index_result = result_for_index()
 	idt = Itemdatatype.query.all()
 	if request.method == 'POST':
 		reportname = request.form['reportname']
@@ -100,15 +95,15 @@ def addreport():
 			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
-			flash(str(e),'error')
+			flash(str(e),'danger')
 			return redirect(url_for('chart.addreport'))
 		else:
-			flash('you add a report')
+			flash('you add a report','success')
 			return redirect(url_for('chart.report'))
 		finally:
 			db.session.remove()
 
-	return render_template('chart/report.html',title='report',area=area,service=service,host=host,aws=aws,idt=idt)
+	return render_template('chart/report.html',title='report',index_result=index_result,idt=idt)
 
 @mod_chart.route('/report/delete/<reportid>', methods=['GET', 'POST'])
 @login_required
@@ -119,9 +114,9 @@ def reportdelete(reportid):
 		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
-		flash(str(e),'error')
+		flash(str(e),'danger')
 	else:
-		flash(' you delete a report ')
+		flash(' you delete a report ','success')
 	finally:
 		db.session.remove()
 
@@ -164,9 +159,9 @@ def addschedule():
 			update_schedule_data_2_s3()
 		except Exception, e:
 			db.session.rollback()
-			flash(str(e),'error')
+			flash(str(e),'danger')
 		else:
-			flash('Save email schedule successfully')
+			flash('Save email schedule successfully','success')
 			return redirect(url_for('chart.report'))
 		finally:
 			db.session.remove()
@@ -184,9 +179,9 @@ def scheduledelete(emailscheduleid):
 		update_schedule_data_2_s3()
 	except Exception, e:
 		db.session.rollback()
-		flash(str(e),'error')
+		flash(str(e),'danger')
 	else:
-		flash('you delete a schedule')
+		flash('you delete a schedule','success')
 	finally:
 		db.session.remove()
 
@@ -214,7 +209,7 @@ def history():
 		time_frequency = request_data['time_frequency']
 		for series in current_series_info:
 			if current_series_info[0].has_key('series_item_list'):
-				data_result = history_result(current_series_info)
+				data_result = history_result(current_series_info,time_frequency)
 				y_title = get_init_y_title(current_series_info)
 				result = {'data':data_result,'y_title':y_title}
 				return json.dumps(result)
@@ -228,10 +223,11 @@ def interval():
 		current_series_info = request_data['current_series_info']
 		time_since = request_data['time_since']
 		time_till = request_data['time_till']
+		time_frequency = request_data['time_frequency']
 
 		for series in current_series_info:
 			if current_series_info[0].has_key('series_item_list'):
-				data_result = interval_result(current_series_info,int(time_till),int(time_since))
+				data_result = interval_result(current_series_info,int(time_till),int(time_since),time_frequency)
 				y_title = get_init_y_title(current_series_info)
 				result = {'data':data_result,'y_title':y_title}
 				return json.dumps(result)

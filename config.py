@@ -46,7 +46,7 @@ AUTOSCALE_COMMAND_PATH = basedir + '/autoscale_group.py'
 EMAIL_NOTIFICATION_COMMAND_PATH = basedir + '/sendemail'
 
 # chart init timelength in seconds
-CHART_INIT_TIME = 86400
+CHART_INIT_TIME = 3600
 
 # chart history timelength in seconds
 CHART_HISTORY_TIME = 2592000
@@ -63,5 +63,38 @@ EMAILNOTIFICATION = 1
 SQLALCHEMY_BINDS = {
 	'zabbix': 'mysql://zabbix:zabbix@127.0.0.1/zabbix'
 }
+
+# host group name
+HOST_GROUP_NAME = 'AWS servers'
+
+# template name
+TEMPLATE_NAME = 'Template OS Linux'
+
+# zabbix value type
+NUMERIC_FLOAT = 0
+CHARACTER = 1
+LOG = 2
+NUMERIC_UNSIGNED = 3
+TEXT = 4
+
+# current server ip
+CURRENT_SERVER_IP = '192.168.221.130'
+
+# generate report script path
+GENERATE_REPORT_SCRIPT_PATH = '/home/jone/flask_project/monitor-0.3.6/'
+
+# kinds of adding itemtype
+BY_ALL = 1
+BY_AREA = 2
+BY_SERVICE = 3
+BY_HOST = 4
+
+# Authorization Server
+AUTHORIZATION_SERVER = 'jp.ops-beta.tplinkcloud.com'
+AUTHORIZATION_VIEW = '/auth'
+AUTHORIZATION_PROTOCAL = 'https://'
+
+# Deploy in local or not
+IN_LOCAL = True
 
 

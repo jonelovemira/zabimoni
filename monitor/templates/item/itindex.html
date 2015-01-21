@@ -1,0 +1,22 @@
+<table class="table table-striped">
+	<thead>
+		<th>#</th>
+		<th>Name</th>
+		<th>Unit</th>
+		<th>DataType</th>
+		<th>DisplayType</th>
+		<th>Delete</th>
+	</thead>
+	<tbody>
+		{% for it in itemtype %}
+		<tr>
+			<td>{{it.itemtypeid}}</td>
+			<td>{{it.itemtypename}}</td>
+			<td>{{it.itemunit}}</td>
+			<td>{{it.zabbixvaluetype}}</td>
+			<td>{{it.itemdatatype.itemdatatypename}}</td>
+			<td><a href="#" path="/item/itemtype/delete/{{it.itemtypeid}}" info="key:{{it.itemtypename}}" delete="1">delete</a></td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>

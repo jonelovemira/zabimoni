@@ -8,7 +8,7 @@ from monitor.auth.models import User
 
 from monitor.item.models import Area,Service,Host,Item,Itemtype,Aws,Itemdatatype,Normalitemtype,Zbxitemtype
 import boto.ec2
-from constants import *
+
 from monitor.zabbix.models import Zabbixitems,Zabbixhosts,loadSession
 
 from monitor.item.functions import add_update_host
@@ -22,7 +22,7 @@ from crontab import CronTab
 
 from boto.s3.connection import S3Connection
 from tempfile import NamedTemporaryFile
-from config import S3_BUCKET_NAME,XML_EXPORT_PATH
+from config import S3_BUCKET_NAME,XML_EXPORT_PATH,NUMERIC_FLOAT ,CHARACTER ,LOG,NUMERIC_UNSIGNED ,TEXT
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -409,11 +409,11 @@ def init_itemtype(it_keys=[]):
 
 if __name__ == '__main__':
 
-	u = User.query.filter_by(username='root').first()
-	if u == None:
-		u = User('root','root',0,1,'root@localhost')
-		db.session.add(u)
-		db.session.commit()
+	# u = User.query.filter_by(username='root').first()
+	# if u == None:
+	# 	u = User('root','root',0,1,'root@localhost')
+	# 	db.session.add(u)
+	# 	db.session.commit()
 	
 
 	con = S3Connection()
