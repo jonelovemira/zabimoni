@@ -7,17 +7,16 @@
     <title>Monitor</title>
     {% endif %}
     <link href="{{url_for('static',filename='css/style.css')}}" rel="stylesheet"></link>
-    <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet" ></link>
+    <link href="{{url_for('static',filename='css/page.css')}}" rel="stylesheet"></link>
+    <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet" media="screen"></link>
     <link href="{{url_for('static',filename='css/bootstrap-theme.min.css')}}" rel="stylesheet" ></link>
     <link href="{{url_for('static',filename='css/carousel.css')}}" rel="stylesheet" ></link>
     <script type="text/javascript" src="{{url_for('static',filename='js/jquery-2.1.1.js')}}"></script>
     <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap.min.js')}}"></script>
-    <script src="{{url_for('static',filename='js/highstock.js')}}"></script>
-    <script src="{{url_for('static',filename='js/modules/exporting.js')}}"></script>
-
-<script src="{{url_for('static',filename='js/create_chart.js')}}"></script>
-<script src="{{url_for('static',filename='js/history.js')}}"></script>
-<script src="{{url_for('static',filename='js/save_load_refresh.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/bootstrapValidator.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/window_base.js')}}"></script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -26,7 +25,7 @@
 <body>
 
 
-<div class="navbar navbar-default navbar-static-top page" role="navigation">
+<div class="navbar navbar-default navbar-fixed-top page" role="navigation">
         <div class="container">
             <div class="navbar-header">
                 <a class="navbar-brand" href="{{ url_for('index') }}">Monitor</a>
@@ -48,321 +47,183 @@
         </div>
 </div>
 
-
-
-
-
-
-
 <script type="text/javascript">
-$(function () {
+$(function()
+{
+    //global variable
+    var current_window_index = null;
+    var nine_charts = {};
 
-    var series_info;
-    var last_value;
-    var is_init_empty;
-    var time_frequency;
-    var check_result;
-    var current_window_index;
-    var callbacks;
-    var max_display_count;
-    var mychart = [];
-    var si = [];
-    var is_load_indexes;
+    //add chart button in page
+    add_chart_page_class = 'page';
+    add_chart_page_selector = 'button.' + add_chart_page_class;
 
+    add_chart_modal_class = 'addchart';
+    add_chart_modal_selector = 'button.' + add_chart_modal_class;
 
-    init_local();
-    load_indexes();
-    load_first();
+    maintable_class = 'maintable';
+    maintable_selector = 'div.' + maintable_class;
 
+    jumbotron_class = 'jumbotron';
+    jumbotron_selector = 'div.' + jumbotron_class;
 
-    ///////////////////////////////////////////////////////////////////
-    ///************initiate local variable********************
+    button_setting_class = 'setting';
+    button_setting_selector = 'button.' + button_setting_class;
+    button_remove_class = 'remove';
+    button_remove_selector = 'button.' + button_remove_class;
 
-    function init_local()
+    chart_container_class = 'chartinpage';
+    chart_container_selector = 'div.' + chart_container_class ;
+
+    display_chart_modal_selector = '#myModal';
+
+    var f = new window_base();
+
+    // var page_table_dom = $(maintable_selector).clone();
+    // var page_table_chartcontainer = [];
+    // clone_page_table_chartcontainer();
+
+    // function clone_page_table_chartcontainer()
+    // {
+    //     $(chart_container_selector).each(function(i,d)
+    //     {
+    //         page_table_chartcontainer.push($(this).clone());
+    //     })
+    // }
+
+    $(document).on('click',add_chart_page_selector,function()
     {
-        series_info = [];
-        last_value=[];
-        is_init_empty=[];
-        time_frequency = 60;
-        check_result = {};
-        current_window_index = -1;
-        max_display_count = 300;
-        mychart = [];
-        last_update_time = [];
-
-        for (var i = 8; i >= 0; i--) {
-            var arr = [];
-            series_info.push(arr);
-            last_value.push(arr.concat());
-            is_init_empty.push(arr.concat());
-            last_update_time.push(arr.concat());
-            var tmp;
-            mychart.push(tmp);
-          
-        };
-        si = [];
-        si.push(tmp);
-        callbacks = $.Callbacks();
-        is_load_indexes = 0;
-    }
-    function init_clear(si)
-    {
-        for (var i = 8; i >= 0; i--) {
-            sortId = i ;
-            $('div[container=windowContainer]').empty();
-            if (mychart[sortId] != undefined) {
-                mychart[sortId].destroy();
-                mychart[sortId] = null;
-            };
-            if (si[0] != undefined) {
-                clearInterval(si[0]);
-            };
-            if (si.length > 1) {
-                si[1] = null;
-            };
-        };
-        init_local();
-        // si = [];
-        // var tmp;
-        // si.push(tmp);
-        si[0] = undefined;
-    }
-    function load_first()
-    {
-        p = $('button[class="btn btn-sm btn-default savedListItemButton"]').first();
-        if (p != undefined) {
-            pageid = p.attr("indexId");
-            pagename = p.attr("name");
-            load_saved_in_page(pageid,pagename);
-        };
-    }
-    ///**********end of initiate***************
-    //////////////////////////////////////////////////////////////////
-
-    //////////////////////////////////////////////////////////////////
-    // normal function
-    function create_new_series(series_info,sortId,check_result,type,item_list,series_name)
-    {
-            // console.log("create_new_series",series_info);
-            var series_info_item = {};
-            series_info_item['area_list'] = check_result['area'];
-            series_info_item['service_list'] = check_result['service'];
-            series_info_item['host_list'] = check_result['host'];
-            series_info_item['aws_list'] = check_result['aws'];
-            series_info_item['series_type'] = type;
-            series_info_item['series_item_list'] = item_list;
-            series_info_item['series_name'] = series_name;
-            series_info[sortId].push(series_info_item);
-    }
-
-    function refresh_page()
-    {
-        $('div[container="col-lg-4 page"]').empty();
-        $('button.morehistory').remove();
-        for (var i = 0; i < 9; i++) {
-            var htm_tag = "<button class='btn btn-primary btn-lg center-block page' sortId='" + i + "'>Add chart</button>";
-            $('div[container="col-lg-4 page"][sortId="' + i + '"]').append(htm_tag);
-        };
-    }
-
-    function load_saved_in_page(pageid,pagename)
-    {
-        if (pageid == undefined) {
-            return;
-        };
-        init_clear(si);
-        refresh_page();
-        // console.log("savedListItemButton",si);
-        $.getJSON('/chart/load/pageinfo',{pageid:pageid},function(data)
-        {
-            //console.log(data);
-            series_info = data['window_data'];
-
-            class_name = 'col-lg-4 page';
-            for (var i = data.window_data.length - 1; i >= 0; i--) {
-                if (data.window_data[i].length > 0) {
-                    create_chart(class_name,i,series_info,pagename + ' ' + (i+1),0,time_frequency,null,max_display_count,mychart,si,60);
-                };
-            };
-        });
-    }
-    //////////////////////////////////////////////////////////////////
-
-
-    //////////////////////////////////////////////////////////////////
-    ///********register of click callbacks
-    
-
-
-    $(document).on('click','button.itemtype',function()
-    {
-            // console.log("item_type");
-        var value = $(this).attr('value');
-        var name = $(this).attr('name');
-        var itemtypeid = $(this).attr('itemtypeid');
-        var display_name = generate_display_name(name,check_result);
-        value = value.split('@');
-        // time_frequency_tmp = parseInt($(this).attr('time_frequency'),10);
-        // if (time_frequency_tmp < time_frequency) {
-        //     time_frequency = time_frequency_tmp;
-        // };
-
-        $('div[class=chooseresult]').append('<label class="chooseditem">'+display_name+';</label>');
-
-        create_new_series(series_info,current_window_index,check_result,itemtypeid,value,display_name);
-        $(this).attr("disabled","disabled");
-    });
-
-
-    
-    $(document).on('click','button.addchart',function()
-    {
-        $('#myModal').modal('hide');
-        sortId = current_window_index;
-        class_name = 'col-lg-4 page';
-        create_chart(class_name,sortId,series_info, (current_window_index - '0') + 1 ,0,time_frequency,callbacks,max_display_count,mychart,si,60);
-    });
-
-    $(document).on('click','button.saveButton',function()
-    {
-        var pagename = $("input[id='savetext']").val();
-        if (0 == pagename.length) {
-            alert("Saved page name cannot be empty");
-        }
-        else
-        {
-            $('#forsaving').modal({
-                keyboard: false
-            });
-            $('#forsaving').modal('show');
-            save_page_chart(pagename,series_info);
-        }
-    });
-
-    $(document).on('click','button.clear',function()
-    {
-        init_clear(si);
-        refresh_page();
-    });
-
-    $(document).on('click','button.savedListItemButton',function()
-    {
-        // if (spanclick == 0) {
-        var pageid = $(this).attr("indexId");
-        var pagename = $(this).attr("name");
-        load_saved_in_page(pageid,pagename);
-        // };
-    });
-
-    $(document).on('click','button.center-block.page',function()
-    {
+        console.log("add_chart_page_selector");
         current_window_index = $(this).attr("sortId");
-        $('div[class=chooseresult]').empty();
-        $('button.itemtype').removeAttr("disabled");
-        // console.log()
-        $('#myModal').modal({
+
+        $(display_chart_modal_selector).modal({
             keyboard: false
         });
-        $('#myModal').modal('show');
-        // console.log(current_window_index);
+        $(display_chart_modal_selector).modal('show');
     });
 
-    var historychart;
-    var history_container = 'history';
+    
 
-    $(document).on('click','button.morehistory',function()
+    $(document).on('click',add_chart_modal_selector,function()
     {
-        var sortId = $(this).attr("sortId");
-        var si_arr = [];
-        var tmp;
-        si_arr.push(tmp);
 
-        $('#history').modal({
-                keyboard: false,
-                backdrop:'static'
+        console.log("add_chart_modal_selector");
+        $(display_chart_modal_selector).modal('hide');
+        var selected_metric_result;
+        var chart_config;
+
+        selected_metric_result = jQuery.extend(true, {}, f.get_selected_metric_result());
+        chart_config = jQuery.extend(true, {}, f.get_chart_config());
+
+        chart_config['container_class'] = chart_container_class;
+        chart_config['container_selector'] = 'div.' + chart_container_class + '[sortId="' + current_window_index + '"]';
+
+        var local_display_chart = new chart();
+        local_display_chart.set_selected_metrics(selected_metric_result);
+        local_display_chart.set_chart_config(chart_config);
+        local_display_chart.clear_chart();
+        local_display_chart.set_highchart();
+
+        // delete nine_charts[current_window_index];
+        clear_old_by_index(current_window_index);
+
+        nine_charts[current_window_index] = {};
+        nine_charts[current_window_index]['chart'] = local_display_chart;
+        nine_charts[current_window_index]['selected_metric_result'] = selected_metric_result;
+        nine_charts[current_window_index]['chart_config'] = chart_config;
+        // nine_charts[current_window_index] = local_display_chart;
+        // console.log(local_display_chart);
+        local_display_chart.create_chart();
+        // display_chart.
+        // console.log(nine_charts);
+
+    });
+
+    function clear_old_by_index(sortId)
+    {
+        if (nine_charts[sortId] != undefined) {
+            if (nine_charts[sortId]['chart'] != undefined) {
+                nine_charts[sortId]['chart'].clear_chart();
+            };
+        };
+        
+        delete nine_charts[sortId];
+    }
+
+    $(document).on('click',button_setting_selector,function()
+    {
+        var sortId = $(this).closest('div.page').attr("sortId");
+        // console.log(sortId);
+        current_window_index = sortId;
+
+        if (nine_charts[current_window_index] != undefined) {
+            f.set_smr_cc(nine_charts[current_window_index]['selected_metric_result'],nine_charts[current_window_index]['chart_config']);
+        };
+
+        $(display_chart_modal_selector).modal({
+            keyboard: false
         });
-        $('#history').modal('show');
-        // for (var i = series_info.length - 1; i >= 0; i--) {
-        //     if (series_info[i].length > 0)
-        //     {
-                
-        //         break;
-        //     }
-        // };
-
-        if (series_info[sortId].length > 0) {
-            history(history_container,series_info[sortId],"chart_title",60,max_display_count,historychart);
-        };
-
+        $(display_chart_modal_selector).modal('show');
     });
 
-    $('#history').on('hidden.bs.modal',function(e)
+    $(document).on('click',button_remove_selector,function()
     {
-        $('div[container="' + history_container +'"]').empty();
-        if (historychart != undefined) {
-            historychart.destroy();
-            historychart = null;
+        var sortId = $(this).closest('div.page').attr("sortId");
+        clear_old_by_index(sortId);
+        clear_specific_chart(sortId);
+        add_sepecific_template(sortId);
+    })
+
+    $(display_chart_modal_selector).on('shown.bs.modal', function () {
+        if (f.get_display_chart() != undefined) {
+            f.update_call();
         };
     });
-    
 
-    // var spanclick = 0;
-
-    $(document).on('click','span.glyphicon-remove',function()
+    $(display_chart_modal_selector).on('hidden.bs.modal',function()
     {
-        // spanclick = 1;
-        indexId = $(this).attr("indexId");
-        info = 'Page:' + $('button.savedListItemButton[indexId=' + indexId + ']').attr("name")
-
-        if (confirm('You want to delete ' + info)) {
-            // href = '/chart/window/delete/' + indexId;
-            // window.location.href=href;
-            $.getJSON('/chart/page/delete/' + indexId,function(data)
-            {
-
-                if (data == 1) {
-                    $('button.savedListItemButton[indexId=' + indexId + ']').remove();
-                    init_clear(si);
-                    refresh_page();
-                    load_first();
-                }
-                else
-                {
-                    alert('delete failed');
-                }
-                // spanclick = 0;
-            })
-        }
-        // else
-        // {
-        //     spanclick = 0;
-        // }
-        return false;
+        if (f.get_display_chart() != undefined) {
+            f.get_display_chart().clear_chart();
+        };
     });
-    
-    ///************end of register********
-    //////////////////////////////////////////////////////////////////
 
-})
+    function clear_specific_chart(sortId)
+    {
+
+        var remove_selector = 'div.' + chart_container_class + '[sortId="' + sortId + '"]';
+
+        $(remove_selector).remove();
+    }
+
+    function add_sepecific_template(sortId)
+    {
+        var add_selector = 'div.col-lg-4.page.text-center[sortId="' + sortId + '"]';
+        
+        // <div container='col-lg-4 page' class='chartinpage' sortId='{{i}}'><button class='btn btn-primary btn-lg center-block page' sortId='{{i}}' style="margin-top:25%">Add chart</button></div>
+        var result_str = '';
+        result_str += '<div container="col-lg-4 page" class="chartinpage" sortId="' + sortId + '">';
+        result_str += '<button class="btn btn-primary btn-lg center-block page" sortId="' + sortId + '" style="margin-top:25%">Add chart</button>';
+        result_str += '</div>';
+
+        $(add_selector).append(result_str);
+    }
+
+    
+
+
+});
+
 </script>
 
-
 <div class="jumbotron">
-{% include 'chart/save.html' %}
-<div class="form-inline" udf="savedlist" style="padding-bottom:10px;">
-    <label>History Saved:</label>
-    {% for p in pages%}
-        <button class="btn btn-sm btn-default savedListItemButton" indexId="{{p.pageid}}" name="{{p.pagename}}">{{p.pagename}}<span class="glyphicon glyphicon-remove" aria-hidden="true" style="margin-left:10px" indexId="{{p.pageid}}"></span></button>
-    {% endfor %}
-</div>
 <div class="maintable">
 {% include 'chart/pagetable.html' %}
 </div>
+</div>
 
-{% include 'chart/morehistory.html' %}
 
 <!-- Modal -->
-<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal fade bs-example-modal-lg" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
   <div class="modal-dialog page">
     <div class="modal-content">
       <div class="modal-header">
@@ -370,7 +231,7 @@ $(function () {
         <h4 class="modal-title" id="myModalLabel">Choose monitor items</h4>
       </div>
       <div class="modal-body">
-        {% include 'chart/index.html'%}
+        {% include 'chart/window_base.html'%}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -380,21 +241,7 @@ $(function () {
   </div>
 </div>
 
-<div class="modal fade bs-example-modal-sm" tabindex="-1" id="forsaving" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content">
-        <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <h4 class="modal-title" id="myModalLabel">For save</h4>
-              </div>
-              <div class="modal-body">
-                saving chart ...
-              </div>
-        </div>
-    </div>
-  </div>
-</div>
+
 
 
 </body>

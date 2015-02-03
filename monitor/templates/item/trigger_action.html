@@ -249,7 +249,7 @@ $(function () {
         <label class="col-sm-2 control-label">asg config</label>
         <div class="col-sm-3">
             <select class="form-control" name="areaid">
-                {% for a in area %}
+                {% for a in index_result.area %}
                     <option value="{{a.areaid}}" bring="{{a.areaname}}">{{a.areaname}}</option>
                 {% endfor %}
             </select>

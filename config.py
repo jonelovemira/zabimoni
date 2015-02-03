@@ -42,6 +42,13 @@ S3_SCHEDULE_FOLDER = 'monitor-server/schedule/'
 SCHEDULE_ALL_FILENAME = 'all'
 XML_EXPORT_PATH = 'monitor-server/monitor.xml'
 
+S3_MONITOR_BUCKET_NAME = 'ipcamera-monitor-alpha'
+S3_MONITOR_REPORT_FOLDER = AREA + '/' + 'report/'
+S3_MONITOR_SCHEDULE_FOLDER = AREA + '/' + 'schedule/'
+S3_MONITOR_SHEDULE_ALL_FILENAME = 'all'
+
+LOCAL_XML_EXPORT_PATH = basedir + '/monitor.xml'
+
 AUTOSCALE_COMMAND_PATH = basedir + '/autoscale_group.py'
 
 EMAIL_SNS_PATH = basedir + '/sendemail_sns.py'
@@ -102,5 +109,24 @@ IN_LOCAL = True
 
 # use SNS or not
 MAIL_USE_SNS = True
+
+
+# search config
+BY_GROUP_RESULT = 'by_group_result'
+PER_INSTANCE_RESULT = 'per_instance_result'
+TABLE_HEAD_GROUP_NAME = 'Group Name'
+TABLE_HEAD_METRIC_NAME = 'Metric Name'
+TABLE_HEAD_INSTANCE_NAME = 'Instance Name'
+TABLE_HEAD_IP = 'IP'
+BY_GROUP_TABLE_HEAD = [TABLE_HEAD_GROUP_NAME,TABLE_HEAD_METRIC_NAME]
+PER_INSTANCE_TABLE_HEAD = [TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_HEAD_IP,TABLE_HEAD_METRIC_NAME]
+
+# chart config
+FUNC_TYPE_COUNT = 0
+FUNC_TYPE_AVG = 1
+FUNC_TYPE_MAX = 2
+FUNC_TYPE_MIN = 3
+FUNC_TYPE_SUM = 3
+
 
 

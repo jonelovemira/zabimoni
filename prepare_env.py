@@ -22,7 +22,7 @@ from crontab import CronTab
 
 from boto.s3.connection import S3Connection
 from tempfile import NamedTemporaryFile
-from config import S3_BUCKET_NAME,XML_EXPORT_PATH,NUMERIC_FLOAT ,CHARACTER ,LOG,NUMERIC_UNSIGNED ,TEXT
+from config import S3_BUCKET_NAME,XML_EXPORT_PATH,NUMERIC_FLOAT ,CHARACTER ,LOG,NUMERIC_UNSIGNED ,TEXT,LOCAL_XML_EXPORT_PATH
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -416,129 +416,96 @@ if __name__ == '__main__':
 	# 	db.session.commit()
 	
 
-	con = S3Connection()
-	bucket = con.get_bucket(S3_BUCKET_NAME)
-	key = bucket.get_key(XML_EXPORT_PATH)
+	
+	key = None
+	try:
+		con = S3Connection()
+		bucket = con.get_bucket(S3_BUCKET_NAME)
+		key = bucket.get_key(XML_EXPORT_PATH)
+	except Exception, e:
+		key = None
+
+	tree = None
 	if key == None:
-		print 'can not load xml file in s3, use default env instead'
-		print 'process area'
-		init_area()
-		print 'process service'
-		init_service()
-
-		zabbix = zabbix_api()
-		try:
-			session = loadSession()
-			h = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
-			session.close()
-			if h == None:
-				result = zabbix.host_create(get_zabbix_server_ip() , '127.0.0.1' , ['AWS servers'], [])
-			else:
-				result = h.hostid
-			area = Area.query.filter_by(areaname=AREA).first()
-			service = Service.query.filter_by(servicename=SERVICE).first()
-			h = Host(result,get_zabbix_server_ip(),area,service)
-			print "hostid",result
-			db.session.add(h)
-			db.session.commit()
-		except Exception, e:
-			db.session.rollback()
-			zabbix.rollback()
-
-		if os.environ.get('aws_cron_command') is None:
-			aws_cron_command = os.path.abspath(os.path.dirname(__file__)) + '/aws_update.py'
-		else:
-			aws_cron_command = os.environ['aws_cron_command']
-
-		if os.environ.get('aws_cron_time') is None:
-			aws_cron_time = '0 */4 * * *'
-		else:
-			aws_cron_time = os.environ['aws_cron_time']
-
-		init_aws_update_crontab(aws_cron_command,aws_cron_time)
-
-		print 'process aws'
-		init_aws_item()
-		print 'process itemdatatype'
-		init_itemdatatype()
-		print 'process normalitemtype'
-		init_normalitemtype()
-		print 'process zbxitemtype'
-		init_zbxitemtype()
-		print 'process itemtype'
-		init_itemtype()
+		tree = ET.ElementTree(file=LOCAL_XML_EXPORT_PATH)
 	else:
 		print "get contents from s3"
 		f = NamedTemporaryFile(delete=False)
 		key.get_contents_to_filename(f.name)
+		print f.name
 		tree = ET.ElementTree(file=f.name)
-		root = tree.getroot()
-		services = root.findall('service')
-		names = []
-		for s in services:
-			names.append(s.attrib['servicename'])
 
-		itemtypes = root.findall('itemtype')
-		it_keys = []
-		for it in itemtypes:
-			it_services = it.findall('itservice')
-			it_s = []
-			for i_s in it_services:
-				it_s.append(i_s.attrib['servicename'])
+	if tree == None:
+		raise Exception('Cannot open xml config file')
 
-			it.attrib['services'] = it_s
-			it_keys.append(it.attrib)
+	root = tree.getroot()
+	services = root.findall('service')
+	names = []
+	for s in services:
+		names.append(s.attrib['servicename'])
 
+	itemtypes = root.findall('itemtype')
+	it_keys = []
+	for it in itemtypes:
+		it_services = it.findall('itservice')
+		it_s = []
+		for i_s in it_services:
+			it_s.append(i_s.attrib['servicename'])
+
+		it.attrib['services'] = it_s
+		it_keys.append(it.attrib)
+	
+	if key != None:
 		os.unlink(f.name)
 		
-		print 'process area'
-		init_area()
-		print 'process service'
-		init_service(names)
+	print 'process area'
+	init_area()
+	print 'process service'
+	init_service(names)
 
-		print 'process host'
-		zabbix = zabbix_api()
-		try:
-			session = loadSession()
-			h = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
-			session.close()
-			if h == None:
-				result = zabbix.host_create(get_zabbix_server_ip() , '127.0.0.1' , ['AWS servers'], [])
-			else:
-				result = h.hostid
-			area = Area.query.filter_by(areaname=AREA).first()
-			service = Service.query.filter_by(servicename=SERVICE).first()
-			h = Host(result,get_zabbix_server_ip(),area,service)
-			print "hostid",result
-			db.session.add(h)
-			db.session.commit()
-		except Exception, e:
-			db.session.rollback()
-			zabbix.rollback()
-
-		if os.environ.get('aws_cron_command') is None:
-			aws_cron_command = os.path.abspath(os.path.dirname(__file__)) + '/aws_update.py'
+	print 'process host'
+	zabbix = zabbix_api()
+	try:
+		session = loadSession()
+		h = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
+		session.close()
+		if h == None:
+			result = zabbix.host_create(get_zabbix_server_ip() , '127.0.0.1' , ['AWS servers'], [])
 		else:
-			aws_cron_command = os.environ['aws_cron_command']
+			result = h.hostid
+	
+		area = Area.query.filter_by(areaname=AREA).first()
+		service = Service.query.filter_by(servicename=SERVICE).first()
+		h = Host(result,get_zabbix_server_ip(),area,service)
+		print "hostid",result
+		db.session.add(h)
+		db.session.commit()
+	except Exception, e:
+		db.session.rollback()
+		zabbix.rollback()
 
-		if os.environ.get('aws_cron_time') is None:
-			aws_cron_time = '0 */4 * * *'
-		else:
-			aws_cron_time = os.environ['aws_cron_time']
+	if os.environ.get('aws_cron_command') is None:
+		aws_cron_command = os.path.abspath(os.path.dirname(__file__)) + '/aws_update.py'
+	else:
+		aws_cron_command = os.environ['aws_cron_command']
 
-		init_aws_update_crontab(aws_cron_command,aws_cron_time)
+	if os.environ.get('aws_cron_time') is None:
+		aws_cron_time = '0 */4 * * *'
+	else:
+		aws_cron_time = os.environ['aws_cron_time']
 
-		print 'process aws'
-		init_aws_item()
-		print 'process itemdatatype'
-		init_itemdatatype()
-		print 'process normalitemtype'
-		init_normalitemtype()
-		print 'process zbxitemtype'
-		init_zbxitemtype()
-		print 'process itemtype'
-		init_itemtype(it_keys)
+	init_aws_update_crontab(aws_cron_command,aws_cron_time)
 
+	print 'process aws'
+	init_aws_item()
+	print 'process itemdatatype'
+	init_itemdatatype()
+	print 'process normalitemtype'
+	init_normalitemtype()
+	print 'process zbxitemtype'
+	init_zbxitemtype()
+	print 'process itemtype'
+	init_itemtype(it_keys)
 
 
 

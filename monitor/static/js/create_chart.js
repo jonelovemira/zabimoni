@@ -9,7 +9,6 @@ function create_chart(container,sortId,series_info,chart_title,series_index,time
         };
         if (si[0] != undefined) {
             clearInterval(si[0]);
-                // console.log("cleared");
         };
     }
 
@@ -190,9 +189,9 @@ function create_chart(container,sortId,series_info,chart_title,series_index,time
                  });
         }
         var series_name = [];
-        // console.log("init");
+        //console.log(series_info[sortId]);
         var option = {  
-               url: '/chart/init/',  
+               url: '/chart/init2/',  
                type: 'POST',  
                data: JSON.stringify({'current_series_info':series_info[sortId],'time_frequency':time_frequency,'sortId':sortId}),  
                dataType: 'json', 
@@ -246,7 +245,7 @@ function create_chart(container,sortId,series_info,chart_title,series_index,time
         time_till = now;
         time_till = Math.floor(now/1000);
         var option = {  
-               url: '/chart/update/',  
+               url: '/chart/update2/',  
                type: 'POST',  
                data: JSON.stringify({'series_info':series_info,'time_frequency':time_frequency,'time_till':time_till}),  
                dataType: 'json', 

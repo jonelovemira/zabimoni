@@ -36,7 +36,7 @@ function find_all_checked(check_result)
         //find all area checked
         $("input[indextype=area]").each(function(i,d){
             // console.log("D.VALUE",d.value);
-            if ($(this).attr("checked") == 'checked'){
+            if (d.checked){
                 // console.log("D.VALUE",d.value);
                 current_area_id_list.push(d.value);
                 current_area_name_list.push(d.name);
@@ -45,7 +45,7 @@ function find_all_checked(check_result)
 
         //find all service checked
         $("input[indextype=service]").each(function(i,d){
-            if ($(this).attr("checked") == 'checked'){
+            if (d.checked){
                 current_service_id_list.push(d.value);
                 current_service_name_list.push(d.name);
             }
@@ -70,13 +70,13 @@ function find_all_checked(check_result)
 
         //find all aws checked
         $("input[indextype=aws]").each(function(i,d){
-            if ($(this).attr("checked") == 'checked'){
+            if (d.checked){
                 current_aws_name_list.push(d.name);
                 current_aws_id_list.push(d.value);
             }
             
         });
-        console.log(current_host_id_list);
+        // console.log(current_host_id_list);
         check_result['area'] = '';
         check_result['service'] = '';
         check_result['host'] = '';
@@ -113,7 +113,7 @@ function refresh_item_container(check_result)
     clear_panel();
     find_all_checked(check_result);
 	// find_all_checked(check_result);
-    // console.log(check_result);
+    console.log(check_result);
 	var area = check_result['area'];
     var service = check_result['service'];
     var host = check_result['host'];
@@ -122,7 +122,7 @@ function refresh_item_container(check_result)
     $.getJSON('/chart/itemtype',{area:area,service:service,host:host,aws:aws},function(data)
     {
         clear_panel();
-        // console.log(data);
+        console.log(data);
         if (data.itemtype != undefined) {
             for (data_it in data.itemtype) {
                 // console.log(data.itemtype[data_it]);
@@ -138,10 +138,10 @@ function refresh_item_container(check_result)
             };
             // $('input[type=checkbox][locate=index][indextype=host]')[0].parentNode.hide();
             // console.log($('input[type=checkbox][locate=index][indextype=host]'));
-            $('div[class=col-sm-3][indextype=host]').hide();
-            for (var i = data.hostids.length - 1; i >= 0; i--) {
-                $('div[class=col-sm-3][indextype=host][value=' + data.hostids[i] + ']').show();
-            }
+            // $('div[class=col-sm-3][indextype=host]').hide();
+            // for (var i = data.hostids.length - 1; i >= 0; i--) {
+            //     $('div[class=col-sm-3][indextype=host][value=' + data.hostids[i] + ']').show();
+            // }
         };
         
         // $('div[input=checkbox][locate=index][indextype=host][value=' +  + ']')

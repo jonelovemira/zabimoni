@@ -1,0 +1,50 @@
+<link href="{{url_for('static',filename='css/window_base.css')}}" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
+<script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
+
+
+
+<div class="container-fluid">
+      <div class="row">
+        <div class="col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+            <li class="sidebar-page active"><a href="javascript:;" page="dashboard" class="sidebar-page">Dashboard <span class="sr-only">(current)</span></a></li>
+            <li class="sidebar-page"><a href="javascript:;" page="billing" class="sidebar-page">Billing</a></li>
+            <li class="sidebar-page">
+            	<a href="javascript:;" page="metric" class="sidebar-page">Metric</a>
+            	<ul>
+                    <li class="selected-metrics"><a href="javascript:;" class="sidebar-option" locate="main-sidebar">Selected Metrics</a></li>
+                    <li><a href="javascript:;" option="Basic Metrics" class="sidebar-option" locate="main-sidebar">Basic Metrics</a></li>
+                    {% for s in services %}
+                        <li><a href="javascript:;" option="{{s.servicename}}" class="sidebar-option" locate="main-sidebar">{{s.servicename}}</a></li>
+            		{% endfor %}
+            	</ul>
+            </li>
+          </ul>
+        </div>
+        <div class="col-md-10 col-md-offset-2 main">
+            
+            <div class="row indexmain">
+                <div class="jumbotron">
+                    <h1>Metric Summary</h1>
+                    <p>Monitor monitors operational and performance metrics for your cloud resources and applications.</p>
+                    <p>Browse or search your metrics to get started graphing data.</p>
+                    <div class="navbar-form">
+                        <button class='btn btn-primary form-control browsemetric' type="button">Browse Metrics</button>
+                        <input type=text class="form-control search" placeholder="input Metrics Name"/>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- <div class="row chart"> -->
+                <!-- <div class="col-sm-9 chart-main"> -->
+                    <!-- <div class="row chart-header-config"></div> -->
+                    <!-- <div class="row chart-display-container"></div> -->
+                <!-- </div> -->
+                <!-- <div class="col-sm-3 chart-sidebar-config"></div> -->
+            <!-- </div> -->
+        </div>
+      </div>
+</div>

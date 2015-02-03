@@ -370,6 +370,8 @@ def trigger_action():
 		timeshift = request.form.get('timeshift')
 		command = ''
 		kinds = request.form.get('kinds')
+		first_itemids = request.form.get('formulaitemfirst')
+		second_itemids = request.form.get('formulaitemsecond')
 
 		kinds = int(kinds)
 
@@ -384,7 +386,7 @@ def trigger_action():
 				areaid = request.form.get('areaid')
 				asgname = request.form.get('asgname')
 				asgtype = request.form.get('asgtype')
-				command = AUTOSCALE_COMMAND_PATH + ' ' + '{trigger.name}'
+				command = AUTOSCALE_COMMAND_PATH + ' ' + '{TRIGGER.NAME}'
 
 			elif kinds == EMAILNOTIFICATION:
 				emailaddress = request.form.get('receivers')
@@ -394,8 +396,6 @@ def trigger_action():
 				command = EMAIL_NORMAL_PATH + " '" + emailaddress + "'"
 
 				if MAIL_USE_SNS:
-					first_itemids = request.form.get('formulaitemfirst')
-					second_itemids = request.form.get('formulaitemsecond')
 
 					if len(first_itemids) == 0  and len(second_itemids) == 0:
 						flash('Items choosed is empty', 'danger')

@@ -1,336 +1,76 @@
-{% extends "layout.html" %}
-{% block body %}
 
 
-<script src="{{url_for('static',filename='js/highstock.js')}}"></script>
-<script src="{{url_for('static',filename='js/modules/exporting.js')}}"></script>
-
-<script src="{{url_for('static',filename='js/create_chart.js')}}"></script>
-<script src="{{url_for('static',filename='js/history.js')}}"></script>
-<script src="{{url_for('static',filename='js/save_load_refresh.js')}}"></script>
+<!doctype html>
+<html>
+<head>
+    {% if title %}
+    <title>{{ title }} - Monitor</title>
+    {% else %}
+    <title>Monitor</title>
+    {% endif %}
+    <link href="{{url_for('static',filename='css/style.css')}}" rel="stylesheet"></link>
+    <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet" media="screen"></link>
+    <link href="{{url_for('static',filename='css/bootstrap-theme.min.css')}}" rel="stylesheet" ></link>
+    <link href="{{url_for('static',filename='css/carousel.css')}}" rel="stylesheet" ></link>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrapValidator.css')}}"></link>
+    <script type="text/javascript" src="{{url_for('static',filename='js/jquery-2.1.1.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap.min.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/bootstrapValidator.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/window_base.js')}}"></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    
+</head>
 
 <script type="text/javascript">
-$(function () {
-
-    var series_info ;
-    var last_value;
-    var is_init_empty;
-    var time_frequency;
-    var check_result;
-
-    var callbacks;
-    var max_display_count;
-
-    var mychart;
-    
-    var last_update_time;
-
-    var si = [];
-    var tmp;
-    si.push(tmp);
-    init_local();
-
-    ///////////////////////////////////////////////////////////////////
-    ///************initiate local variable********************
-    function init_local()
+$(document).ready(function()
+{
+    var f = new window_base();
+    $('button.test').click(function()
     {
-        series_info = [];
-        last_value=[];
-        is_init_empty=[];
-        time_frequency = 60;
-        check_result = {};
-
-        max_display_count = 300;
-        mychart = [];
-        last_update_time = [];
-        var arr = [];
-        series_info.push(arr);
-        last_value.push(arr.concat());
-        is_init_empty.push(arr.concat());
-        last_update_time.push(arr.concat());
-        callbacks = $.Callbacks();
-        var tmp;
-        mychart.push(tmp);
-        // si.push(tmp);
-    }
-    ///**********end of initiate***************
-    //////////////////////////////////////////////////////////////////
-    load_indexes();
-    load_first();
-    // load_saved_list('/chart/load/window');
-
-    ///**********end of load***************
-    //////////////////////////////////////////////////////////////////
-
-    //////////////////////////////////
-    // normal functions
-    function create_series_chart(current_item_typeid,current_item_list,series_name,series_time_frequency)
-    {
-        // console.log(current_item_list);
-        create_new_series(series_info,0,check_result,current_item_typeid,current_item_list,series_name);
-        //console.log("series_info",series_info);
-        series_index = series_info[0].length -1;
-        windowContainer = 'windowContainer';
-        sortId = 0;
-        create_chart(windowContainer,sortId,series_info,series_info[0][0]['series_name'],series_index,time_frequency,callbacks,max_display_count,mychart,si,series_time_frequency);
-    }
-    function create_new_series(series_info,sortId,check_result,type,item_list,series_name)
-    {
-            
-            var series_info_item = {};
-            series_info_item['area_list'] = check_result['area'];
-            series_info_item['service_list'] = check_result['service'];
-            series_info_item['host_list'] = check_result['host'];
-            series_info_item['aws_list'] = check_result['aws'];
-            series_info_item['series_type'] = type;
-            series_info_item['series_item_list'] = item_list;
-            series_info_item['series_name'] = series_name;
-            series_info[0].push(series_info_item);
-    }
-    function init_clear(si)
-    {
-        sortId = 0 ;
-        $('div[container=windowContainer]').empty();
-        $('button.morehistory').remove();
-        if (mychart[sortId] != undefined) {
-            mychart[sortId].destroy();
-            mychart[sortId] = null;
-        };
-        if (si[0] != undefined) {
-            clearInterval(si[0]);
-        };
-
-        init_local();
-        si[0] = undefined;
-    }
-    function load_saved_in_window(windowid,windowname)
-    {
-        if (windowid == undefined) {
-            return;
-        };
-        $.getJSON('/chart/load/series',{windowid:windowid},function(data)
-        {
-            series_info = [];
-            var arr = [];
-            series_info.push(arr); 
-            
-            // series_info[0].push([]);
-            var len = 0;
-            for (key in data) {
-                len += 1;
-            };
-            for (var i = len - 1; i >= 0; i--) {
-                var tmp = {};
-                series_info[0].push(tmp);   
-            }; 
-
-            var min_tf = time_frequency;
-            for (i in data) {
-                series_info[0][i]['area_list'] = data[i]['area_list'];
-                series_info[0][i]['service_list'] = data[i]['service_list'];
-                series_info[0][i]['host_list'] = data[i]['host_list'];
-                series_info[0][i]['aws_list'] = data[i]['aws_list'];
-                series_info[0][i]['series_type'] = data[i]['series_type'];
-                series_info[0][i]['series_item_list'] = data[i]['series_item_list'];
-                series_info[0][i]['series_name'] = data[i]['series_name'];
-                // time_frequency_tmp = data[i]['time_frequency'];
-                // if (time_frequency_tmp < min_tf) {
-                //     min_tf = time_frequency_tmp;
-                // }; 
-            };
-
-
-            create_chart('windowContainer',0,series_info,windowname,is_init_empty,min_tf,callbacks,max_display_count,mychart,si,last_update_time);
-        });
-    }
-
-    function load_first()
-    {
-        w = $('button[class="btn btn-sm btn-default savedListItemButton"]').first();
-        if (w != undefined) {
-            var windowid = w.attr("indexId");
-            var windowname = w.attr("name");
-            load_saved_in_window(windowid,windowname);
-        };
-    }
-
-    // function generate_display_name(name,check_result)
-    // {
-    //     // console.log("check_result",check_result);
-    //     tmp = '';
-    //     dic = {0:'area',1:'service',2:'host',3:'aws'};
-    //     for (var i in check_result['names']) {
-    //         tmp += i + ':' + check_result['names'][i] + '<br/>';
-    //     };
-    //     tmp += name;
-    //     return tmp;
-    // }
-    //////////////////////////////////
-
-    //////////////////////////////////////////////////////////////////
-    ///********register of click callbacks
-    $(document).on('click','button.itemtype',function()
-    {
-        windowContainer = 'windowContainer';
-        res = $('div[container="' + windowContainer + '"]').find("button");
-        if (res.length > 0) {
-            init_clear(si);
-        };
-        var value = $(this).attr('value');
-        var name = $(this).attr('name');
-        // console.log(name);
-        var display_name = generate_display_name(name,check_result);
-        var itemtypeid = $(this).attr('itemtypeid');
-        // time_frequency_tmp = parseInt($(this).attr('time_frequency'),10);
-        // if (time_frequency_tmp < time_frequency) {
-        //     time_frequency = time_frequency_tmp;
-        // };
-        // if (itemtypeid <= 28 ) {time_frequency = 14400;}
-        // else time_frequency=60;
-        value = value.split('@');
-        
-        // console.log(series_info);
-        
-        
-        create_series_chart(itemtypeid,value,display_name,time_frequency);
-        $('button.itemtype').attr('disabled','true');
-          
+        selected_metric_result = f.get_selected_metric_result();
+        console.log(selected_metric_result);
     });
-
-
-    $(document).on('click','button.saveButton',function()
-    {
-        var wc_name = $("input[id='savetext']").val();
-        if (0 == wc_name.length) {
-            alert("Saved window name cannot be empty");
-        }
-        else
-        {
-            $('#forsaving').modal({
-                keyboard: false
-            });
-            $('#forsaving').modal('show');
-            // console.log("test");
-            current_series = series_info[0];
-            save_window_chart(wc_name,current_series)
-        }       
-    });
-
-    $(document).on('click','button.savedListItemButton',function()
-    {
-        console.log("savedbutton");
-        // if (spanclick == 0) {
-            init_clear(si);
-            var windowid = $(this).attr("indexId");
-            var windowname = $(this).attr("name");
-            load_saved_in_window(windowid,windowname);
-        // };
-    });
-
-    $(document).on('click','button.clear',function()
-    {
-        init_clear(si);
-    });
-
-    var historychart;
-    var history_container = 'history';
-
-    $(document).on('click','button.morehistory',function()
-    {
-        var sortId = 0;
-        var si_arr = [];
-        var tmp;
-        si_arr.push(tmp);
-
-        $('#history').modal({
-                keyboard: false,
-                backdrop:'static'
-        });
-        $('#history').modal('show');
-
-        current_time_frequency = time_frequency;
-        if (si.length > 1) {
-            current_time_frequency = si[1];
-        };
-
-        console.log(current_time_frequency);
-
-        for (var i = series_info.length - 1; i >= 0; i--) {
-            if (series_info[i].length > 0)
-            {
-                history(history_container,series_info[0],"History",current_time_frequency,max_display_count,historychart);
-                break;
-            }
-        };
-
-    });
-
-    $('#history').on('hidden.bs.modal',function(e)
-    {
-        $('div[container="' + history_container +'"]').empty();
-        if (historychart != undefined) {
-            historychart.destroy();
-            historychart = null;
-        };
-    });
-
-    // var spanclick = 0;
-
-    $(document).on('click','span.glyphicon-remove',function()
-    {
-        // spanclick = 1;
-        indexId = $(this).attr("indexId");
-        info = 'Window:' + $('button[indexId=' + indexId + ']').attr("name")
-        
-        
-        if (confirm('You want to delete ' + info)) {
-            // href = '/chart/window/delete/' + indexId;
-            // window.location.href=href;
-            $.getJSON('/chart/window/delete/' + indexId,function(data)
-            {
-
-                if (data == 1) {
-                    $('button.savedListItemButton[indexId=' + indexId + ']').remove();
-                    init_clear(si);
-                    load_first();
-                }
-                else
-                {
-                    alert('delete failed');
-                }
-                // spanclick = 0;
-            })
-        }
-        // else
-        // {
-        //     spanclick = 0;
-        // }
-        return false;
-
-    });
-
-    // $(document).on('click','a[tabindex=0]',function()
-    // {
-    //     $('a[tabindex=0][role=button]').popover({});
-    //     $('a[tabindex=0][role=button]').popover('show');
-
-    // });
-
-    
-
 });
 </script>
-{% include 'chart/save.html' %}
-<div class="form-inline" udf="savedlist" style="padding-bottom:10px;">
-    <label>{{ title }} Saved:</label>
-    {% for w in windows%}
-    <button class="btn btn-sm btn-default savedListItemButton" indexId="{{w.windowid}}" name="{{w.windowname}}">{{w.windowname}}<span class="glyphicon glyphicon-remove" aria-hidden="true" style="margin-left:10px" indexId="{{w.windowid}}"></span></button>
-    {% endfor %}
+
+
+<body>
+
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{{ url_for('index') }}">Monitor</a>
+            </div>
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li><a href="{{url_for('auth.config')}}">Auth </a></li>
+                    <li><a href="{{url_for('chart.mainboard')}}">Chart </a></li>
+                    <li><a href="{{url_for('item.mainboard')}}">Item </a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if g.user.is_authenticated() %}
+                    <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
+                    {% else %}
+                    <li><a href="{{ url_for('auth.login') }}">Login</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
 </div>
-<div class="text-center"><div id="windowContainer" class="chartinwindow text-center" container="windowContainer" sortId="0" style="min-height: 400px; min-width: 600px"></div>
-</div>
-{% include 'chart/index.html' %}
-{% include 'chart/morehistory.html' %}
-{% include 'saving.html' %}
-{% include 'chart/change_frequency.html' %}
-{% endblock %}
+        
+
+
+
+    {% include 'chart/window_base.html' %}
+
+
+
+</body> 
+</html>
+
+

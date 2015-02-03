@@ -9,6 +9,8 @@ from monitor.zabbix.models import Zabbixhosts
 from monitor.chart.models import *
 from monitor.chart.functions import *
 from monitor.MonitorException import *
+from monitor.chart.search import *
+from monitor.chart.displaychart import *
 
 # from send_email import monitor_status_notification
 
@@ -25,11 +27,10 @@ def mainboard():
 @mod_chart.route('/window/', methods=['GET', 'POST'])
 @login_required
 def window():
-	index_result = {}
-	index_result = result_for_index()
-	idt = Itemdatatype.query.all()
+	
 	windows = g.user.windows.filter_by(type=0).all()
-	return render_template("chart/window.html",title='Window',index_result=index_result,idt=idt,windows=windows)
+	services = Service.query.all()
+	return render_template("chart/window.html",title='Window',services=services,windows=windows)
 	
 @mod_chart.route('/window/delete/<windowid>', methods=['GET', 'POST'])
 @login_required
@@ -48,11 +49,9 @@ def window_delete(windowid):
 @mod_chart.route('/page/', methods=['GET', 'POST'])
 @login_required
 def page():
-	index_result = {}
-	index_result = result_for_index()
-	idt = Itemdatatype.query.all()
+	services = Service.query.all()
 	pages = g.user.pages.all()
-	return render_template("chart/page.html",title='Page',index_result=index_result,idt=idt,pages=pages)
+	return render_template("chart/page.html",title='Page',services=services,pages=pages)
 
 @mod_chart.route('/page/delete/<pageid>', methods=['GET', 'POST'])
 @login_required
@@ -233,9 +232,9 @@ def interval():
 				return json.dumps(result)
 	return json.dumps(0)
 
-@mod_chart.route('/init/', methods=['GET', 'POST'])
+@mod_chart.route('/init2/', methods=['GET', 'POST'])
 @login_required
-def init():
+def init2():
 	sortId = 0
 	if request.method == 'POST':
 		request_data = json.loads(request.data)
@@ -259,9 +258,33 @@ def init():
 		# return json.dumps(result)
 	return json.dumps({'data':0,'sortId':sortId})
 
-@mod_chart.route('/update/', methods=['GET', 'POST'])
+@mod_chart.route('/init/', methods=['GET', 'POST'])
 @login_required
-def update():
+def init():
+	result = {}
+	info = None
+	init_result_bool = False
+	init_result = None
+	if request.method == 'POST':
+		try:
+			request_data = json.loads(request.data)
+			selected_metrics = request_data['selected_metrics']
+			chart_config = request_data['chart_config']
+			init_result = Chart.init(selected_metrics,chart_config)
+			init_result_bool = True
+			info = 'success'
+		except Exception, e:
+			print str(e)
+			info = str(e)
+
+	result['init_result_bool'] = init_result_bool
+	result['init_result'] = init_result
+	result['info'] = info
+	return json.dumps(result)
+
+@mod_chart.route('/update2/', methods=['GET', 'POST'])
+@login_required
+def update2():
 	result = []
 	if request.method == 'POST':
 		request_data = json.loads(request.data)
@@ -270,6 +293,27 @@ def update():
 		time_till = request_data['time_till']
 		result = update_result(series_info,time_frequency,time_till)
 	return json.dumps(result)
+
+@mod_chart.route('/update/', methods=['GET', 'POST'])
+@login_required
+def update():
+	result = {}
+	info = None
+	update_result_bool = False
+	update_result = None
+	if request.method == 'POST':
+		request_data = json.loads(request.data)
+		selected_metrics = request_data['selected_metrics']
+		chart_config = request_data['chart_config']
+		update_result = Chart.update(selected_metrics,chart_config)
+		update_result_bool = True
+		info = 'success'
+	
+	result['update_result_bool'] = update_result_bool
+	result['update_result'] = update_result
+	result['info'] = info
+	return json.dumps(result)
+
 
 
 @mod_chart.route('/save/window', methods=['GET', 'POST'])
@@ -444,6 +488,56 @@ def report_generate(emailscheduleid):
 		return 'success'
 	except Exception, e:
 		return 'failed'
+
+
+@mod_chart.route('/searchitem/',methods=['POST','GET'])
+@login_required
+def searchitem():
+	result = {}
+	info = None
+	search_result_bool = False
+	search_result = None
+	request_option = None
+	if request.method == 'GET':
+		try:
+			option = request.args.get('option')
+			request_option = option
+			search_value = request.args.get('search_value')
+			function_of_option = {'All':SearchWithAll.search,'Basic Metrics':SearchWithBasicMetrics.search,'Browse Metrics':SearchWithAll.search}
+			search_result = function_of_option.get(option,SearchInASGGroup.search)(search_value,option)
+			search_result_bool = True
+			info = 'success'
+		except Exception, e:
+			info = str(e)
+
+	result['search_result_bool'] = search_result_bool
+	result['search_result'] = search_result
+	result['info'] = info
+	result['request_option'] = request_option
+		# print result
+		# print option,search_value
+	return json.dumps(result)
+		# pass
+
+@mod_chart.route('/browseitem/',methods=['POST','GET'])
+@login_required
+def browseitem():
+	result = {}
+	info = None
+	browse_result_bool = False
+	browse_result = None
+	if request.method == 'GET':
+		try:
+			browse_result = BrowseMetrics.browse()
+			browse_result_bool = True
+			info = 'success'
+		except Exception, e:
+			info = str(e)
+
+	result['browse_result_bool'] = browse_result_bool
+	result['browse_result'] = browse_result
+	result['info'] = info
+	return json.dumps(result)
 
 # @mod_chart.route('/schedule/data/')
 # def all_schedule_data():

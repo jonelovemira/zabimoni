@@ -18,7 +18,8 @@ from config import PHANTOMJS,HIGHCHART_CONVERT,REPORT_OUTPUT_DIR,REPORT_OUTPUT_W
 				REPORT_OUTPUT_TYPE,REPORT_OUTPUT_SCALE,GENERATE_REPORT_PATH,\
 				S3_BUCKET_NAME,S3_BUCKET_FOLDER,CHART_INIT_TIME,CHART_HISTORY_TIME,\
 				DESIRED_DISPLAY_POINTS,RESOLUTION,SECOND_TO_MILLI,SCHEDULE_ALL_FILENAME,\
-				S3_SCHEDULE_FOLDER
+				S3_SCHEDULE_FOLDER,S3_MONITOR_BUCKET_NAME,S3_MONITOR_REPORT_FOLDER,\
+				S3_MONITOR_SCHEDULE_FOLDER,S3_MONITOR_SHEDULE_ALL_FILENAME
 
 ########################################################################################
 ###222222222222222222222222222222222222222222222222222222222222222222222222222222#######
@@ -254,8 +255,8 @@ def generate_report_series_data(report,time_since,time_till):
 
 		indexes = index_arg_2_array(s.area_id,s.service_id,s.host_id,s.aws_id)
 		all_itemtypes = get_all_itemtypes(indexes['area'],indexes['service'],indexes['host'],indexes['aws'])
-		if all_itemtypes.has_key(s.itemtype.itemtypeid):
-			itemlist = all_itemtypes[s.itemtype.itemtypeid]['items']
+		if all_itemtypes['itemtype'].has_key(s.itemtype.itemtypeid):
+			itemlist = all_itemtypes['itemtype'][s.itemtype.itemtypeid]['items']
 
 		series_info['series_item_list'] = itemlist
 		series_info['series_name'] = s.seriesname
@@ -477,6 +478,22 @@ def delete_specific_cron(es):
 def update_schedule_data_2_s3():
 	try:
 		con = S3Connection()
+		bucket = con.get_bucket(S3_MONITOR_BUCKET_NAME)
+		schedule_data_file = bucket.get_key(S3_MONITOR_SCHEDULE_FOLDER + S3_MONITOR_SHEDULE_ALL_FILENAME)
+		if schedule_data_file == None:
+			schedule_data_file = bucket.new_key(S3_MONITOR_SCHEDULE_FOLDER + S3_MONITOR_SHEDULE_ALL_FILENAME)
+		all_es = Emailschedule.query.all()
+		result = []
+		for es in all_es:
+			report_info = []
+			result.append({'starttime':es.starttime,'frequency':es.frequency,'esid':es.emailscheduleid,'timezone':es.timezone})
+
+		result_str = json.dumps(result)
+		
+		schedule_data_file.set_contents_from_string(result_str)
+		schedule_data_file.make_public()
+	except Exception, e:
+		con = S3Connection()
 		bucket = con.get_bucket(S3_BUCKET_NAME)
 		schedule_data_file = bucket.get_key(S3_SCHEDULE_FOLDER+SCHEDULE_ALL_FILENAME)
 		all_es = Emailschedule.query.all()
@@ -487,10 +504,7 @@ def update_schedule_data_2_s3():
 
 		result_str = json.dumps(result)
 		schedule_data_file.set_contents_from_string(result_str)
-	except Exception, e:
-		# raise Exception('update schedule data in s3 fail')
-		print str(e)
-		pass
+		schedule_data_file.make_public()
 
 
 def save_emailschedule(subject,reportids,email,frequency,start_time,owner,timezone):
@@ -937,9 +951,9 @@ def get_series_info(series):
 
 		indexes = index_arg_2_array(s.area_id,s.service_id,s.host_id,s.aws_id)
 		all_itemtypes = get_all_itemtypes(indexes['area'],indexes['service'],indexes['host'],indexes['aws'])
-		# print "all_itemtypes",all_itemtypes
-		if all_itemtypes.has_key(s.itemtype.itemtypeid):
-			tmp['series_item_list'] = all_itemtypes[s.itemtype.itemtypeid]['items']
+		print "all_itemtypes",all_itemtypes
+		if all_itemtypes['itemtype'].has_key(s.itemtype.itemtypeid):
+			tmp['series_item_list'] = all_itemtypes['itemtype'][s.itemtype.itemtypeid]['items']
 		# items = s.items
 		# item_arr = []
 		# for i in items:
@@ -963,22 +977,36 @@ def construct_random_str(size=6, chars=string.ascii_uppercase + string.digits):
 	return ''.join(random.choice(chars) for _ in range(size))
 
 def upload_img_to_s3(filename):
-	imgfile = file(REPORT_OUTPUT_DIR + filename,'r')
-	con = S3Connection()
-	bucket = con.get_bucket(S3_BUCKET_NAME)
-	key = bucket.new_key(S3_BUCKET_FOLDER+filename)
-	key.set_contents_from_file(imgfile)
-	imgfile.close()
-	key.make_public()
+	try:
+		imgfile = file(REPORT_OUTPUT_DIR + filename,'r')
+		con = S3Connection()
+		bucket = con.get_bucket(S3_MONITOR_BUCKET_NAME)
+		key = bucket.new_key(S3_MONITOR_REPORT_FOLDER + filename)
+		key.set_contents_from_file(imgfile)
+		imgfile.close()
+		key.make_public()
+	except Exception, e:
+		try:
+			imgfile = file(REPORT_OUTPUT_DIR + filename,'r')
+			con = S3Connection()
+			bucket = con.get_bucket(S3_BUCKET_NAME)
+			key = bucket.new_key(S3_BUCKET_FOLDER+filename)
+			key.set_contents_from_file(imgfile)
+			imgfile.close()
+			key.make_public()
+		except Exception, e:
+			pass
+		
+	
 
 
 def update_specific_schedule_data_2_s3(esid):
 	try:
 		con = S3Connection()
-		bucket = con.get_bucket(S3_BUCKET_NAME)
-		schedule_data_file = bucket.get_key(S3_SCHEDULE_FOLDER+str(esid))
+		bucket = con.get_bucket(S3_MONITOR_BUCKET_NAME)
+		schedule_data_file = bucket.get_key(S3_MONITOR_SCHEDULE_FOLDER+str(esid))
 		if schedule_data_file == None:
-			schedule_data_file = bucket.new_key(S3_SCHEDULE_FOLDER+str(esid))
+			schedule_data_file = bucket.new_key(S3_MONITOR_SCHEDULE_FOLDER+str(esid))
 
 		es = Emailschedule.query.filter_by(emailscheduleid=esid).first()
 		result = {}
@@ -1002,8 +1030,41 @@ def update_specific_schedule_data_2_s3(esid):
 		result = {'reports':report_info,'rvaddress':rvaddress,'subject':subject,'starttime':es.starttime,'frequency':es.frequency}
 		result_str = json.dumps(result)
 		schedule_data_file.set_contents_from_string(result_str)
+		schedule_data_file.make_public()
 	except Exception, e:
-		raise e
+		try:
+			con = S3Connection()
+			bucket = con.get_bucket(S3_BUCKET_NAME)
+			schedule_data_file = bucket.get_key(S3_SCHEDULE_FOLDER+str(esid))
+			if schedule_data_file == None:
+				schedule_data_file = bucket.new_key(S3_SCHEDULE_FOLDER+str(esid))
+
+			es = Emailschedule.query.filter_by(emailscheduleid=esid).first()
+			result = {}
+			report_info = []
+			day = datetime.today()
+			daytime = day.strftime("%Y%m%d")
+			for r in es.reports:
+				img = r.imgs.filter_by(es=es,daytime=daytime).first()
+				if img == None:
+					raise MonitorException('img did not generate')
+				imgname = img.reportimgname
+				tmp = {'imgname':imgname,'title':r.title,'discription':r.discription}
+				report_info.append(tmp)
+
+			rvs = es.receivers
+			rvaddress = []
+			for rv in rvs:
+				rvaddress.append(rv.mailaddress)
+			subject = es.subject
+
+			result = {'reports':report_info,'rvaddress':rvaddress,'subject':subject,'starttime':es.starttime,'frequency':es.frequency}
+			result_str = json.dumps(result)
+			schedule_data_file.set_contents_from_string(result_str)
+			schedule_data_file.make_public()
+		except Exception, e:
+			pass
+		
 
 
 @async
@@ -1083,7 +1144,10 @@ def result_for_index():
 			h_info['hostname'] = h.hostname
 			h_info['hostid'] = h.hostid
 			zh = Zabbixhosts.query.get(h.hostid)
-			h_info['available'] = zh.available
+			if zh == None:
+				h_info['available'] = None
+			else:
+				h_info['available'] = zh.available
 			host_arr.append(h_info)
 		tmp['host'] = host_arr
 		service_result.append(tmp)

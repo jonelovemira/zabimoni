@@ -2,7 +2,21 @@
 	{% if i % 3 == 0%}
 		<div class='row' >
 	{% endif %}
-	<div class='col-lg-4 page text-center'><div container='col-lg-4 page' class='chartinpage' sortId='{{i}}'><button class='btn btn-primary btn-lg center-block page' sortId='{{i}}' style="margin-top:25%">Add chart</button></div></div>
+	<div class='col-lg-4 page text-center' sortId='{{i}}'>
+		<div class="panel panel-default">
+			<div class="panel-heading clearfix chartpanel" style="padding: 1px 15px;">
+				<div class="btn-group pull-right">
+					<button class="btn btn-default setting">
+						<span class="glyphicon glyphicon-cog"></span>
+					</button>
+					<button class="btn btn-default remove">
+						<span class="glyphicon glyphicon-remove-circle"></span>
+					</button>
+				</div>
+			</div>
+		</div>
+		
+		<div container='col-lg-4 page' class='chartinpage' sortId='{{i}}'><button class='btn btn-primary btn-lg center-block page' sortId='{{i}}' style="margin-top:25%">Add chart</button></div></div>
 	{% if i % 3 == 2%}
 		</div>
 	{% endif %}

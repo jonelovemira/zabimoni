@@ -4,6 +4,39 @@ from monitor.item.models import Item
 
 engine = db.get_engine(app,bind='zabbix')
 
+
+def history_data_2_arr(s):
+	result = []
+	last_count = 0
+	for i in range(0,len(s)):
+		if len(result) == 0:
+			result.append([int(s[i][1]),float(s[i][2]),float(s[i][3]),float(s[i][4]),long(s[i][5]),float(s[i][6])])
+			last_count = 1
+		else:
+			if s[i][5] == result[len(result) -1][4]:
+				result[len(result) - 1][0] += int(s[i][1])
+				result[len(result) - 1][1] += float(s[i][2])
+				if result[len(result) - 1][2] < float(s[i][3]):
+					result[len(result) - 1][2] = float(s[i][3])
+				if result[len(result) - 1][3] > float(s[i][4]):
+					result[len(result) - 1][3] = float(s[i][4])
+
+				result[len(result) -1][5] += float(s[i][6])
+				last_count += 1
+			else:
+				result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+				result.append([int(s[i][1]),float(s[i][2]),float(s[i][3]),float(s[i][4]),long(s[i][5]),float(s[i][6])])
+				last_count = 1
+	
+	if last_count > 1:
+		result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+		
+
+	if len(result) != 0:
+		return result
+	return None
+
+
 class Zabbixhistory(db.Model):
 	__bind_key__ = 'zabbix'
 	__tablename__ = 'history'
@@ -98,8 +131,9 @@ class Zabbixhistory(db.Model):
 				db.func.avg(cls.value).label('avg'),\
 				db.func.max(cls.value).label('max'),\
 				db.func.min(cls.value).label('min'),\
-				db.func.floor((cls.clock)/ground).label('minute') ). \
-			filter_by(itemid = qi).filter('clock >=' + str(time_since - 2 * time_frequency)).filter('clock <=' + str(time_till)).\
+				db.func.floor((cls.clock)/ground).label('minute'),
+				cls.value ).\
+			filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
 			# print s1
@@ -107,33 +141,8 @@ class Zabbixhistory(db.Model):
 
 		s = sorted(tmp_s,key = lambda x:x[5])
 
-		result = []
-		last_count = 0
-		for i in range(0,len(s)):
-			if len(result) == 0:
-				result.append(list(s[i][1:6]))
-				last_count = 1
-			else:
-				if s[i][5] == result[len(result) -1][4]:
-					result[len(result) - 1][0] += s[i][1]
-					result[len(result) - 1][1] += s[i][2]
-					if result[len(result) - 1][2] < s[i][3]:
-						result[len(result) - 1][2] = s[i][3]
-					if result[len(result) - 1][3] > s[i][4]:
-						result[len(result) - 1][3] = s[i][4]
-					last_count += 1
-				else:
-					result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
-					result.append(list(s[i][1:6]))
-					last_count = 1
-		if last_count > 1:
-			result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
-		
-		# print result
-		if len(result) != 0:
-			return result		
-		return None
 
+		return history_data_2_arr(s)
 
 class Zabbixhistoryuint(db.Model):
 	__bind_key__ = 'zabbix'
@@ -228,8 +237,9 @@ class Zabbixhistoryuint(db.Model):
 				db.func.avg(cls.value).label('avg'),\
 				db.func.max(cls.value).label('max'),\
 				db.func.min(cls.value).label('min'),\
-				db.func.floor((cls.clock)/ground).label('minute') ). \
-			filter_by(itemid = qi).filter('clock >=' + str(time_since - 2 * time_frequency)).filter('clock <=' + str(time_till)).\
+				db.func.floor((cls.clock)/ground).label('minute'),\
+				cls.value).\
+			filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
 			# print s1
@@ -237,32 +247,7 @@ class Zabbixhistoryuint(db.Model):
 
 		s = sorted(tmp_s,key = lambda x:x[5])
 
-		result = []
-		last_count = 0
-		for i in range(0,len(s)):
-			if len(result) == 0:
-				result.append(list(s[i][1:6]))
-				last_count = 1
-			else:
-				if s[i][5] == result[len(result) -1][4]:
-					result[len(result) - 1][0] += s[i][1]
-					result[len(result) - 1][1] += s[i][2]
-					if result[len(result) - 1][2] < s[i][3]:
-						result[len(result) - 1][2] = s[i][3]
-					if result[len(result) - 1][3] > s[i][4]:
-						result[len(result) - 1][3] = s[i][4]
-					last_count += 1
-				else:
-					result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
-					result.append(list(s[i][1:6]))
-					last_count = 1
-		if last_count > 1:
-			result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
-		
-
-		if len(result) != 0:
-			return result		
-		return None
+		return history_data_2_arr(s)
 
 # def get_init_result(query_itemids,ground):
 

@@ -752,9 +752,17 @@ def host_with_zabbix_data(host_monitor):
 		tmp['host'] = h
 		zh = Zabbixhosts.query.get(h.hostid)
 		zi = Zabbixinterface.query.filter_by(hostid=h.hostid).first()
-		tmp['ip'] = zi.ip
-		tmp['available'] = zh.available
-		tmp['error'] = zh.error
+		if zi != None:
+			tmp['ip'] = zi.ip
+		else:
+			tmp['ip'] = None
+
+		if zh != None:
+			tmp['available'] = zh.available
+			tmp['error'] = zh.error
+		else:
+			tmp['available'] = None
+			tmp['error'] = None
 		host.append(tmp)
 
 	return host
