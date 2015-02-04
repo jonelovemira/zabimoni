@@ -137,6 +137,7 @@ function chart()
         		if( ! data.init_result_bool )
         		{
         			$(chart_config['container_selector']).append('<button class="btn btn-lg btn-warn">No Monitor data to display</button>');
+                    console.log(data.info);
         		}
         		else
         		{

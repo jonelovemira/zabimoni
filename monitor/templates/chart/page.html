@@ -93,7 +93,7 @@ $(function()
 
     $(document).on('click',add_chart_page_selector,function()
     {
-        console.log("add_chart_page_selector");
+        // console.log("add_chart_page_selector");
         current_window_index = $(this).attr("sortId");
 
         $(display_chart_modal_selector).modal({
@@ -107,7 +107,7 @@ $(function()
     $(document).on('click',add_chart_modal_selector,function()
     {
 
-        console.log("add_chart_modal_selector");
+        // console.log("add_chart_modal_selector");
         $(display_chart_modal_selector).modal('hide');
         var selected_metric_result;
         var chart_config;

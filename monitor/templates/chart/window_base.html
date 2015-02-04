@@ -1,8 +1,11 @@
-<link href="{{url_for('static',filename='css/window_base.css')}}" rel="stylesheet">
+<link type="text/css" href="{{url_for('static',filename='css/window_base.css')}}" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/jquery-ui.min.css')}}">
 <script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
+
 
 
 
@@ -27,7 +30,7 @@
         <div class="col-md-10 col-md-offset-2 main">
             
             <div class="row indexmain">
-                <div class="jumbotron">
+                <div class="jumbotron dashboard-main">
                     <h1>Metric Summary</h1>
                     <p>Monitor monitors operational and performance metrics for your cloud resources and applications.</p>
                     <p>Browse or search your metrics to get started graphing data.</p>
@@ -35,6 +38,7 @@
                         <button class='btn btn-primary form-control browsemetric' type="button">Browse Metrics</button>
                         <input type=text class="form-control search" placeholder="input Metrics Name"/>
                     </div>
+                    
                 </div>
             </div>
             

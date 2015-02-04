@@ -7,6 +7,11 @@ function window_base()
     sidebar_option_selector = 'a.' +  sidebar_option_class;
     sidebar_page_li_selector = 'li.' + sidebar_page_class;
 
+    // dashboard main 
+    dashboard_main_class = 'dashboard-main';
+    dashboard_main_selector = 'div.' + dashboard_main_class;
+
+
 
 
     main_board_selector = "div.indexmain";
@@ -14,6 +19,8 @@ function window_base()
     selected_metric_li_selector = 'li.' + selected_metric_li_class;
 
     // top category config
+    top_category_main_class = 'top-category-main';
+    top_category_main_selector = 'div.' + top_category_main_class;
     top_category_selector = "div.top-category";
     browsemetric_button_str = "<button class='btn btn-primary form-control browsemetric' type='button'>Browse Metrics</button>"
     browsemetric_button_selector = "button.browsemetric";
@@ -24,7 +31,9 @@ function window_base()
     option_select_selector = '#metricoptions';
 
     //search result panel
-    search_result_panel_class = "search-result-panel";
+    search_result_main_class = "search-result-main"; 
+    search_result_main_selector = 'div.' + search_result_main_class; 
+    search_result_panel_class = "search-result-panel-test";
     search_result_panel_selector = "div." + search_result_panel_class;
 
     // basic metrics panel
@@ -173,7 +182,7 @@ function window_base()
         page = $(this).attr("page");
         option = $(this).attr("option");
         hidden_chart();
-        console.log(page,option);
+        // console.log(page,option);
         if (page != undefined) {
             render_main_by_page(page);
         }
@@ -361,7 +370,7 @@ function window_base()
 
     $(document).on('click',update_graph_button_selector,function()
     {
-        console.log("update graph");
+        // console.log("update graph");
 
         if (chart_config['from_clock'] == undefined || chart_config['to_clock'] == undefined) {
 
@@ -402,7 +411,7 @@ function window_base()
     {
         chart_config['update_flag'] = false;
         var time_range = display_chart.get_time_range();
-        if (time_range != null) {
+        if (time_range != null && time_range != undefined) {
             var from_in_ms = parseInt(time_range.dataMin);
             var to_in_ms = parseInt(time_range.dataMax);
             var new_from = to_in_ms;
@@ -411,18 +420,31 @@ function window_base()
             chart_config['from_clock'] = new_from / 1000 + 60;
             chart_config['to_clock'] = new_to / 1000 + 120;
 
-            set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
-            set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
+            
             chart_update();
 
-        };
+        }
+        else
+        {
+            var now = (new Date()).getTime() / 1000 ;
+            // console.log(now);
+            chart_config['from_clock'] = now  - 3600;
+            chart_config['to_clock'] = now  ;
+        }
+
+        set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
+        set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
+        // else
+        // {
+        //     chart_config['from_clock'] = (new Date()).getTime();
+        // }
     });
 
     $(document).on('click',chart_left_icon_selector,function()
     {
         chart_config['update_flag'] = false;
         var time_range = display_chart.get_time_range();
-        if (time_range != null) {
+        if (time_range != null && time_range != undefined) {
             var from_in_ms = parseInt(time_range.dataMin);
             var to_in_ms = parseInt(time_range.dataMax);
             var new_from = from_in_ms - (to_in_ms - from_in_ms);
@@ -430,13 +452,19 @@ function window_base()
 
             chart_config['from_clock'] = new_from / 1000 - 60;
             chart_config['to_clock'] = new_to / 1000 ;
-
-            set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
-            set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
-
             chart_update();
 
-        };
+        }
+        else
+        {
+            var now = (new Date()).getTime() / 1000 ;
+            // console.log(now);
+            chart_config['from_clock'] = now  - 3600;
+            chart_config['to_clock'] = now  ;
+        }
+
+        set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
+        set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
     });
 
     function set_date_to_timepicker(selector,clock)
@@ -517,6 +545,7 @@ function window_base()
 
         // set_default_chart_config();
         chart_update();
+
     }
     
     function check_selected_metric()
@@ -538,8 +567,39 @@ function window_base()
         return result;
     }
 
+    function check_chart_config(chart_config)
+    {
+        chart_config['update_flag'] = chart_config['update_flag'] || true ;
+        if (chart_config['update_flag']) {
+            // chart_config['init_time_length'] = 3600;
+            if (chart_config['init_time_length'] == undefined || chart_config['init_time_length'] == true) {
+                chart_config['init_time_length'] = 3600;
+            };
+        }
+        else
+        {
+            if (chart_config['to_clock'] == undefined || chart_config['to_clock'] == null) {
+                var now = (new Date()).getTime() / 1000 ;
+                chart_config['to_clock'] = now  ;
+            }
+            
+            if (chart_config['from_clock'] == undefined || chart_config['from_clock'] == null) {
+                chart_config['from_clock'] = chart_config['to_clock']  - 3600;
+            };
+        }
+
+        if (chart_config['frequency'] == undefined || chart_config['frequency'] == null) {
+            chart_config['frequency'] = 60;
+        }
+
+        if (chart_config['function_type'] == undefined || chart_config['function_type'] == null) {
+            chart_config['function_type'] = 'Average';
+        };
+    }
+
     function chart_update()
     {
+        check_chart_config(chart_config);
         // check_result = check_selected_metric();
         // if (check_result) {
             display_chart.set_selected_metrics(selected_metric_result);
@@ -627,7 +687,7 @@ function window_base()
 
         if (search_result.search_result_bool) {
             option = search_result.request_option;
-            clear_search_result_panel();
+            // clear_search_result_panel();
             render_search_result_to_table(option,search_result.search_result);
 
         }
@@ -648,7 +708,7 @@ function window_base()
     function after_browse(browse_result)
     {
         if (browse_result.browse_result_bool) {
-            clear_search_result_panel();
+            // clear_search_result_panel();
             render_to_browsemetrics_panel(browse_result.browse_result);
         }
         else
@@ -662,6 +722,8 @@ function window_base()
     function clear_search_result_panel()
     {
         $(search_result_panel_selector).empty();
+        // $(search_result_panel_selector).resizable();
+        // $("#resizable").resizable();
     }
 
     function render_search_result_to_table(option,metrics)
@@ -673,7 +735,7 @@ function window_base()
                 result_str += '<div class="panel panel-default">';
                 // result_str += '<div class=' + search_result_div_class + '>';
                 result_str += '<div class="panel-heading ' + search_result_table_title_class + '">' + '<b>' + option + '</b>' + option_title_spliter + '<b><I>' + table_title + '</I></b></div>';
-                result_str += '<table class="table table-hover ' + search_result_table_class + '">';
+                result_str += '<table class="table table-striped ' + search_result_table_class + '">';
                 result_str += '<thead><th></th>';
                 for (var name in metrics[table_title]['table_head'])
                 {
@@ -707,6 +769,7 @@ function window_base()
                 result_str += '</div>';
             };
         };
+        // console.log(result_str);
         $(search_result_panel_selector).append(result_str);
     }
 
@@ -761,26 +824,34 @@ function window_base()
 	function dashboard_render_main()
 	{
         clear_main();
-        hidden_chart();
-        result_str = '';
-        result_str += '<div class="jumbotron">';
-        result_str += '<h1>Metric Summary</h1>';
-        result_str += '<p>Monitor monitors operational and performance metrics for your cloud resources and applications.</p>';
-        result_str += '<p>Browse or search your metrics to get started graphing data.</p>';
+        // hidden_chart();
 
-        result_str += '<div class="navbar-form">';
-        result_str += browsemetric_button_str;
-        result_str += search_input_str;
-        result_str +='</div></div>';
-                    
-        $(main_board_selector).append(result_str);
+        if ($(dashboard_main_selector).length <= 0) {
+            result_str = '';
+            result_str += '<div class="jumbotron ' + dashboard_main_class + '">';
+            result_str += '<h1>Metric Summary</h1>';
+            result_str += '<p>Monitor monitors operational and performance metrics for your cloud resources and applications.</p>';
+            result_str += '<p>Browse or search your metrics to get started graphing data.</p>';
+
+            result_str += '<div class="navbar-form">';
+            result_str += browsemetric_button_str;
+            result_str += search_input_str;
+            result_str +='</div></div>';
+                        
+            $(main_board_selector).append(result_str);
+        }
+        else
+        {
+            $(dashboard_main_selector).removeClass('hidden');
+        }
+        
 	}
 
 	function billing_render_main(option)
 	{
         clear_main();
         // show_chart();
-        $(main_board_selector).append('billing');
+        // $(main_board_selector).append();
         // $("div.main").append(option);
 	}
 
@@ -794,9 +865,8 @@ function window_base()
         if (option != undefined) {
             
             add_top_category(option,searched_value);
-            
-            add_chart_main_panel();
             if (! browse_flag) {
+                add_chart_main_panel();
                 add_search_result_panel();
                 perform_search(option,searched_value);
                 show_chart();
@@ -827,34 +897,44 @@ function window_base()
     {
         selected_value = selected_value || default_selected;
         searched_value = searched_value || default_searched_value;
-        panel_wrapper = '<div class="panel panel-default" >';
-        form_wrapper = '<div class="navbar-form top-category" >';
 
-        
 
-        select_str = '<select class="form-control" id="metricoptions">';
-        select_str += '<option>All</option>';
-        bind_result = get_bind_option();
-        // console.log(bind_result);
-        for (var i = 0; i < bind_result.length; i++) {
-            if (bind_result[i].attr("option") != undefined) {
-                select_str += '<option>';
-                select_str += bind_result[i].attr("option") + '</option>';
+        if ($(top_category_main_selector).length <= 0) {
+            panel_wrapper = '<div class="panel panel-default ' + top_category_main_class + '" >';
+            form_wrapper = '<div class="navbar-form top-category" >';
+
+            
+
+            select_str = '<select class="form-control" id="metricoptions">';
+            select_str += '<option>All</option>';
+            bind_result = get_bind_option();
+            // console.log(bind_result);
+            for (var i = 0; i < bind_result.length; i++) {
+                if (bind_result[i].attr("option") != undefined) {
+                    select_str += '<option>';
+                    select_str += bind_result[i].attr("option") + '</option>';
+                }
             }
+
+            select_str += '<option>Browse Metrics</option>';
+
+            select_str += '</select>';
+
+            form_wrapper += select_str;
+            form_wrapper += '<div class="form-group" >' + search_input_str + '</div>';
+
+            form_wrapper += '</div>';
+            // form_wrapper += div_wapper + '</form>';
+            panel_wrapper += form_wrapper + '</div>';
+
+            $(main_board_selector).append(panel_wrapper);
+        }
+        else
+        {
+            $(top_category_main_selector).removeClass('hidden');
         }
 
-        select_str += '<option>Browse Metrics</option>';
-
-        select_str += '</select>';
-
-        form_wrapper += select_str;
-        form_wrapper += '<div class="form-group" >' + search_input_str + '</div>';
-
-        form_wrapper += '</div>';
-        // form_wrapper += div_wapper + '</form>';
-        panel_wrapper += form_wrapper + '</div>';
-
-        $(main_board_selector).append(panel_wrapper);
+        
 
         $(search_input_selector).attr("value",searched_value);
         $(option_select_selector).val(selected_value);
@@ -862,31 +942,58 @@ function window_base()
 
     function add_search_result_panel()
     {
-        if ($(search_result_panel_selector).length > 0) {
-            $(search_result_panel_selector).empty();
+        if ($(search_result_panel_selector).length <= 0) {
+            var result_str = '';
+            result_str += '<div style="height:280px;" class=' + search_result_main_class + '>';
+            result_str += '<div class=' + search_result_panel_class + ' ></div>';
+            // result_str += '<div id="resizable" class="' + search_result_panel_class + '" style="width: 100px;  height: 100px;  background: #ccc;"></div>';
+            result_str += '</div>';
+
+            $(main_board_selector).append(result_str);
+            $(search_result_panel_selector).addClass("DivToScroll");
+            $(search_result_panel_selector).addClass("DivWithScroll");
+            // $('div.search-result-panel').addClass("DivToScroll");
+            // $('div.search-result-panel').addClass("DivWithScroll");
+            // $(search_result_panel_selector).addClass("ui-widget-content");
+            // $(search_result_panel_selector).removeClass(search_result_panel_class);
+            // console.log("resizable");
+            // $(search_result_panel_selector).resizable();
+            // $( search_result_panel_selector ).on( "resize", function( event, ui ) {
+            //     console.log("resize");
+            // } );
+
+            // var tmp_str = '<div id="resizable" class="nihao" style="width: 100px;  height: 100px;  background: #ccc;"></div>';
+            // $(main_board_selector).append(tmp_str);
+            $(search_result_main_selector).resizable({
+                handles: 's'
+            });
         }
         else
         {
-            $(main_board_selector).append('<div class=' + search_result_panel_class + '></div>');
-            $(search_result_panel_selector).addClass("DivToScroll");
-            $(search_result_panel_selector).addClass("DivWithScroll");
+            $(search_result_panel_selector).empty();
+            $(search_result_main_selector).removeClass('hidden');
         }
+        
     }
+
+    // $('#resizable').resizable();
 
     function add_basicmetric_panel()
     {
-        if ($(basicmetrics_panel_selector).length > 0) {
-            $(basicmetrics_panel_selector).empty();
+        if ($(basicmetrics_panel_selector).length <= 0) {
+            $(main_board_selector).append('<div class=' + basicmetrics_panel_class + '></div>');
         }
         else
         {
-            $(main_board_selector).append('<div class=' + basicmetrics_panel_class + '></div>');
+            $(basicmetrics_panel_selector).empty();
+            $(basicmetrics_panel_selector).removeClass('hidden');
+            // $(main_board_selector).append('<div class=' + basicmetrics_panel_class + '></div>');
         }
     }
 
     function add_chart_main_panel()
     {
-        if ($(chart_div_selector).length == 0) {
+        if ($(chart_div_selector).length <= 0) {
             result_str = '';
             result_str += '<div class="row ' + chart_div_class + '">';
             result_str += '<div class="col-sm-9 ' + chart_main_div_class + '">';
@@ -901,7 +1008,11 @@ function window_base()
             add_panel_to_chart_main_header();
             add_pagination_panel();
             add_chart_sidebar_config_panel();
-        };
+        }
+        else
+        {
+            $(chart_div_selector).removeClass('hidden');
+        }
     }
 
     function add_pagination_panel()
@@ -1041,7 +1152,7 @@ function window_base()
         setTimeout(function()
         {
             $(sidebar_config_message_selector).empty();
-        },5000)
+        },5000);
         // $(sidebar_config_message_selector).append('<div class="alert alert-' + type + '">' + message + '');
     }
 
@@ -1084,9 +1195,15 @@ function window_base()
 
     function clear_main()
     {
-        $(main_board_selector).empty();
+        // $(main_board_selector).empty();
         // display_chart.clear_chart();
         // hidden_chart();
+
+        $(dashboard_main_selector).addClass('hidden');
+        $(top_category_main_selector).addClass('hidden');
+        $(search_result_main_selector).addClass('hidden');
+        $(basicmetrics_panel_selector).addClass('hidden');
+        $(chart_div_selector).addClass('hidden');
     }
 
     function all_clear()
