@@ -516,7 +516,12 @@ def autoscalegroup():
 	result = []
 
 	con = boto.ec2.autoscale.connect_to_region(areaname)
-	asg = con.get_all_groups()
+	asg = []
+	try:
+		asg = con.get_all_groups()
+	except Exception, e:
+		pass
+	
 
 	for a in asg:
 		result.append(a.name)

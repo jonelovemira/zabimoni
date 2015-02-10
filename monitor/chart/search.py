@@ -1,8 +1,8 @@
-from monitor.item.models import Item,Host,Service,Itemtype,Zbxitemtype,Normalitemtype
+from monitor.item.models import Item,Host,Service,Itemtype,Zbxitemtype,Normalitemtype,Aws
 from monitor.zabbix.models import Zabbixhosts,Zabbixinterface
 from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,\
 					TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_HEAD_IP,\
-					TABLE_HEAD_METRIC_NAME,PER_INSTANCE_TABLE_HEAD
+					TABLE_HEAD_METRIC_NAME,PER_INSTANCE_TABLE_HEAD,AWS_FEE_TABEL_HEAD
 
 
 def by_group_name(row):
@@ -10,6 +10,9 @@ def by_group_name(row):
 
 def per_instance_name(row):
 	return row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)] + ' ' + row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+
+def aws_fee_name(row):
+	return row[AWS_FEE_TABEL_HEAD.index(TABLE_HEAD_METRIC_NAME)]
 
 
 class BaseSearch():
@@ -29,13 +32,16 @@ class ItemSearch(BaseSearch):
 		return result
 
 	@classmethod
-	def generate_by_group_result_no_fee(cls,item_search_result):
+	def generate_by_group_result_no_fee(cls,item_search_result,asg_name=None):
 		result = {}
 		table_head = BY_GROUP_TABLE_HEAD
 		metric_count = 0
 		metric_result = []
 		for s in item_search_result:
 			if s.itemtype.aws != None or s.itemtype.itemunit == None:
+				continue
+
+			if asg_name != None and s.host.service.servicename != asg_name:
 				continue
 
 			if [s.host.service.servicename,s.itemname] not in metric_result:
@@ -80,11 +86,27 @@ class ItemSearch(BaseSearch):
 		return result
 
 	@classmethod
+	def find_item_list_for_table_row_aws_fee(cls,row):
+		result = []
+		metric_name = row[AWS_FEE_TABEL_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+		filter_boolean = ItemSearchValue2Filter.parse(metric_name)
+		search_result = cls.search(filter_boolean)
+		for item in search_result:
+			if item.itemtype.aws != None:
+				result.append(item.itemid)
+
+		return result
+
+
+	@classmethod
 	def row_2_item_list(cls,row_type,row):
 		type_func_map = {
 			BY_GROUP_RESULT:cls.find_item_list_for_table_row_group,
 			PER_INSTANCE_RESULT:cls.find_item_list_for_table_row_instance
 		}
+
+		for aws in Aws.query.all():
+			type_func_map[aws.awsname] = cls.find_item_list_for_table_row_aws_fee
 
 		result = []
 		result = type_func_map.get(row_type)(row)
@@ -98,11 +120,14 @@ class ItemSearch(BaseSearch):
 			PER_INSTANCE_RESULT : per_instance_name
 		}
 
+		for aws in Aws.query.all():
+			type_name_map[aws.awsname] = aws_fee_name
+
 		return type_name_map.get(row_type,None)(row)
 
 	
 	@classmethod
-	def generate_per_instance_result_no_fee(cls,item_search_result):
+	def generate_per_instance_result_no_fee(cls,item_search_result,asg_name=None):
 		result = {}
 		table_head = PER_INSTANCE_TABLE_HEAD
 		metric_count = 0
@@ -110,6 +135,9 @@ class ItemSearch(BaseSearch):
 
 		for s in item_search_result:
 			if s.itemtype.aws != None or s.itemtype.itemunit == None:
+				continue
+
+			if asg_name != None and s.host.service.servicename != asg_name:
 				continue
 
 			
@@ -137,6 +165,46 @@ class ItemSearch(BaseSearch):
 		result['metric_result'] = metric_result
 
 		return result
+
+	@classmethod
+	def generate_fee_data(cls,item_search_result,awsname):
+
+		result = {}
+		table_head = AWS_FEE_TABEL_HEAD
+		metric_count = 0
+		metric_result =[]
+
+		for s in item_search_result:
+			if s.itemtype.aws != None and s.itemtype.aws.awsname == awsname:
+				metric_name = s.itemname
+				row = [metric_name]
+
+				assert len(row) == len(table_head)
+				metric_result.append(row)
+				metric_count += 1
+
+		result['table_head'] = table_head
+		result['metric_count'] = metric_count
+		result['metric_result'] = metric_result
+
+		return result
+
+	@classmethod
+	def item_list_2_unitname(cls,item_list):
+
+		unit_name = 'unkown'
+
+		for i in item_list:
+			item = Item.query.get(i)
+			if item == None:
+				continue
+			it = item.itemtype
+			if it == None:
+				continue
+
+			unit_name = it.itemunit
+
+		return unit_name
 
 class ItemtypeSearchValue2Filter():
 
@@ -230,17 +298,17 @@ class SearchInASGGroup():
 			item_search_result = []
 
 			##### contains all basic metrics  ####
-			for h in asg_group.hosts.all():
-				item_search_result += BaseSearch.search(h.items,filter_boolean)
+			# for h in asg_group.hosts.all():
+			# 	item_search_result += BaseSearch.search(h.items,filter_boolean)
 
 			# only for group-specific metrics
-			# for it in asg_group.itemtypes.all():
-			# 	item_search_result += BaseSearch.search(it.items,filter_boolean)			
+			for it in asg_group.itemtypes.all():
+				item_search_result += BaseSearch.search(it.items,filter_boolean)			
 
-			by_group_result = ItemSearch.generate_by_group_result_no_fee(item_search_result)
+			by_group_result = ItemSearch.generate_by_group_result_no_fee(item_search_result,asg_name)
 			result[BY_GROUP_RESULT] = by_group_result
 
-			per_instance_result = ItemSearch.generate_per_instance_result_no_fee(item_search_result)
+			per_instance_result = ItemSearch.generate_per_instance_result_no_fee(item_search_result,asg_name)
 			result[PER_INSTANCE_RESULT] = per_instance_result
 
 		return result
@@ -262,6 +330,25 @@ class SearchWithAll():
 		per_instance_result = ItemSearch.generate_per_instance_result_no_fee(item_search_result)
 		result[PER_INSTANCE_RESULT] = per_instance_result
 
+		return result
+
+class SearchWithBilling():
+
+	@classmethod
+	def search(cls,search_value=None,option=''):
+		result = {}
+
+		filter_boolean = ItemSearchValue2Filter.parse(search_value)
+
+		item_search_result = ItemSearch.search(filter_boolean)
+
+		for aws in Aws.query.all():
+			per_aws_fee_result = ItemSearch.generate_fee_data(item_search_result,aws.awsname)
+			result[aws.awsname] = per_aws_fee_result
+
+		# per_instance_result = ItemSearch.generate_fee_data(item_search_result)
+
+		# result[] = per_instance_result
 		return result
 
 

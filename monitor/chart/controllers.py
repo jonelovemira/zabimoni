@@ -11,6 +11,12 @@ from monitor.chart.functions import *
 from monitor.MonitorException import *
 from monitor.chart.search import *
 from monitor.chart.displaychart import *
+from monitor.chart.generate import *
+
+from flask.ext.principal import Permission, RoleNeed
+admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
+
+from config import WINDOW_CHART
 
 # from send_email import monitor_status_notification
 
@@ -28,44 +34,19 @@ def mainboard():
 @login_required
 def window():
 	
-	windows = g.user.windows.filter_by(type=0).all()
+	windows = g.user.windows.filter_by(type=WINDOW_CHART).all()
 	services = Service.query.all()
 	return render_template("chart/window.html",title='Window',services=services,windows=windows)
-	
-@mod_chart.route('/window/delete/<windowid>', methods=['GET', 'POST'])
-@login_required
-def window_delete(windowid):
-	try:
-		delete_window(windowid)
-		db.session.commit()
-		return json.dumps(1)
-	except Exception, e:
-		db.session.rollback()
-	finally:
-		db.session.remove()
 
-	return json.dumps(0)
 
 @mod_chart.route('/page/', methods=['GET', 'POST'])
 @login_required
 def page():
 	services = Service.query.all()
 	pages = g.user.pages.all()
-	return render_template("chart/page.html",title='Page',services=services,pages=pages)
+	windows = g.user.windows.filter_by(type=WINDOW_CHART).all()
+	return render_template("chart/page.html",title='Page',services=services,pages=pages,windows=windows)
 
-@mod_chart.route('/page/delete/<pageid>', methods=['GET', 'POST'])
-@login_required
-def page_delete(pageid):
-	try:
-		delete_page(pageid)
-		db.session.commit()
-		return json.dumps(1)
-	except Exception, e:
-		db.session.rollback()
-	finally:
-		db.session.remove()
-
-	return json.dumps(0)
 
 @mod_chart.route('/report')
 @login_required
@@ -78,19 +59,18 @@ def report():
 @mod_chart.route('/addreport/', methods=['GET', 'POST'])
 @login_required
 def addreport():
-	index_result = {}
-	index_result = result_for_index()
-	idt = Itemdatatype.query.all()
+	services = Service.query.all()
 	if request.method == 'POST':
-		reportname = request.form['reportname']
-		seriesinfo = request.form['seriesinfo']
-		scaletype = request.form['scaletype']
-		functiontype = request.form['functiontype']
-		title = request.form['title']
-		discription = request.form['discription']
-		owner = g.user
 		try:
-			save_report(reportname,seriesinfo,scaletype,functiontype,owner,title,discription)
+			reportname = request.form['reportname']
+			selectedmetrics = json.loads(request.form['selectedmetrics'])
+			scaletype = request.form['scaletype']
+			functiontype = request.form['functiontype']
+			title = request.form['title']
+			description = request.form['description']
+			owner = g.user
+
+			save_result = generate_report.save_report(reportname,selectedmetrics,scaletype,functiontype,owner,title,description)
 			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
@@ -101,15 +81,31 @@ def addreport():
 			return redirect(url_for('chart.report'))
 		finally:
 			db.session.remove()
+		
 
-	return render_template('chart/report.html',title='report',index_result=index_result,idt=idt)
+		# print selectedmetrics
+		# try:
+		# 	save_report(reportname,seriesinfo,scaletype,functiontype,owner,title,discription)
+		# 	db.session.commit()
+		# except Exception, e:
+		# 	db.session.rollback()
+		# 	flash(str(e),'danger')
+		# 	return redirect(url_for('chart.addreport'))
+		# else:
+		# 	flash('you add a report','success')
+		# 	return redirect(url_for('chart.report'))
+		# finally:
+		# 	db.session.remove()
+
+	return render_template('chart/report.html',title='report',services=services)
 
 @mod_chart.route('/report/delete/<reportid>', methods=['GET', 'POST'])
 @login_required
 def reportdelete(reportid):
 	try:
-		r = Report.query.filter_by(reportid=reportid).first()
-		db.session.delete(r)
+		# r = Report.query.filter_by(reportid=reportid).first()
+		generate_report.delete_report(reportid)
+		# db.session.delete(r)
 		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
@@ -138,24 +134,25 @@ def reportlist():
 @login_required
 def addschedule():
 	if request.method == 'POST':
-		f = request.form
-		email = []
-		for key in f.keys():
-		    for value in f.getlist(key):
-		    	if len(value) != 0:
-					if key == 'email[]':
-						email.append(value)
-		reportids = json.loads(request.form['reportid'])
-		subject = request.form['emailsubject']
-		u = g.user
-		period = request.form['period']
-		start_time = request.form['timestart']
-		timezone = request.form['timezone']
 		try:
-			es = save_emailschedule(subject,reportids,email,period,start_time,u,timezone)
+			f = request.form
+			email = []
+			for key in f.keys():
+			    for value in f.getlist(key):
+			    	if len(value) != 0:
+						if key == 'email[]':
+							email.append(value)
+			reportids = json.loads(request.form['reportid'])
+			subject = request.form['emailsubject']
+			u = g.user
+			period = request.form['period']
+			start_time = request.form['timestart']
+			timezone = request.form['timezone']
+		
+			es = generate_schedule.save_schedule(subject,reportids,email,period,start_time,u,timezone)
 			db.session.commit()
-			add_specific_cron(es)
-			update_schedule_data_2_s3()
+			generate_schedule.add_specific_cron(es)
+			generate_schedule.update_schedule_data_2_s3()
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'danger')
@@ -172,10 +169,11 @@ def addschedule():
 @login_required
 def scheduledelete(emailscheduleid):
 	try:
-		es = Emailschedule.query.filter_by(emailscheduleid=emailscheduleid).first()
-		delete_schedule(emailscheduleid)
+		es = Emailschedule.query.get(emailscheduleid)
+		generate_schedule.delete_schedule(es)
 		db.session.commit()
-		update_schedule_data_2_s3()
+		generate_schedule.delete_specific_cron(es)
+		generate_schedule.update_schedule_data_2_s3()
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'danger')
@@ -302,12 +300,16 @@ def update():
 	update_result_bool = False
 	update_result = None
 	if request.method == 'POST':
+		# try:
 		request_data = json.loads(request.data)
 		selected_metrics = request_data['selected_metrics']
 		chart_config = request_data['chart_config']
 		update_result = Chart.update(selected_metrics,chart_config)
 		update_result_bool = True
 		info = 'success'
+		# except Exception, e:
+		# 	print str(e)
+		# 	info = str(e)
 	
 	result['update_result_bool'] = update_result_bool
 	result['update_result'] = update_result
@@ -316,80 +318,253 @@ def update():
 
 
 
+# @mod_chart.route('/save/window', methods=['GET', 'POST'])
+# @login_required
+# def save_window():
+# 	if request.method == 'POST':
+# 		request_data = json.loads(request.data)
+# 		wc_name = request_data['wc_name']
+# 		current_series = request_data['series']
+# 		user = g.user
+# 		try:
+# 			result = None
+# 			w = user.windows.filter_by(type=0,windowname=wc_name).first()
+# 			if w != None:
+# 				update_window_chart(wc_name,current_series,user)
+# 			else:
+# 				w = save_window_chart(wc_name,current_series,user)
+# 				result = w
+
+# 			db.session.commit()
+# 		except Exception, e:
+# 			db.session.rollback()
+# 			raise MonitorException('save window failed ' + str(e))
+# 		else:
+# 			if result != None:
+# 				return json.dumps({'id':result.windowid,'name':result.windowname})
+# 		finally:
+# 			db.session.remove()
+# 	return json.dumps({})
+
 @mod_chart.route('/save/window', methods=['GET', 'POST'])
 @login_required
 def save_window():
+	result = {}
+	info = None
+	save_result_bool = False
+	save_result = None
 	if request.method == 'POST':
-		request_data = json.loads(request.data)
-		wc_name = request_data['wc_name']
-		current_series = request_data['series']
-		user = g.user
 		try:
-			result = None
-			w = user.windows.filter_by(type=0,windowname=wc_name).first()
-			if w != None:
-				update_window_chart(wc_name,current_series,user)
-			else:
-				w = save_window_chart(wc_name,current_series,user)
-				result = w
+			request_data = json.loads(request.data)
+			selected_metrics = request_data['selected_metrics']
+			chart_config = request_data['chart_config']
+			windowname = request_data['windowname']
+			user = g.user
+			window = Chart.save_window_chart(selected_metrics,chart_config,windowname,user)
 
 			db.session.commit()
+
+			save_result = {'name':windowname,'indexId':window.windowid}
+
+			save_result_bool = True
+
+			info = 'success'
 		except Exception, e:
 			db.session.rollback()
-			raise MonitorException('save window failed ' + str(e))
-		else:
-			if result != None:
-				return json.dumps({'id':result.windowid,'name':result.windowname})
-		finally:
-			db.session.remove()
-	return json.dumps({})
+			print str(e)
+			info = str(e)
+
+	result['save_result_bool'] = save_result_bool
+	result['save_result'] = save_result
+	result['info'] = info
+	return json.dumps(result)
+
+@mod_chart.route('/load/window', methods=['GET', 'POST'])
+@login_required
+def load_window():
+
+	result = {}
+	info = None
+	load_result_bool = False
+	load_result = None
+
+	if request.method == 'GET':
+		try:
+			windowid = request.args.get('windowid',None)
+			load_result = Chart.load_window_chart(windowid)
+			info = 'success'
+			load_result_bool = True
+		except Exception, e:
+			info = str(e)
+			print info
+
+	result['info'] = info
+	result['load_result_bool'] = load_result_bool
+	result['load_result'] = load_result
+
+	return json.dumps(result)
+
+@mod_chart.route('/delete/window',methods = ['GET','POST'])
+@login_required
+def delete_window():
+	result = {}
+	info = None
+	delete_result_bool = False
+	delete_result = None
+
+	if request.method == 'GET':
+		try:
+			windowid = request.args.get('windowid',None)
+			Chart.delete_window_chart(windowid)
+			db.session.commit()
+			info = 'success'
+			delete_result = windowid
+			delete_result_bool = True
+		except Exception, e:
+			db.session.rollback()
+			info = str(e)
+			print info
+
+	result['info'] = info
+	result['delete_result_bool'] = delete_result_bool
+	result['delete_result'] = delete_result
+
+	return json.dumps(result)
+
+
+# @mod_chart.route('/save/page', methods=['GET', 'POST'])
+# @login_required
+# def save_page():
+
+# 	if request.method == 'POST':
+# 		request_data = json.loads(request.data)
+# 		pagename = request_data['pagename']
+# 		series_info = request_data['series_info']
+# 		user = g.user
+# 		try:
+# 			result = None
+# 			p = user.pages.filter_by(pagename=pagename).first()
+# 			if p != None:
+# 				update_page_chart(pagename,series_info,user)
+# 			else:
+# 				p = save_page_chart(pagename,series_info,user)
+# 				result = p
+
+# 			db.session.commit()
+# 		except Exception, e:
+# 			db.session.rollback()
+# 			raise MonitorException('save page failed ' + str(e))
+# 		else:
+# 			if result != None:
+# 				return json.dumps({'id':result.pageid,'name':result.pagename})
+# 		finally:
+# 			db.session.remove()
+
+# 	return json.dumps({})
 
 @mod_chart.route('/save/page', methods=['GET', 'POST'])
 @login_required
 def save_page():
 
+	result = {}
+	info = None
+	save_result_bool = False
+	save_result = None
 	if request.method == 'POST':
-		request_data = json.loads(request.data)
-		pagename = request_data['pagename']
-		series_info = request_data['series_info']
-		user = g.user
 		try:
-			result = None
-			p = user.pages.filter_by(pagename=pagename).first()
-			if p != None:
-				update_page_chart(pagename,series_info,user)
-			else:
-				p = save_page_chart(pagename,series_info,user)
-				result = p
+			request_data = json.loads(request.data)
+
+			nine_charts = request_data['nine_charts']
+			pagename = request_data['pagename']
+			user = g.user
+			page = Chart.save_page(nine_charts,pagename,user)
 
 			db.session.commit()
+
+			save_result = {'name':pagename,'indexId':page.pageid}
+
+			save_result_bool = True
+
+			info = 'success'
 		except Exception, e:
 			db.session.rollback()
-			raise MonitorException('save page failed ' + str(e))
-		else:
-			if result != None:
-				return json.dumps({'id':result.pageid,'name':result.pagename})
-		finally:
-			db.session.remove()
+			print str(e)
+			info = str(e)
 
-	return json.dumps({})
+	result['save_result_bool'] = save_result_bool
+	result['save_result'] = save_result
+	result['info'] = info
+	return json.dumps(result)
 
-
-
-
-@mod_chart.route('/load/window', methods=['GET', 'POST'])
+@mod_chart.route('/delete/page', methods=['GET', 'POST'])
 @login_required
-def load_window():
-	user = g.user
-	windows = user.windows.filter_by(type=0).all()
-	result = []
-	for w in windows:
-		tmp = {}
-		tmp['id'] = w.windowid
-		tmp['name'] = w.windowname
-		result.append(tmp)
+def delete_page():
+	result = {}
+	info = None
+	delete_result_bool = False
+	delete_result = None
+
+	if request.method == 'GET':
+		try:
+			pageid = request.args.get('pageid',None)
+			Chart.delete_page(pageid)
+			db.session.commit()
+			info = 'success'
+			delete_result = pageid
+			delete_result_bool = True
+		except Exception, e:
+			db.session.rollback()
+			info = str(e)
+			print info
+
+	result['info'] = info
+	result['delete_result_bool'] = delete_result_bool
+	result['delete_result'] = delete_result
 
 	return json.dumps(result)
+
+@mod_chart.route('/load/page',methods = ['GET','POST'])
+@login_required
+def load_page():
+	result = {}
+	info = None
+	load_result_bool = False
+	load_result = None
+
+	if request.method == 'GET':
+		try:
+			pageid = request.args.get('pageid',None)
+			load_result = Chart.load_page(pageid)
+			info = 'success'
+			load_result_bool = True
+		except Exception, e:
+			info = str(e)
+			print info
+
+	result['info'] = info
+	result['load_result_bool'] = load_result_bool
+	result['load_result'] = load_result
+
+	return json.dumps(result)
+
+
+
+
+# @mod_chart.route('/load/window', methods=['GET', 'POST'])
+# @login_required
+# def load_window():
+# 	user = g.user
+# 	windows = user.windows.filter_by(type=0).all()
+# 	result = []
+# 	for w in windows:
+# 		tmp = {}
+# 		tmp['id'] = w.windowid
+# 		tmp['name'] = w.windowname
+# 		result.append(tmp)
+
+# 	return json.dumps(result)
+
+
 
 @mod_chart.route('/load/pageinfo', methods=['GET', 'POST'])
 @login_required
@@ -429,19 +604,19 @@ def load_pageinfo():
 	return json.dumps(result)
 
 
-@mod_chart.route('/load/page', methods=['GET', 'POST'])
-@login_required
-def load_page():
-	user = g.user
-	pages = user.pages.all()
-	result = []
-	for p in pages:
-		tmp = {}
-		tmp['id'] = p.pageid
-		tmp['name'] = p.pagename
-		result.append(tmp)
+# @mod_chart.route('/load/page', methods=['GET', 'POST'])
+# @login_required
+# def load_page():
+# 	user = g.user
+# 	pages = user.pages.all()
+# 	result = []
+# 	for p in pages:
+# 		tmp = {}
+# 		tmp['id'] = p.pageid
+# 		tmp['name'] = p.pagename
+# 		result.append(tmp)
 
-	return json.dumps(result)
+# 	return json.dumps(result)
 
 @mod_chart.route('/load/series', methods=['GET', 'POST'])
 @login_required
@@ -483,11 +658,18 @@ def getreportimg(reportimg):
 
 @mod_chart.route('/report/generate/<emailscheduleid>')
 def report_generate(emailscheduleid):
-	try:
-		gen_upload_report_img(emailscheduleid)
-		return 'success'
-	except Exception, e:
-		return 'failed'
+	#try:
+	generate_schedule.gen_upload_report_img(emailscheduleid)
+	return 'success'
+	#except Exception, e:
+	#	return 'failed'
+
+def billing_search(search_value,option):
+	if not admin_permission.can():
+		raise Exception('You are not authorized to access billing data')
+
+	return SearchWithBilling.search(search_value,option)
+
 
 
 @mod_chart.route('/searchitem/',methods=['POST','GET'])
@@ -503,7 +685,8 @@ def searchitem():
 			option = request.args.get('option')
 			request_option = option
 			search_value = request.args.get('search_value')
-			function_of_option = {'All':SearchWithAll.search,'Basic Metrics':SearchWithBasicMetrics.search,'Browse Metrics':SearchWithAll.search}
+			function_of_option = {'All':SearchWithAll.search,'Basic Metrics':SearchWithBasicMetrics.search,\
+									'Browse Metrics':SearchWithAll.search,'billing':billing_search}
 			search_result = function_of_option.get(option,SearchInASGGroup.search)(search_value,option)
 			search_result_bool = True
 			info = 'success'
@@ -537,6 +720,34 @@ def browseitem():
 	result['browse_result_bool'] = browse_result_bool
 	result['browse_result'] = browse_result
 	result['info'] = info
+	return json.dumps(result)
+
+@mod_chart.route('/smr2item',methods=['POST','GET'])
+@login_required
+def smr2item():
+	result = {}
+	convert_result = None
+	info = None
+	convert_result_bool = False
+	if request.method == 'POST':
+		try:
+			selected_metrics = json.loads(request.data)['selected_metrics'] 
+			row_result = Chart.selected_metrics_2_metric_content(selected_metrics)
+			convert_result = []
+			for row in row_result:
+				item_list = ItemSearch.row_2_item_list(row['row_type'],row['row'])
+				convert_result = list( set(convert_result) | set(item_list) )
+
+			info = 'success'
+			convert_result_bool = True
+		except Exception, e:
+			info = str(e)
+			convert_result_bool = False
+			convert_result = None
+
+	result['convert_result'] = convert_result
+	result['info'] = info
+	result['convert_result_bool'] = convert_result_bool
 	return json.dumps(result)
 
 # @mod_chart.route('/schedule/data/')

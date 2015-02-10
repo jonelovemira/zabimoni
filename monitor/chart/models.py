@@ -3,6 +3,9 @@ from monitor import db
 from monitor.item.models import Item
 # from monitor.models import series_item
 
+
+
+
 class Window(db.Model):
 	windowid = db.Column(db.Integer,primary_key=True)
 	windowname = db.Column(db.String(80))
@@ -11,7 +14,10 @@ class Window(db.Model):
 	user_id = db.Column(db.Integer,db.ForeignKey('user.userid'))
 	page_id = db.Column(db.Integer,db.ForeignKey('page.pageid'))
 
-	window_series = db.relationship('Series',backref='window',lazy = 'dynamic')
+	# window_series = db.relationship('Series',backref='window',lazy = 'dynamic')
+
+	selectedmetrics = db.relationship('Selectedmetrics',backref='window',lazy='dynamic')
+	chartconfig = db.relationship('Chartconfig',backref='window',lazy='dynamic')
 
 	def __init__(self,windowname,type,index,user,page):
 		self.windowname = windowname
@@ -22,6 +28,92 @@ class Window(db.Model):
 	
 	def __repr__(self):
 		return '<Window %r>' % self.windowname
+
+class Selectedmetrics(db.Model):
+	selectedmetricsid = db.Column(db.Integer,primary_key=True)
+	window_id = db.Column(db.Integer,db.ForeignKey('window.windowid'))
+	report_id = db.Column(db.Integer,db.ForeignKey('report.reportid'))
+
+	options = db.relationship('Option',backref='selectedmetrics',lazy='dynamic')
+
+	def __init__(self,window,report=None):
+		self.window = window
+		self.report = report
+
+	def __repr__(self):
+		return '<Selectedmetrics %r>' % self.selectedmetricsid
+
+class Option(db.Model):
+	optionid = db.Column(db.Integer,primary_key=True)
+	optionname = db.Column(db.String(80))
+	selectedmetrics_id = db.Column(db.Integer,db.ForeignKey('selectedmetrics.selectedmetricsid'))
+
+	displaytables = db.relationship('Displaytable',backref='option',lazy='dynamic')
+
+	def __init__(self,optionname,selectedmetrics):
+		self.optionname = optionname
+		self.selectedmetrics = selectedmetrics
+
+	def __repr__(self):
+		return '<Option %r>' % optionname
+
+class Displaytable(db.Model):
+	displaytableid = db.Column(db.Integer,primary_key=True)
+	displaytablename = db.Column(db.String(80))
+
+	option_id = db.Column(db.Integer,db.ForeignKey('option.optionid'))
+
+	rows = db.relationship('Displaytablerow',backref='displaytable',lazy='dynamic')
+
+	def __init__(self,displaytablename,option):
+		self.displaytablename = displaytablename
+		self.option = option
+
+	def __repr__(self):
+		return '<Displaytable %r>' % displaytablename
+
+class Displaytablerow(db.Model):
+	displaytablerowid = db.Column(db.Integer,primary_key=True)
+
+	displaytable_id = db.Column(db.Integer,db.ForeignKey('displaytable.displaytableid'))
+
+	attrs = db.relationship('Attr',backref = 'displaytablerow',lazy='dynamic')
+
+	def __init__(self,displaytable):
+		self.displaytable = displaytable
+
+	def __repr__(self):
+		return '<Displaytablerow %r>' % displaytablerowid
+
+class Attr(db.Model):
+	attrid = db.Column(db.Integer,primary_key=True)
+	attrname = db.Column(db.String(80))
+	attrvalue = db.Column(db.String(80))
+
+	displaytablerow_id = db.Column(db.Integer,db.ForeignKey('displaytablerow.displaytablerowid'))
+	chartconfig_id = db.Column(db.Integer,db.ForeignKey('chartconfig.chartconfigid'))
+
+	def __init__(self,attrname,attrvalue,displaytablerow=None,chartconfig=None):
+		self.attrname = attrname
+		self.attrvalue = attrvalue
+		self.displaytablerow = displaytablerow
+		self.chartconfig = chartconfig
+
+	def __repr__(self):
+		return '<Attr key: %r value: %r>' % (attrname,attrvalue)
+
+class Chartconfig(db.Model):
+	chartconfigid = db.Column(db.Integer,primary_key=True)
+	attrs = db.relationship('Attr',backref = 'chartconfig',lazy='dynamic')
+
+	window_id = db.Column(db.Integer,db.ForeignKey('window.windowid'))
+
+	def __init__(self,window):
+		self.window = window
+
+	def __repr__(self):
+		return '<Chartconfig %r>' % (chartconfigid)
+
 
 class Series(db.Model):
 	seriesid = db.Column(db.Integer,primary_key=True)
@@ -80,6 +172,8 @@ class Report(db.Model):
 	title = db.Column(db.String(80))
 	discription = db.Column(db.String(200))
 	imgs = db.relationship('Reportimg',backref='report',lazy = 'dynamic')
+
+	selectedmetrics = db.relationship('Selectedmetrics',backref='report',lazy='dynamic')
 	
 	def __init__(self,scaletype,functiontype,reportname,owner,title=None,discription=None):
 		self.scaletype = scaletype

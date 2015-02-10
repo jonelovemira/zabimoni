@@ -1,0 +1,246 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/save_load_refresh.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/create_report.js')}}"></script>
+<script type="text/javascript">
+$(function () {
+                var display_item_list;
+                var series_info ;
+                var time_frequency;
+                var mychart;
+                var si = [];
+                var tmp;
+                var check_result ;
+                si.push(tmp);
+
+                function init_local()
+                {
+                    series_info = [];
+                    display_item_list = []
+                    time_frequency = 600;
+                    mychart = [];
+                    check_result = {};
+                    var arr = [];
+                    series_info.push(arr);
+                    callbacks = $.Callbacks();
+                    var tmp;
+                    mychart.push(tmp);
+                }
+
+            	  load_indexes();
+                init_local();
+
+                
+
+                function create_new_series(series_info,sortId,check_result,type,item_list,series_name)
+                {
+                        // console.log("create_new_series",series_info);
+                        var series_info_item = {};
+                        series_info_item['area_list'] = check_result['area'];
+                        series_info_item['service_list'] = check_result['service'];
+                        series_info_item['host_list'] = check_result['host'];
+                        series_info_item['aws_list'] = check_result['aws'];
+                        series_info_item['series_type'] = type;
+                        series_info_item['series_item_list'] = item_list;
+                        series_info_item['series_name'] = series_name;
+                        series_info[sortId].push(series_info_item);
+                }
+
+                $(document).on('click','button.addchart',function()
+                {
+                    $('#myModal').modal('hide');
+                    // for (var i = 0; i < display_item_list.length; i++) {
+                    //     $('#choosemonitoritem').append('<b>1</b>');
+                    // };
+                    display_str = display_item_list.join(';');
+                    // console.log($('#choosemonitoritem'));
+                    // $('#choosemonitoritem').attr('value',display_str);
+                    $('#choosemonitoritem').val(display_str);
+                    str = JSON.stringify({'current_series_info':series_info[0]});
+                    $('#hiddenseriesinfo').attr('value',str);  
+                });
+
+                $(document).on('click','button.btn.btn-default.preview',function()
+                {
+                    ////1. validate forms
+
+                    ////2. set value
+                    time_frequency = parseInt($('#ScaleType').val());
+                    functiontype = parseInt($('#FunctionType').val());
+                    classname='windowContainer';
+                    time_since = $('input[name=timesince]').val();
+                    time_till = $('input[name=timetill]').val();
+                    
+                    // console.log(time_since,time_till);
+
+                    create_report(classname,0,series_info,time_frequency,mychart,time_since,time_till,functiontype);
+                });
+
+
+                $('#choosemonitoritem').click(function()
+                {
+                    init_local();
+                    display_item_list=[];
+                    $('div[class=chooseresult]').empty();
+                  	$('button.itemtype').removeAttr("disabled");
+      			        $('#myModal').modal({
+      			            keyboard: false
+      			        });
+      			        $('#myModal').modal('show');
+                });
+
+                $(document).on('click','button.itemtype',function()
+      			    {
+      			        var value = $(this).attr('value');
+      			        var name = $(this).attr('name');
+                    var itemtypeid = $(this).attr('itemtypeid');
+      			        var itemids = value.split('@');
+                    var display_name = generate_display_name(name,check_result);
+                    display_item_list.push(name);
+      			        $('div[class=chooseresult]').append('<label class="chooseditem">'+display_name+';</label>');
+                    create_new_series(series_info,0,check_result,itemtypeid,itemids,display_name);
+      			        $(this).attr("disabled","disabled");
+      			    });
+                
+    $(document).ready(function() {
+      $('#fieldIconsForm').bootstrapValidator({
+          feedbackIcons: {
+              valid: 'glyphicon glyphicon-ok',
+              invalid: 'glyphicon glyphicon-remove',
+              validating: 'glyphicon glyphicon-refresh'
+          },
+          fields: {
+              reportname: {
+                  feedbackIcons: 'false',
+                  validators: {
+                      notEmpty: {
+                          message: 'The report name is required and cannot be empty'
+                      }
+                  }
+              },
+              itemname: {
+                  feedbackIcons: 'false',
+                  validators: {
+                      stringLength: {
+                          min:0,
+                          message: 'You should choose at least one item'
+                      }
+                  }
+              },
+              timesince: {
+                  feedbackIcons: 'false',
+                  validators: {
+                      notEmpty: {
+                          message: 'The time since cannot be empty'
+                      }
+                  }
+              },
+              timetill: {
+                  feedbackIcons: 'false',
+                  validators: {
+                      notEmpty: {
+                          message: 'The time till cannot be empty'
+                      }
+                  }
+              }
+          }
+      });
+
+      
+    });
+});
+</script>
+
+<form id="fieldIconsForm" class="form-horizontal" method="POST" action="">
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="exampleInputReportName1">Report name</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" id="exampleInputReportName1" placeholder="Enter Report Name" name="reportname">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="choosemonitoritem">Items</label>
+        <div class="col-sm-5">
+          <input type="text" class="form-control" id="choosemonitoritem" placeholder="Choose items" name="itemname" readonly>
+        </div>
+    </div>
+
+    <div class="form-group hidden">
+        <label class="col-sm-3 control-label" for="hiddenseriesinfo">Items</label>
+        <div class="col-sm-5">
+          <input type="text" class="form-control" id="hiddenseriesinfo" placeholder="Choose items" name="seriesinfo">
+        </div>
+    </div>
+   
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="ScaleType">Scale Type</label>
+        <div class="col-sm-5">
+          <select class="form-control" id="ScaleType" name="scaletype">
+            <option value=600>Ten Minute</option>
+            <option value=3600>Hourly</option>
+            <option value=86400>Daily</option>
+            <option value=604800>Weekly</option>
+          </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="FunctionType">Function Type</label>
+        <div class="col-sm-5">  
+          <select class="form-control" id="FunctionType" name="functiontype">
+            <option value=0>Count</option>
+            <option value=1 selected>Avg</option>
+            <option value=2>Max</option>
+            <option value=3>Min</option>
+          </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="titleforreport">Title in email</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" id="titleforreport" placeholder="Title in email" name="title">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-sm-3 control-label" for="discription">Discription</label>
+        <div class="col-sm-5">
+            <input type="text" class="form-control" id="discription" placeholder="Discription" name="discription">
+        </div>
+    </div>
+
+
+    <div class="form-group">
+        <div class="col-sm-5 col-sm-offset-3">
+            <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</form>
+<button class="btn btn-default preview" style="margin-bottom:10px;">preview</button>
+
+
+<div id="windowContainer" class="windowContainer" sortId="0" style="height: 400px; min-width: 600px; border:1px solid #aaa;text-align: center" ></div>
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog page">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="myModalLabel">Choos monitor items</h4>
+      </div>
+      <div class="modal-body">
+        {% include 'chart/index.html'%}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary addchart">Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

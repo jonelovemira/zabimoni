@@ -47,15 +47,15 @@ def export_all_2_xml():
 	tree.write(f.name)
 	f.close()
 
-	con = S3Connection()
-	bucket = con.get_bucket(S3_BUCKET_NAME)
-	key = bucket.get_key(XML_EXPORT_PATH)
-	if key == None:
-		key = bucket.new_key(XML_EXPORT_PATH)
+	#con = S3Connection()
+	#bucket = con.get_bucket(S3_BUCKET_NAME)
+	#key = bucket.get_key(XML_EXPORT_PATH)
+	#if key == None:
+	#	key = bucket.new_key(XML_EXPORT_PATH)
 
-	key.set_contents_from_filename(f.name)
-	key.make_public()
-	os.unlink(f.name)
+	#key.set_contents_from_filename(f.name)
+	#key.make_public()
+	#os.unlink(f.name)
 
 	
 

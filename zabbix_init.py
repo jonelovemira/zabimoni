@@ -198,7 +198,7 @@ if __name__ == '__main__':
 		
 		update_itemprototype(zabbix)
 
-		ua = Zabbixactions.query.filter_by(name=unreachable_action_command).first()
+		ua = Zabbixactions.query.filter_by(name=unreachable_action_name).first()
 		if ua == None:
 			create_unreachable_action(zabbix,unreachable_action_command,unreachable_action_name)
 

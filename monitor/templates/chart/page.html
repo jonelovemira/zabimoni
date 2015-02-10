@@ -22,7 +22,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     
 </head>
-<body>
+<body class="window-base-body">
 
 
 <div class="navbar navbar-default navbar-fixed-top page" role="navigation">
@@ -77,6 +77,23 @@ $(function()
 
     display_chart_modal_selector = '#myModal';
 
+    save_button_class = 'saveButton';
+    save_button_selector = 'button.' + save_button_class;
+
+    clear_button_class = 'clear';
+    clear_button_selector = 'button.' + clear_button_class;
+
+    saved_name_selector  = '#savetext';
+
+    load_button_class = 'savedListItemButton';
+    load_button_selector = 'button.' + load_button_class;
+
+    remove_span_class = 'remove-span';
+    remove_span_selector = 'span.' + remove_span_class;
+
+    saved_list_selector = 'div[udf="savedlist"]';
+
+
     var f = new window_base();
 
     // var page_table_dom = $(maintable_selector).clone();
@@ -118,26 +135,28 @@ $(function()
         chart_config['container_class'] = chart_container_class;
         chart_config['container_selector'] = 'div.' + chart_container_class + '[sortId="' + current_window_index + '"]';
 
+        refresh_specific_chart(current_window_index,selected_metric_result,chart_config);
+    });
+    
+    function refresh_specific_chart(refresh_index,refresh_smr,refresh_cc)
+    {
         var local_display_chart = new chart();
-        local_display_chart.set_selected_metrics(selected_metric_result);
-        local_display_chart.set_chart_config(chart_config);
+        local_display_chart.set_selected_metrics(refresh_smr);
+        local_display_chart.set_chart_config(refresh_cc);
         local_display_chart.clear_chart();
         local_display_chart.set_highchart();
 
         // delete nine_charts[current_window_index];
-        clear_old_by_index(current_window_index);
+        clear_old_by_index(refresh_index);
 
-        nine_charts[current_window_index] = {};
-        nine_charts[current_window_index]['chart'] = local_display_chart;
-        nine_charts[current_window_index]['selected_metric_result'] = selected_metric_result;
-        nine_charts[current_window_index]['chart_config'] = chart_config;
-        // nine_charts[current_window_index] = local_display_chart;
+        nine_charts[refresh_index] = {};
+        nine_charts[refresh_index]['chart'] = local_display_chart;
+        nine_charts[refresh_index]['selected_metric_result'] = refresh_smr;
+        nine_charts[refresh_index]['chart_config'] = refresh_cc;
+
         // console.log(local_display_chart);
         local_display_chart.create_chart();
-        // display_chart.
-        // console.log(nine_charts);
-
-    });
+    }
 
     function clear_old_by_index(sortId)
     {
@@ -158,6 +177,8 @@ $(function()
 
         if (nine_charts[current_window_index] != undefined) {
             f.set_smr_cc(nine_charts[current_window_index]['selected_metric_result'],nine_charts[current_window_index]['chart_config']);
+            f.update_select_badge_from_outer();
+            f.render_current_selected_metrics_from_outer();
         };
 
         $(display_chart_modal_selector).modal({
@@ -187,6 +208,128 @@ $(function()
         };
     });
 
+    $(document).on('click',save_button_selector,function()
+    {
+        var pagename = $(saved_name_selector).val();
+        if (pagename != undefined && pagename != null && pagename != '') {
+            save_page(pagename,nine_charts);
+        }
+        else
+        {
+            alert(' saved name cannot be empty ');
+        }
+    });
+
+    $(document).on('click',load_button_selector,function()
+    {
+        var indexId = $(this).attr("indexId");
+        load_page(indexId);
+    });
+
+    $(document).on('click',remove_span_selector,function(event)
+    {
+        var pagename = $(this).attr("name");
+        if (confirm(' Are you sure to delete page: ' + pagename)) {
+            var indexId = $(this).closest('button').attr("indexId");
+            delete_page(indexId);
+        }
+        event.stopPropagation();
+    });
+
+    load_first();
+
+    function load_first()
+    {
+        var first_page = $(load_button_selector).first();
+        // var indexId = first_page
+        // console.log(first_page.attr("indexid"));
+        var indexid = first_page.attr("indexid");
+        load_page(indexid);
+    }
+
+    function delete_page(indexId_to_delete)
+    {
+        $.getJSON('/chart/delete/page',{pageid:indexId_to_delete},function(data)
+        {
+            if (data.delete_result_bool) {
+                // console.log(data.delete_result);
+                $('button[indexId="' + data.delete_result + '"]' ).remove();
+            }
+            else
+            {
+                console.log(data.info);
+            }
+        });
+    }
+
+    function load_page(indexId)
+    {
+        for (var i = 9 - 1; i >= 0; i--) {
+            clear_old_by_index(i);
+            clear_specific_chart(i);
+            add_sepecific_template(i);
+        };
+
+        $.getJSON('/chart/load/page',{pageid:indexId},function(data)
+        {
+            if (data.load_result_bool) {
+                // console.log(data);
+                for( index in data.load_result)
+                {
+                    refresh_specific_chart(index,data.load_result[index]['selected_metrics'],data.load_result[index]['chart_config'])
+                }
+            }
+            else
+            {
+                console.log(data.info);
+            }
+        });
+    }
+
+
+
+    function save_page(pagename,saved_nine_charts)
+    {
+        var tmp_nine_charts = {};
+
+        for(index in saved_nine_charts)
+        {
+            var tmp_selected_metrics = jQuery.extend(true, {}, saved_nine_charts[index]['selected_metric_result']);
+            var tmp_chart_config = jQuery.extend(true, {}, saved_nine_charts[index]['chart_config']);
+            tmp_nine_charts[index] = {};
+            tmp_nine_charts[index]['selected_metric_result'] = tmp_selected_metrics;
+            tmp_nine_charts[index]['chart_config'] = tmp_chart_config;
+        }
+
+        var option = {  
+            url: '/chart/save/page',  
+            type: 'POST',  
+            data: JSON.stringify({'pagename':pagename,'nine_charts':tmp_nine_charts}),  
+            dataType: 'json', 
+            contentType : 'application/json', 
+            success: function (data) {
+                
+                if (data.save_result_bool) {
+                    
+                    // console.log(data);
+                    result_str = '';
+                    result_str += '<button class="btn btn-sm btn-default savedListItemButton" indexId="' + data.save_result['indexId'] + '" name="' + data.save_result['name'] + '">' + data.save_result['name'];
+                    result_str += '<span class="glyphicon glyphicon-remove remove-span" aria-hidden="true" style="margin-left:10px" name="' + data.save_result['name'] + '">';
+                    result_str += '</span></button>';
+
+                    $(saved_list_selector).append(result_str);
+                }
+                else
+                {
+                    console.log(data.info);
+                    // add_message_2_query_message_selector(data.info,'danger');
+                }
+                $(saved_name_selector).val('');
+            }  
+        };  
+        $.ajax(option);
+    }
+
     function clear_specific_chart(sortId)
     {
 
@@ -208,6 +351,15 @@ $(function()
         $(add_selector).append(result_str);
     }
 
+    $(document).on('click',clear_button_selector,function()
+    {
+        for(index in nine_charts)
+        {
+            clear_old_by_index(index);
+            clear_specific_chart(index);
+            add_sepecific_template(index);
+        }
+    });
     
 
 
@@ -215,7 +367,27 @@ $(function()
 
 </script>
 
-<div class="jumbotron">
+<div class="jumbotron" style="padding-top:5px;">
+
+    <div class="form-inline" role="form" style="text-align:right;padding-bottom:10px;">
+        <div class="form-group">
+            <div class="input-group">
+                <label class="sr-only" for="savetext">Saved Name</label>
+                <input type="text" class="form-control" id="savetext" placeholder="Saved Name">
+            </div>
+        </div>
+      <button class="btn btn-primary saveButton">Save</button>
+      <button class="btn btn-info clear">Clear</button>
+    </div>
+
+<div class="form-inline" udf="savedlist" style="padding-bottom:10px;">
+    <label>History Saved:</label>
+    {% for p in pages%}
+        <button class="btn btn-sm btn-default savedListItemButton" indexId="{{p.pageid}}" name="{{p.pagename}}">{{p.pagename}}<span class="glyphicon glyphicon-remove remove-span" aria-hidden="true" style="margin-left:10px" name="{{p.pagename}}"></span></button>
+    {% endfor %}
+</div>
+
+
 <div class="maintable">
 {% include 'chart/pagetable.html' %}
 </div>

@@ -66,7 +66,7 @@ def login():
 
 def try_login(username,password):
     url = AUTHORIZATION_PROTOCAL + AUTHORIZATION_SERVER + AUTHORIZATION_VIEW
-    data = urllib.urlencode({'username':username,'password':password})
+    data = urllib.urlencode({'username':username,'password':password,'origin':'monitor'})
     result = urllib2.urlopen(url=url, data=data).read()
     return json.loads(result)
 

@@ -11,7 +11,7 @@
 
 <div class="container-fluid">
       <div class="row">
-        <div class="col-md-2 sidebar">
+        <div class="col-sm-3 col-md-2 sidebar">
           <ul class="nav nav-sidebar">
             <li class="sidebar-page active"><a href="javascript:;" page="dashboard" class="sidebar-page">Dashboard <span class="sr-only">(current)</span></a></li>
             <li class="sidebar-page"><a href="javascript:;" page="billing" class="sidebar-page">Billing</a></li>
@@ -25,30 +25,37 @@
             		{% endfor %}
             	</ul>
             </li>
-          </ul>
-        </div>
-        <div class="col-md-10 col-md-offset-2 main">
-            
-            <div class="row indexmain">
-                <div class="jumbotron dashboard-main">
-                    <h1>Metric Summary</h1>
-                    <p>Monitor monitors operational and performance metrics for your cloud resources and applications.</p>
-                    <p>Browse or search your metrics to get started graphing data.</p>
-                    <div class="navbar-form">
-                        <button class='btn btn-primary form-control browsemetric' type="button">Browse Metrics</button>
-                        <input type=text class="form-control search" placeholder="input Metrics Name"/>
-                    </div>
-                    
+            <li class="sidebar-page">
+                <a href="javascript:;" class="sidebar-load">History Chart Saved</a>
+                <ul class="sidebar-load-ul">
+                    {% for w in windows %}
+                        <li>
+                            <a href="javascript:;" class="chart-saved-li" indexId="{{w.windowid}}" name="{{w.windowname}}">{{w.windowname}}
+                                <span class="glyphicon glyphicon-remove remove" aria-hidden="true" indexId="{{w.windowid}}"></span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </li>
+            <li class="sidebar-page">
+                <a href="javascript:;" class="sidebar-save">Click Save Button to Save</a>
+                <div class="navbar-form">
+                    <input type="text" class="form-control save-name" placeholder="input saved name">
+                    <button class="btn btn-default form-control save">Save</button>
                 </div>
-            </div>
+            </li>
+          </ul>
+          
+          
+        </div>
+
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
             
-            <!-- <div class="row chart"> -->
-                <!-- <div class="col-sm-9 chart-main"> -->
-                    <!-- <div class="row chart-header-config"></div> -->
-                    <!-- <div class="row chart-display-container"></div> -->
-                <!-- </div> -->
-                <!-- <div class="col-sm-3 chart-sidebar-config"></div> -->
-            <!-- </div> -->
+            
+            
+            {% include 'chart/window_main.html' %}
+
+            
         </div>
       </div>
 </div>

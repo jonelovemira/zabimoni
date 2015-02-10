@@ -1,168 +1,52 @@
 {% extends "layout.html" %}
 {% block body %}
-<link href="{{url_for('static',filename='css/trigger.css')}}" rel="stylesheet"></link>
-<script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
-<script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
-<script type="text/javascript" src="{{url_for('static',filename='js/window_base.js')}}"></script>
+<script src="{{url_for('static',filename='js/save_load_refresh.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/email.js')}}"></script>
-
-<link type="text/css" href="{{url_for('static',filename='css/window_base.css')}}" rel="stylesheet">
-<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
-<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
-<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/jquery-ui.min.css')}}">
-<script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
-<script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
-<script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
 <script type="text/javascript">
 $(function () {
+    load_indexes();
 
+    index = 'first';
 
-    display_chart_modal_selector = '#forchooseitem';
-
-    confrim_item_class = 'confirm';
-    confirm_item_selector = 'button.' + confrim_item_class;
-
-    flash_class = 'alert';
-    flash_selector = 'div.' + flash_class;
-
-    generateformula_button_selector = 'a[udf="generateformula"]';
-
-
-    scale_selector = '#formulascale';
-    scaleoperator_selector = 'select[name="scaleoperator"]';
-    first_itemids_selector = '#formulaitemfirst';
-    fs_operator_selector = 'select[name="firstsecondoperator"]';
-    second_itemids_selector = '#formulaitemsecond';
-    brackets_position_selector = 'select[name=bracketsposition]';
-
-    var current_selector = null;
-
-    var f = new window_base();
-
-    f.set_allow_check_multiple(false);
-
-    $(document).on('click',first_itemids_selector,function()
+    $('#formulaitemfirst').click(function()
     {
-        current_selector = first_itemids_selector;
-        $(display_chart_modal_selector).modal({
+        index = 'first';
+        $('#forchooseitem').modal({
             keyboard: false
         });
-        $(display_chart_modal_selector).modal('show');
+        $('#forchooseitem').modal('show');
     });
 
-    $(document).on('click',second_itemids_selector,function()
+    $('#formulaitemsecond').click(function()
     {
-        current_selector = second_itemids_selector;
-        $(display_chart_modal_selector).modal({
+        index = 'second';
+        $('#forchooseitem').modal({
             keyboard: false
         });
-        $(display_chart_modal_selector).modal('show');
+        $('#forchooseitem').modal('show');
     });
 
-
-    function selected_metric_2_name(current_selected_metrics)
+    $(document).on('click','button.confirmchoose',function()
     {
-        var name = '';
-        for (var option in current_selected_metrics)
-        {
-            // console.log(selected_metric_result[option]);
-            for (var table_title in current_selected_metrics[option])
-            {
-                // console.log(table_title);
-                var metric_count = current_selected_metrics[option][table_title]['metric_count'];
-                if (metric_count > 0) {
-                    var table_head = current_selected_metrics[option][table_title]['table_head'];
+        $('#formulaitem' + index).attr('value','');
+        $('#forchooseitem').modal('hide');
+    })
 
-                    for (var metric_index in current_selected_metrics[option][table_title]['metric_result']) {
-                    // console.log(selected_metric_result[option][table_title]['metric_result'][metric_index]);
-                        var name_str = '';
-                        name_str = current_selected_metrics[option][table_title]['metric_result'][metric_index][table_head.indexOf('Metric Name')];
-                        name += name_str + ';';
-                    };
-                };
-            }
-        }
-        // console.log(name);
-        return name;
-    }
-
-
-    $(document).on('click',confirm_item_selector,function()
+    $(document).on('click','button.itemtype',function()
     {
-        $(display_chart_modal_selector).modal('hide');
-        
-
-        var selected_metric_result;
-        var chart_config;
-
-        selected_metric_result = jQuery.extend(true, {}, f.get_selected_metric_result());
-        chart_config = jQuery.extend(true, {}, f.get_chart_config());
-
-        selected_metrics_2_item_list(selected_metric_result);
+        var value = $(this).attr('value');
+        $('#formulaitem' + index).attr('value',value);
+        $('#forchooseitem').modal('hide');
     });
 
-    // function add_message_2_flash(message,type)
-    // {
-    //     console.log($(flash_selector));
-    //     result_str = '';
-    //     result_str += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
-    //     result_str += message;
-
-    //     $(flash_selector).append(result_str);
-
-    //     setTimeout(function()
-    //     {
-    //         $(flash_selector).empty();
-    //         $(flash_selector).removeClass('alert-' + type);
-    //     },5000)
-    // }
-
-    function item_render(item_list)
+    $('a[udf="generateformula"]').click(function()
     {
-        var item_list_str = item_list.join('@');
-        $(current_selector).attr('value',item_list_str);
-    }
-
-
-    function selected_metrics_2_item_list(selected_metric_result)
-    {
-        var option = {
-            url: '/chart/smr2item', 
-            type: 'POST',
-            data: JSON.stringify({'selected_metrics':selected_metric_result}),  
-            dataType: 'json', 
-            contentType : 'application/json', 
-            success: function (data) {
-                console.log(data);
-                if (data.convert_result_bool) {
-                    item_render(data.convert_result);
-                }
-            }
-        };
-        $.ajax(option);
-    }
-
-    $(display_chart_modal_selector).on('shown.bs.modal', function () {
-        if (f.get_display_chart() != undefined) {
-            f.update_call();
-        };
-    });
-
-    $(display_chart_modal_selector).on('hidden.bs.modal',function()
-    {
-        if (f.get_display_chart() != undefined) {
-            f.get_display_chart().clear_chart();
-        };
-    });
-
-    $(generateformula_button_selector).click(function()
-    {
-        scale = $(scale_selector).val();
-        scaleoperator = $(scaleoperator_selector).val();
-        first_itemids = $(first_itemids_selector).val();
-        fs_operator = $(fs_operator_selector).val();
-        second_itemids = $(second_itemids_selector).val();
-        brackets_position = $(brackets_position_selector).val();
+        scale = $('#formulascale').val();
+        scaleoperator = $('select[name="scaleoperator"]').val();
+        first_itemids = $('#formulaitemfirst').val();
+        fs_operator = $('select[name="firstsecondoperator"]').val();
+        second_itemids = $('#formulaitemsecond').val();
+        brackets_position = $('select[name=bracketsposition]').val();
 
         $.getJSON('/item/generateformula',{scale:scale,scaleoperator:scaleoperator,first_itemids:first_itemids,fs_operator:fs_operator,second_itemids:second_itemids,brackets_position:brackets_position},function(data)
         {
@@ -171,12 +55,12 @@ $(function () {
         });
     });
 
-    // $('select[name="selectedaction"]').change(function()
-    // {
-    //     value = $('select[name="selectedaction"]').val();
-    //     alert(value);
-    //     // $('textarea[name="command"]').val(value);
-    // })
+    $('select[name="selectedaction"]').change(function()
+    {
+        value = $('select[name="selectedaction"]').val();
+        alert(value);
+        // $('textarea[name="command"]').val(value);
+    })
 
     $('div[case="actiontype"]').hide();
     $('div[udf=at1]').show();
@@ -190,7 +74,7 @@ $(function () {
         };
     });
 
-    // // loadfirstareaasg();
+    // loadfirstareaasg();
 
     function loadfirstareaasg()
     {
@@ -267,8 +151,6 @@ $(function () {
             </select>
         </div>
 
-
-
         <div class="col-sm-3">
             <input type="text" class="form-control" id="formulaitemfirst" placeholder="click to choose" readonly name="formulaitemfirst">
         </div>
@@ -304,7 +186,7 @@ $(function () {
             <textarea type="text" class="form-control" name="formula" rows="4" required></textarea>
         </div>
         <div class="col-sm-2">
-            <a href="javascript:;" class="btn btn-default form-control" type="button" udf="generateformula">generate</a>
+            <a href="#" class="form-control" udf="generateformula">generate</a>
         </div>
     </div>
 
@@ -400,25 +282,25 @@ $(function () {
 </form>
 
 <div class="modal fade" id="forchooseitem" tabindex="-1" role="dialog" aria-labelledby="chooseitem" aria-hidden="true">
-  <div class="modal-dialog large">
+  <div class="modal-dialog page">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
         <h4 class="modal-title" id="chooseitem">Choose monitor items</h4>
       </div>
       <div class="modal-body">
-        {% include 'chart/window_main.html'%}
+        {% include 'chart/index.html'%}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary confirm">Choose</button>
+        <button type="button" class="btn btn-primary confirmchoose">Choose</button>
       </div>
     </div>
   </div>
 </div>
 
 <div class="modal fade" id="foremailaddress" tabindex="-1" role="dialog" aria-labelledby="emailaddress" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog page">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>

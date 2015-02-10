@@ -4,6 +4,57 @@
 <script type="text/javascript">
 $(document).ready(function() {
 
+    // $('select[name=areaid]')
+    $(document).on('change','select[name=areaid]',function()
+    {
+        $('div[dynamicadd=1]').remove();  
+        var areaid = $('select[name=areaid]').val();
+        var radio_value = null;
+        $("input[type=radio][name=usetype]").each(function(i,d)
+        {
+            if (d.checked) {
+                radio_value = $(this).attr("value");
+            };
+        });
+        console.log(radio_value);
+        if (radio_value == '2') {
+            $('div[udf=useservice]').hide();
+            $('#forsaving').modal({
+                keyboard: false
+            });
+            $('#forsaving').modal('show');
+            load_elb_for_area(areaid);
+        }
+        else
+        {
+            $('div[udf=useservice]').show();
+        }
+    });
+
+    function load_elb_for_area(areaid)
+    {
+        $.getJSON('/item/elbforarea',{areaid:areaid},function(data)
+        {
+            $('#forsaving').modal('hide');
+            if (data.length == 0) {
+                htmltag =   '<div class="form-group" udf="useelb" dynamicadd=1><label class="col-sm-3 control-label" >ELB results</label><div class="col-sm-5"><input type="text" class="form-control"  placeholder="ELB not found" name="elbname" disabled></div></div>';
+            }
+            else
+            {
+                htmlhead =   '<div class="form-group" udf="useelb" dynamicadd=1><label class="col-sm-3 control-label" >ELB results</label><div class="col-sm-5"><select class="form-control"  name="elbname">';
+                htmlbody = '';
+                for (i = 0 ; i < data.length ; i ++) {
+                    htmlbody += '<option value="' + data[i] + '">' + data[i] + '</option>';
+                };
+                htmltail = '</select></div></div>';
+                htmltag = htmlhead + htmlbody + htmltail;
+                anothertag = '<div class="form-group" dynamicadd=1><div class="col-sm-5 col-sm-offset-3"><label class="checkbox-inline"><input type="checkbox" name="addhost" value="1">add host register in this elb</label></div></div>';
+                htmltag += anothertag;
+            }
+            $('div[udf=useservice]').after(htmltag);
+        });
+    }
+
     $('input[type=radio][name=usetype]').click(function()
     {
         $('div[dynamicadd=1]').remove();   
@@ -19,27 +70,9 @@ $(document).ready(function() {
                     });
                     $('#forsaving').modal('show');
 
-                    areaid = $('select[name=areaid]').val();
-                    $.getJSON('/item/elbforarea',{areaid:areaid},function(data)
-                    {
-                        $('#forsaving').modal('hide');
-                        if (data.length == 0) {
-                            htmltag =   '<div class="form-group" udf="useelb" dynamicadd=1><label class="col-sm-3 control-label" >ELB results</label><div class="col-sm-5"><input type="text" class="form-control"  placeholder="ELB not found" name="elbname" disabled></div></div>';
-                        }
-                        else
-                        {
-                            htmlhead =   '<div class="form-group" udf="useelb" dynamicadd=1><label class="col-sm-3 control-label" >ELB results</label><div class="col-sm-5"><select class="form-control"  name="elbname">';
-                            htmlbody = ''
-                            for (i = 0 ; i < data.length ; i ++) {
-                                htmlbody += '<option value="' + data[i] + '">' + data[i] + '</option>';
-                            };
-                            htmltail = '</select></div></div>'
-                            htmltag = htmlhead + htmlbody + htmltail;
-                            anothertag = '<div class="form-group" dynamicadd=1><div class="col-sm-5 col-sm-offset-3"><label class="checkbox-inline"><input type="checkbox" name="addhost" value="1">add host register in this elb</label></div></div>'
-                            htmltag += anothertag;
-                        }
-                        $('div[udf=useservice]').after(htmltag);
-                    });
+                    var areaid = $('select[name=areaid]').val();
+                    load_elb_for_area(areaid);
+                    
                 }
                 else
                 {

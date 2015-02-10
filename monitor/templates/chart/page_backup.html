@@ -347,8 +347,19 @@ $(function () {
 </script>
 
 
-<div class="jumbotron">
-{% include 'chart/save.html' %}
+<div class="jumbotron" style="padding-top:0px">
+
+    <div class="form-inline" role="form" style="text-align:right;padding-bottom:10px;">
+        <div class="form-group">
+            <div class="input-group">
+                <label class="sr-only" for="savetext">Saved Name</label>
+                <input type="text" class="form-control" id="savetext" placeholder="Saved Name">
+            </div>
+        </div>
+      <button class="btn btn-primary saveButton">Save</button>
+      <button class="btn btn-info clear">Clear</button>
+    </div>
+
 <div class="form-inline" udf="savedlist" style="padding-bottom:10px;">
     <label>History Saved:</label>
     {% for p in pages%}

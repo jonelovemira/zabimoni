@@ -141,6 +141,10 @@ $(document).ready(function() {
 	                $('div[class=row][num=' + rn + '][type=report]').append('<div class="col-sm-3"><label class="checkbox-inline no_indent"><input type="checkbox" id=inlineCheckbox' + (j+1) + ' value=' + data[j].reportid + ' name="' + data[j].reportname + '" >'
 	                     + data[j].reportname + '</label></div>');
 	            }
+
+                if (data.length == 0) {
+                    $('div[class=IndexDiv][type=report]').append('<div class="row" num=' + rn + ' type=report>No report available</div>');
+                };
 	    });
 	}
 
