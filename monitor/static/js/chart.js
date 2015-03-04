@@ -6,6 +6,8 @@ function chart()
 	this.selected_metrics = null;
 	this.chart_config =null;
 
+    this.callback = null;
+
     this.get_selected_metrics = function()
     {
         return this.selected_metrics;
@@ -69,6 +71,12 @@ function chart()
         this.mychart = tmp_chart;
     }
 
+    this.set_callback = function(tmp_callback)
+    {
+        this.callback = tmp_callback;
+
+    }
+
 	// clear_chart();
 	// set_highchart();
 
@@ -81,7 +89,7 @@ function chart()
         $(this.chart_config['container_selector']).append('<button class="btn btn-lg btn-info"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Loading...</button>');
         // var series_for_current_window = [];
         // console.log(chart_title);
-
+        console.log("this.callback",this.callback);
         create_highstock_chart = function(current_series_data,tmp_current_class,current_yAxis,current_tooltip){
                  // $(tmp_current_class.get_chart_config()['container_selector']).highcharts({
                  $(tmp_current_class.get_chart_config()['container_selector']).highcharts('StockChart',{
@@ -98,6 +106,12 @@ function chart()
                                             tmp_current_class.update();
                                         },tmp_current_class.get_chart_config()['frequency']*1000);
                                     tmp_current_class.set_interval_num(tmp_interval_num);
+
+                                };
+
+                                // console.log(tmp_current_class.callback);
+                                if (tmp_current_class.callback != null) {
+                                    tmp_current_class.callback.fire();
                                 };
                             }
                         },
@@ -169,8 +183,13 @@ function chart()
                 // console.log(data);
         		if( ! data.init_result_bool )
         		{
-        			$(current_class.get_chart_config()['container_selector']).append('<button class="btn btn-lg btn-warn">No Monitor data to display</button>');
-                    console.log(data.info);
+        			$(current_class.get_chart_config()['container_selector']).empty();
+                    result_str = '';
+                    result_str += '<div class="alert alert-' + 'danger' + '">';
+                    result_str += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+                    result_str += data.info;
+                    result_str += '</div>';
+                    $(current_class.get_chart_config()['container_selector']).append(result_str);
         		}
         		else
         		{
@@ -253,8 +272,20 @@ function chart()
                             var s = 'Value:<b>' + parseFloat(this.y).toFixed(2) + '</b><br/>';
                             s += 'Time:<b>' + Highcharts.dateFormat('%Y/%m/%d %H:%M', this.x) + '</b><br/>';
                             var series_name = this.series.name;
-                            var metric_name = series_name.split(' ')[1];
-                            var name_space = series_name.split(' ')[0];
+                            var metric_name = '';
+                            var name_space = '';
+                            if (series_name.split(' ').length > 1) {
+                                for (var i = 1; i < series_name.split(' ').length; i++) {
+                                    metric_name += series_name.split(' ')[i] + ' ';
+                                };
+                                // var metric_name = series_name.split(' ')[1];
+                                name_space = series_name.split(' ')[0];
+                            }
+                            else
+                            {
+                                metric_name = series_name;
+                            }
+                            
                             s += 'Metric Name:<b>' + metric_name + '</b><br/>';
                             s += 'Namespace:<b>' + name_space + '</b><br/>';
                             // var s = '<b>' + Highcharts.dateFormat('%A, %b %e, %Y', this.x) + '</b>';
@@ -306,7 +337,7 @@ function chart()
     			// console.log(data);
     			if (data.update_result_bool) {
     				for (var i = 0; i < data.update_result.length; i++) {
-    					console.log(data.update_result[i]);
+    					// console.log(data.update_result[i]);
                         // if (data.update_result[i][1] != null) 
                         {
                             current_class.mychart.series[i].addPoint(data.update_result[i],false,true);

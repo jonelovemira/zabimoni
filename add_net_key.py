@@ -12,22 +12,26 @@ from monitor.MonitorException import *
 from datetime import datetime
 from monitor.item.functions import add_key
 from config import REMOTE_COMMAND_LOG
+import time
 
 if __name__ == '__main__':
 	zabbix = zabbix_api()
 	session = loadSession()
 	try:
 
-		content = 'new content'
-		if len(sys.argv) > 1:
-			content = 	sys.argv[1]
-		today = datetime.today()
+		time_format = '%Y-%m-%d %H:%M:%S %Z'
+		current_time = time.strftime(time_format,time.gmtime(time.time()))
+
 		output = open(REMOTE_COMMAND_LOG,'a')
-		output.write('\n')
-		output.write(str(today))
-		output.write(' ' + 'add net key' + ' ')
-		output.write(' ' + content)
+		output.write( '\n' + current_time + ' ')
+
+		for a in sys.argv:
+			output.write(a + ' ')
+
 		output.close()
+
+
+		
 
 		hostname = sys.argv[1]
 		in_key = sys.argv[2]

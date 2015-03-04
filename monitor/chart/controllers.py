@@ -36,7 +36,18 @@ def window():
 	
 	windows = g.user.windows.filter_by(type=WINDOW_CHART).all()
 	services = Service.query.all()
-	return render_template("chart/window.html",title='Window',services=services,windows=windows)
+	itemtypes = Itemtype.query.all()
+	tmp_arr = []
+	aws_tmp_arr = []
+	for it in itemtypes:
+		if it.aws == None:
+			tmp_arr.append(it.itemtypename)
+		else:
+			item = it.items.first()
+			aws_tmp_arr.append(item.itemname)
+	itemtypenames = json.dumps(tmp_arr)
+	aws_itemtypenames = json.dumps(aws_tmp_arr)
+	return render_template("chart/window.html",title='Window',services=services,windows=windows,itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
 
 @mod_chart.route('/page/', methods=['GET', 'POST'])
@@ -45,7 +56,18 @@ def page():
 	services = Service.query.all()
 	pages = g.user.pages.all()
 	windows = g.user.windows.filter_by(type=WINDOW_CHART).all()
-	return render_template("chart/page.html",title='Page',services=services,pages=pages,windows=windows)
+	itemtypes = Itemtype.query.all()
+	tmp_arr = []
+	aws_tmp_arr = []
+	for it in itemtypes:
+		if it.aws == None:
+			tmp_arr.append(it.itemtypename)
+		else:
+			item = it.items.first()
+			aws_tmp_arr.append(item.itemname)
+	itemtypenames = json.dumps(tmp_arr)
+	aws_itemtypenames = json.dumps(aws_tmp_arr)
+	return render_template("chart/page.html",title='Page',services=services,pages=pages,windows=windows,itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
 
 @mod_chart.route('/report')
@@ -60,6 +82,19 @@ def report():
 @login_required
 def addreport():
 	services = Service.query.all()
+
+	itemtypes = Itemtype.query.all()
+	tmp_arr = []
+	aws_tmp_arr = []
+	for it in itemtypes:
+		if it.aws == None:
+			tmp_arr.append(it.itemtypename)
+		else:
+			item = it.items.first()
+			aws_tmp_arr.append(item.itemname)
+	itemtypenames = json.dumps(tmp_arr)
+	aws_itemtypenames = json.dumps(aws_tmp_arr)
+
 	if request.method == 'POST':
 		try:
 			reportname = request.form['reportname']
@@ -71,6 +106,7 @@ def addreport():
 			owner = g.user
 
 			save_result = generate_report.save_report(reportname,selectedmetrics,scaletype,functiontype,owner,title,description)
+			app.logger.info(g.user.username + ' add a report ' + reportname )
 			db.session.commit()
 		except Exception, e:
 			db.session.rollback()
@@ -97,14 +133,16 @@ def addreport():
 		# finally:
 		# 	db.session.remove()
 
-	return render_template('chart/report.html',title='report',services=services)
+	return render_template('chart/report.html',title='report',services=services,itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
 @mod_chart.route('/report/delete/<reportid>', methods=['GET', 'POST'])
 @login_required
 def reportdelete(reportid):
 	try:
-		# r = Report.query.filter_by(reportid=reportid).first()
+		# r = Report.query..get(reportid)
 		generate_report.delete_report(reportid)
+		app.logger.info(g.user.username + ' delete a report ' + reportid )
+
 		# db.session.delete(r)
 		db.session.commit()
 	except Exception, e:
@@ -152,7 +190,9 @@ def addschedule():
 			es = generate_schedule.save_schedule(subject,reportids,email,period,start_time,u,timezone)
 			db.session.commit()
 			generate_schedule.add_specific_cron(es)
-			generate_schedule.update_schedule_data_2_s3()
+			all_es = Emailschedule.query.all()
+			generate_schedule.update_schedule_data_2_s3(all_es)
+			app.logger.info(g.user.username + ' save an email schedule ' )
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'danger')
@@ -174,6 +214,7 @@ def scheduledelete(emailscheduleid):
 		db.session.commit()
 		generate_schedule.delete_specific_cron(es)
 		generate_schedule.update_schedule_data_2_s3()
+		app.logger.info(g.user.username + ' delete an email schedule ' )
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'danger')
@@ -268,6 +309,13 @@ def init():
 			request_data = json.loads(request.data)
 			selected_metrics = request_data['selected_metrics']
 			chart_config = request_data['chart_config']
+
+			item_list = Chart.smr_2_itemlist(selected_metrics)
+			for itemid in item_list:
+				item = Item.query.get(itemid)
+				if item != None and item.itemtype.aws != None and not admin_permission.can():
+					raise Exception('Some lines in your chart is not authorized to access')
+
 			init_result = Chart.init(selected_metrics,chart_config)
 			init_result_bool = True
 			info = 'success'
@@ -363,6 +411,7 @@ def save_window():
 			window = Chart.save_window_chart(selected_metrics,chart_config,windowname,user)
 
 			db.session.commit()
+			app.logger.info(g.user.username + ' save a window chart : ' +  windowname)
 
 			save_result = {'name':windowname,'indexId':window.windowid}
 
@@ -387,10 +436,12 @@ def load_window():
 	info = None
 	load_result_bool = False
 	load_result = None
+	index = None
 
 	if request.method == 'GET':
 		try:
 			windowid = request.args.get('windowid',None)
+			index = request.args.get('render_index',None)
 			load_result = Chart.load_window_chart(windowid)
 			info = 'success'
 			load_result_bool = True
@@ -401,6 +452,7 @@ def load_window():
 	result['info'] = info
 	result['load_result_bool'] = load_result_bool
 	result['load_result'] = load_result
+	result['index'] = index
 
 	return json.dumps(result)
 
@@ -420,6 +472,7 @@ def delete_window():
 			info = 'success'
 			delete_result = windowid
 			delete_result_bool = True
+			app.logger.info(g.user.username + ' delete a window chart : ' +  windowid)
 		except Exception, e:
 			db.session.rollback()
 			info = str(e)
@@ -484,6 +537,7 @@ def save_page():
 			save_result = {'name':pagename,'indexId':page.pageid}
 
 			save_result_bool = True
+			app.logger.info(g.user.username + ' save a page of 9 charts : ' +  pagename)
 
 			info = 'success'
 		except Exception, e:
@@ -512,6 +566,7 @@ def delete_page():
 			info = 'success'
 			delete_result = pageid
 			delete_result_bool = True
+			app.logger.info(g.user.username + ' delete a page of 9 charts : ' +  pageid)
 		except Exception, e:
 			db.session.rollback()
 			info = str(e)
@@ -659,16 +714,19 @@ def getreportimg(reportimg):
 @mod_chart.route('/report/generate/<emailscheduleid>')
 def report_generate(emailscheduleid):
 	#try:
+	app.logger.info('generate report of emailschedule in #' + emailscheduleid)
 	generate_schedule.gen_upload_report_img(emailscheduleid)
 	return 'success'
 	#except Exception, e:
 	#	return 'failed'
 
-def billing_search(search_value,option):
+def billing_search(search_value,option,table_head=None):
 	if not admin_permission.can():
 		raise Exception('You are not authorized to access billing data')
-
-	return SearchWithBilling.search(search_value,option)
+	if table_head is None:
+		return SearchWithBilling.search(search_value,option)
+	print table_head
+	return SearchWithBilling.search(search_value,option,table_head)
 
 
 
@@ -685,9 +743,13 @@ def searchitem():
 			option = request.args.get('option')
 			request_option = option
 			search_value = request.args.get('search_value')
+			table_head = request.args.get('table_head',None)
 			function_of_option = {'All':SearchWithAll.search,'Basic Metrics':SearchWithBasicMetrics.search,\
 									'Browse Metrics':SearchWithAll.search,'billing':billing_search}
-			search_result = function_of_option.get(option,SearchInASGGroup.search)(search_value,option)
+			if table_head == None:
+				search_result = function_of_option.get(option,SearchInASGGroup.search)(search_value,option)
+			else:
+				search_result = function_of_option.get(option,SearchInASGGroup.search)(search_value,option,[table_head])
 			search_result_bool = True
 			info = 'success'
 		except Exception, e:
@@ -732,11 +794,8 @@ def smr2item():
 	if request.method == 'POST':
 		try:
 			selected_metrics = json.loads(request.data)['selected_metrics'] 
-			row_result = Chart.selected_metrics_2_metric_content(selected_metrics)
-			convert_result = []
-			for row in row_result:
-				item_list = ItemSearch.row_2_item_list(row['row_type'],row['row'])
-				convert_result = list( set(convert_result) | set(item_list) )
+			
+			convert_result = Chart.smr_2_itemlist(selected_metrics)
 
 			info = 'success'
 			convert_result_bool = True

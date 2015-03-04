@@ -16,7 +16,13 @@
 			</div>
 		</div>
 		
-		<div container='col-lg-4 page' class='chartinpage' sortId='{{i}}'><button class='btn btn-primary btn-lg center-block page' sortId='{{i}}' style="margin-top:25%">Add chart</button></div></div>
+		<div container='col-lg-4 page' class='chartinpage' sortId='{{i}}'>
+			<div class="row">
+				<button class='btn btn-info btn-lg load_sc' sortId='{{i}}'>Import Single Chart Saved</button>
+				<button class='btn btn-primary btn-lg page' sortId='{{i}}'>New Generate</button>
+			</div>
+		</div>
+	</div>
 	{% if i % 3 == 2%}
 		</div>
 	{% endif %}

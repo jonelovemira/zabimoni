@@ -1,6 +1,6 @@
 from monitor import db
+from monitor.models import Attr
 # from monitor.auth.models import User
-from monitor.item.models import Item
 # from monitor.models import series_item
 
 
@@ -14,7 +14,6 @@ class Window(db.Model):
 	user_id = db.Column(db.Integer,db.ForeignKey('user.userid'))
 	page_id = db.Column(db.Integer,db.ForeignKey('page.pageid'))
 
-	# window_series = db.relationship('Series',backref='window',lazy = 'dynamic')
 
 	selectedmetrics = db.relationship('Selectedmetrics',backref='window',lazy='dynamic')
 	chartconfig = db.relationship('Chartconfig',backref='window',lazy='dynamic')
@@ -85,22 +84,7 @@ class Displaytablerow(db.Model):
 	def __repr__(self):
 		return '<Displaytablerow %r>' % displaytablerowid
 
-class Attr(db.Model):
-	attrid = db.Column(db.Integer,primary_key=True)
-	attrname = db.Column(db.String(80))
-	attrvalue = db.Column(db.String(80))
 
-	displaytablerow_id = db.Column(db.Integer,db.ForeignKey('displaytablerow.displaytablerowid'))
-	chartconfig_id = db.Column(db.Integer,db.ForeignKey('chartconfig.chartconfigid'))
-
-	def __init__(self,attrname,attrvalue,displaytablerow=None,chartconfig=None):
-		self.attrname = attrname
-		self.attrvalue = attrvalue
-		self.displaytablerow = displaytablerow
-		self.chartconfig = chartconfig
-
-	def __repr__(self):
-		return '<Attr key: %r value: %r>' % (attrname,attrvalue)
 
 class Chartconfig(db.Model):
 	chartconfigid = db.Column(db.Integer,primary_key=True)
@@ -115,60 +99,12 @@ class Chartconfig(db.Model):
 		return '<Chartconfig %r>' % (chartconfigid)
 
 
-class Series(db.Model):
-	seriesid = db.Column(db.Integer,primary_key=True)
-	seriesname = db.Column(db.String(1000))
-	index = db.Column(db.Integer)
-	area_id = db.Column(db.String(1000))
-	service_id = db.Column(db.String(1000))
-	host_id = db.Column(db.String(1000))
-	aws_id = db.Column(db.String(1000))
-	itemtype_id = db.Column(db.Integer,db.ForeignKey('itemtype.itemtypeid'))
-	window_id = db.Column(db.Integer,db.ForeignKey('window.windowid'))
-	report_id = db.Column(db.Integer,db.ForeignKey('report.reportid'))
-	
-	# items = db.relationship('Item',
-	# 			secondary=series_item,
-	# 			primaryjoin=(series_item.c.series_id == seriesid),
-	# 			secondaryjoin=(series_item.c.item_id == Item.itemid),
-	# 			lazy = 'dynamic'
-	# )
-
-	def __init__(self,seriesname,index,area_id,service_id,host_id,aws_id,itemtype,window,report):
-		self.seriesname = seriesname
-		self.index = index 
-		self.area_id = area_id
-		self.service_id = service_id
-		self.host_id = host_id
-		self.aws_id = aws_id
-		self.itemtype = itemtype
-		self.window = window
-		self.report = report
-
-	# def add_item(self,item):
-	# 	if not self.has_item(item):
-	# 		self.items.append(item)
-	# 		return self
-
-	# def rm_item(self,item):
-	# 	if self.has_item(item):
-	# 		self.items.remove(item)
-	# 		return self
-
-	# def has_item(self,item):
-	# 	return self.items.filter('itemid='+str(item.itemid)).count() > 0
-	
-
-	def __repr__(self):
-		return '<Series %r>' % self.seriesname
-
 class Report(db.Model):
 	reportid = db.Column(db.Integer,primary_key=True)
 	scaletype = db.Column(db.Integer)
 	functiontype = db.Column(db.Integer)
 	reportname = db.Column(db.String(80))
 	user_id = db.Column(db.Integer,db.ForeignKey('user.userid'))
-	report_series = db.relationship('Series',backref='report',lazy = 'dynamic')
 	title = db.Column(db.String(80))
 	discription = db.Column(db.String(200))
 	imgs = db.relationship('Reportimg',backref='report',lazy = 'dynamic')

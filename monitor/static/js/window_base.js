@@ -1,4 +1,4 @@
-function window_base()
+function window_base(itemtypetags , aws_itemtypetags)
 {
     // sidebar a href
     sidebar_page_class = 'sidebar-page';
@@ -30,8 +30,11 @@ function window_base()
     top_category_selector = "div.top-category";
     browsemetric_button_str = "<button class='btn btn-primary form-control browsemetric' type='button'>Browse Metrics</button>"
     browsemetric_button_selector = "button.browsemetric";
-    search_input_str = '<input type=text class="form-control search" placeholder="input Metrics Name"/>';
-    search_input_selector = "input.search";
+    dashboard_search_input_str = '<input type=text class="form-control dashboard-search" placeholder="input Metrics Name" width="330px" />';
+    main_search_input_str = '<input type=text class="form-control main-search" placeholder="input Metrics Name" width="330px" />';
+    db_search_input_selector = "input.dashboard-search";
+    main_search_input_selector = "input.main-search";
+    search_input_class = "search";
     default_selected = 'Browse Metrics';
     default_searched_value = '';
     option_select_selector = '#metricoptions';
@@ -81,7 +84,7 @@ function window_base()
     chart_div_class = 'chart';
     chart_div_selector = 'div.' + chart_div_class; 
     chart_main_div_class = 'chart-main';
-    chart_main_div_selectoer = 'div.' + chart_main_div_class;
+    chart_main_div_selector = 'div.' + chart_main_div_class;
     chart_main_header_div_class = 'chart-main-header-config';
     chart_main_header_div_selector = 'div.' + chart_main_header_div_class;
     chart_main_pagination_class = 'chart-main-pagination';
@@ -138,6 +141,14 @@ function window_base()
 
     uncheck_all_class = 'uncheck-all';
     uncheck_all_selector = 'a.' + uncheck_all_class;
+    check_all_class = 'check-all';
+    check_all_selector = 'a.' + check_all_class;
+    max_checked_count = 10;
+
+    filter_class = 'table-head-filter';
+    filter_selector = 'a.' + filter_class;
+    clear_filter_class = 'clear-filter';
+    clear_filter_selector = 'span.' + clear_filter_class;
 
 
 
@@ -155,6 +166,13 @@ function window_base()
     var display_chart = new chart();
 
     set_default_chart_config();
+    add_select();
+
+
+
+    // add_top_category('All','');
+    // $(top_category_main_selector).addClass("hidden");
+    // console.log($(top_category_main_selector));
 
     allow_check_multiple_flag = true;
 
@@ -169,6 +187,119 @@ function window_base()
         chart_config['update_flag'] = true;
         chart_config['shared_yaxis'] = true;
     }
+
+    // calc_init_chart_height();
+    set_init_height();
+    add_chart_main_panel();
+    var other_height;
+    this.div_main_height = null;
+
+    this.div_chart_height = null;
+    this.top_category_height = null;
+
+    var chart_main_display_height;
+    var chart_main_display_width;
+    // var chart_main_header_config_height;
+    // var chart_main_pagination_height;
+    $(window).load(function () {
+        console.log("load");
+        this.div_chart_height = $(chart_div_selector).height();
+        this.top_category_height = $(top_category_main_selector).height();
+        // console.log(div_chart_height,top_category_height);
+        var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+        var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+        // console.log(chart_main_header_config_height,chart_main_pagination_height);
+        // console.log(top_category_height);
+        chart_main_display_height = this.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 10;
+        chart_main_display_width = $(chart_main_display_container_selector).width();
+        $(chart_main_display_container_selector).height(chart_main_display_height);
+        $(chart_div_selector).addClass("hidden");
+        $(top_category_main_selector).addClass("hidden");
+        other_height = this.div_chart_height + this.top_category_height;
+    });
+    
+    function set_init_height()
+    {
+        // console.log("body : ",$('body').height());
+        // console.log("navbar navbar-default navbar-fixed-top:", $('div.navbar-fixed-top').height());
+        // console.log("container-fluid:",$('div.container-fluid').height());
+        // console.log('window height:',$(window).height());
+        // console.log('calc height: ' ,$(window).height() - $('div.navbar-fixed-top').height());
+        // console.log('document height:',$(document).height())
+        // main_height = $('div.sidebar').outerHeight();
+        this.div_main_height = $(window).height() - $('div.navbar-fixed-top').height() - 20;
+        $('div.main').height(this.div_main_height);
+        // console.log("div_main_height",this.div_main_height);
+        // console.log(main_height);
+        // console.log($(chart_sidebar_config_selector).outerHeight());
+    }
+
+    $(window).resize(function( e )
+    {
+        if (e.target == window)
+        {
+            this.div_main_height = $(document).height() - $('div.navbar-fixed-top').height() - 20;
+            $('div.main').height(this.div_main_height);
+
+            var chart_hidden_flag = $(chart_div_selector).attr("class").indexOf("hidden") > 0;
+            var top_category_hidden_flag = $(top_category_main_selector).attr("class").indexOf("hidden") > 0;
+
+            $(chart_div_selector).removeClass("hidden");
+            $(top_category_main_selector).removeClass("hidden");
+
+            chart_main_display_width = $(chart_main_display_container_selector).width();
+            var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+            var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+            chart_main_display_height = $(chart_sidebar_config_selector).outerHeight() - chart_main_header_config_height - chart_main_pagination_height - 10 + 4;
+            this.div_chart_height = $(chart_sidebar_config_selector).outerHeight() + 4;
+            // console.log(chart_main_display_height);
+            $(chart_main_display_container_selector).height(chart_main_display_height);
+
+            var tmp_top_category_height = $(top_category_main_selector).height();
+            other_height = this.div_chart_height + tmp_top_category_height;
+            $(search_result_main_selector).height(this.div_main_height - 10 - other_height - 5);
+            $(search_result_main_selector).resizable("option","maxHeight",this.div_main_height - 10 - 5 - 50 - 99 );
+
+            
+
+
+
+            if (chart_hidden_flag) {
+                $(chart_div_selector).addClass("hidden");
+            };
+
+            if (top_category_hidden_flag) {
+                $(top_category_main_selector).addClass("hidden");
+            };
+        }
+        
+
+        
+
+        // console.log("load");
+        // $(chart_div_selector).removeClass("hidden");
+        // $(top_category_main_selector).removeClass("hidden");
+        // this.div_chart_height = $(chart_div_selector).height();
+        // this.top_category_height = $(top_category_main_selector).height();
+        // // console.log(div_chart_height,top_category_height);
+        // var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+        // var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+        // // console.log(chart_main_header_config_height,chart_main_pagination_height);
+        // // console.log(top_category_height);
+        // chart_main_display_height = this.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 10;
+        // chart_main_display_width = $(chart_main_display_container_selector).width();
+        // $(chart_main_display_container_selector).height(chart_main_display_height);
+        // $(chart_div_selector).addClass("hidden");
+        // $(top_category_main_selector).addClass("hidden");
+        // other_height = this.div_chart_height + this.top_category_height;
+    });
+    // function calc_init_chart_height()
+    // {
+    //     var tmp_height = 0;
+    //     tmp_height = $(chart_div_selector).height();
+    //     // chart_div_selector - chart_main_header_div_selector - chart_main_pagination_selector;
+    //     console.log(tmp_height);
+    // }
 
 
 
@@ -191,7 +322,18 @@ function window_base()
 		make_active(sidebar_page_li_selector,target);
 	});
 
-    $(document).on('keypress',search_input_selector,function(event)
+    $(document).on('keypress',db_search_input_selector,function(event)
+    {
+        if ( event.which == 13) {
+            option = $(option_select_selector).val();
+            search_value = $(this).val();
+            option = option || default_selected;
+            search_value = search_value || default_searched_value;
+            metric_render_main(option,search_value);
+        };
+    });
+
+    $(document).on('keypress',main_search_input_selector,function(event)
     {
         if ( event.which == 13) {
             option = $(option_select_selector).val();
@@ -214,12 +356,13 @@ function window_base()
     $(document).on('change',option_select_selector,function()
     {
         option = $(this).val();
-        metric_render_main(option);
+        // metric_render_main(option);
         if (option == 'Browse Metrics') {
             metric_render_main(option,'',true);
         }
         else
         {
+            // console.log("change in callback");
             metric_render_main(option);
         }
     });
@@ -351,7 +494,13 @@ function window_base()
     {
         clear_main();
         add_top_category('All','');
-        add_search_result_message();
+        // add_search_result_message();
+
+        var pre_set_filter_str = '';
+        // pre_set_filter_str += '<ul class="nav nav-pills" role="tablist" style="border-bottom:solid 1px #bbb;padding-bottom:2px;">';
+        // pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">per_instance_result<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+        // pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">by_group_result<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+        // pre_set_filter_str += '</ul>';
         add_search_result_panel();
         add_chart_main_panel();
         // show_chart();
@@ -531,7 +680,7 @@ function window_base()
             var new_from = from_in_ms - (to_in_ms - from_in_ms);
             var new_to = from_in_ms ;
 
-            chart_config['from_clock'] = new_from / 1000 - 60;
+            chart_config['from_clock'] = new_from / 1000 ;
             chart_config['to_clock'] = new_to / 1000 ;
             chart_update();
             // console.log("chart exist left");
@@ -556,7 +705,7 @@ function window_base()
         var windowname = $(sidebar_savename_selector).val();
         // console.log(windowname);
         if (windowname != undefined && windowname != null && windowname != '') {
-            console.log(chart_config);
+            // console.log(chart_config);
             save_chart( selected_metric_result,chart_config, windowname);
         }
         else
@@ -586,6 +735,58 @@ function window_base()
         event.stopPropagation();
     });
 
+    $(document).on('click',check_all_selector,function()
+    {
+        // console.log("check all");
+        $(search_result_panel_selector).find(select_metric_input_selector).each(function(i,d)
+        {
+            var metric_count = get_selected_metric_count();
+            if (metric_count < max_checked_count) {
+                $(this).prop("checked","checked");
+
+                var title_text = null;
+                $(this).closest('div').find('.' + search_result_table_title_class).each(function(i,d)
+                {
+                    title_text = $(this).text();
+                });
+
+                var option_title = title_text.split(option_title_spliter);
+                var option = option_title[0];
+                var table_title = option_title[1];
+
+                // console.log(option,table_title);
+
+
+                var table_head = [];
+                $(this).closest('table').find('th').each(function(i,d)
+                {
+                    // console.log($(this).text().length);
+                    if ($(this).text().length > 0) {
+                        table_head.push($(this).text());
+                    };
+                });
+
+                var td_content = [];
+                $(this).closest('tr').find('td').each(function(i,d)
+                {
+                    if ($(this).text().length > 0) {
+                        td_content.push($(this).text());
+                    };
+                });
+
+
+                select_metric_change(option,table_title,table_head,td_content,true);
+            }
+            else
+            {
+                add_message_2_query_message_selector('You can choose at most : ' + max_checked_count + ' metrics' , 'danger')
+            }
+            
+        });
+        
+        // console.log(selected_metric_result);
+        chart_update();
+    });
 
     $(document).on('click',uncheck_all_selector,function()
     {
@@ -634,7 +835,7 @@ function window_base()
         });
         
         if (change_flag) {
-            console.log("update");
+            // console.log("update");
             chart_update();
         };
         
@@ -827,6 +1028,21 @@ function window_base()
         
 
     }
+
+    function get_selected_metric_count()
+    {
+        var metric_count = 0;
+        for (var option in selected_metric_result)
+        {
+            // console.log(selected_metric_result[option]);
+            for (var table_title in selected_metric_result[option])
+            {
+                // console.log(table_title);
+                metric_count += selected_metric_result[option][table_title]['metric_count'];
+            }
+        }
+        return metric_count;
+    }
     
     function check_selected_metric()
     {
@@ -954,21 +1170,29 @@ function window_base()
 
     function add_metric_2_selected(option,table_title,table_head,td_content)
     {
-        if (! find_metric_in_selected(td_content,selected_metric_result)['in']) {
-            if ( ! key_in_dict(option,selected_metric_result)) {
-                // console.log("no option");
-                selected_metric_result[option] = {};
-            }
-            if (! key_in_dict(table_title,selected_metric_result[option])) {
-                // console.log("no table_title");
-                selected_metric_result[option][table_title] = {};
-                selected_metric_result[option][table_title]['metric_count'] = 0;
-                selected_metric_result[option][table_title]['metric_result'] = [];
-                selected_metric_result[option][table_title]['table_head'] = table_head;
+        var metric_count = get_selected_metric_count();
+        if (metric_count < max_checked_count) {
+            if (! find_metric_in_selected(td_content,selected_metric_result)['in'] ) {
+                if ( ! key_in_dict(option,selected_metric_result)) {
+                    // console.log("no option");
+                    selected_metric_result[option] = {};
+                }
+                if (! key_in_dict(table_title,selected_metric_result[option])) {
+                    // console.log("no table_title");
+                    selected_metric_result[option][table_title] = {};
+                    selected_metric_result[option][table_title]['metric_count'] = 0;
+                    selected_metric_result[option][table_title]['metric_result'] = [];
+                    selected_metric_result[option][table_title]['table_head'] = table_head;
+                };
+                selected_metric_result[option][table_title]['metric_count'] += 1;
+                selected_metric_result[option][table_title]['metric_result'].push(td_content);
             };
-            selected_metric_result[option][table_title]['metric_count'] += 1;
-            selected_metric_result[option][table_title]['metric_result'].push(td_content);
-        };
+        }
+        else
+        {
+            add_message_2_query_message_selector('You can choose at most : ' + max_checked_count + ' metrics' , 'danger');
+        }
+        
 
         // console.log(selected_metric_result);
         
@@ -986,13 +1210,14 @@ function window_base()
     }
 
     // search 
-    function perform_search(route,option,search_value)
+    function perform_search(route,args)
     {
         // search_value = $(search_input_selector).val();
 
         //route = '/chart/searchitem/';
 
-        $.getJSON(route,{option:option,search_value:search_value},function(data)
+
+        $.getJSON(route,args,function(data)
         {
             // console.log(data);
             after_search(data);
@@ -1001,7 +1226,6 @@ function window_base()
 
     function after_search(search_result)
     {
-
         if (search_result.search_result_bool) {
             option = search_result.request_option;
             // clear_search_result_panel();
@@ -1010,7 +1234,7 @@ function window_base()
         }   
         else
         {
-            console.log(search_result.info);
+            // console.log(search_result.info);
             add_message_2_query_message_selector(search_result.info,'danger');
         }
     }
@@ -1044,11 +1268,77 @@ function window_base()
         // $("#resizable").resizable();
     }
 
+    $(document).on('click',filter_selector,function()
+    {
+        make_active('li[role=presentation]',$(this).closest('li'));
+        var table_head = $(this).text();
+        // console.log(target);
+        // $(search_result_panel_selector).find('.panel').each(function(i,d)
+        // {
+        //     var parent_obj = $(this);
+        //     parent_obj.removeClass("hidden");
+        //     $(this).find('.panel-heading').each(function(i,d)
+        //     {
+        //         if($(this).text().indexOf(target) < 0 )
+        //         {
+        //             parent_obj.addClass("hidden");
+        //         }
+        //     })
+        // });
+        var option = '';
+        $('.top-category').each(function(i,d)
+        {
+            // console.log($(this).parent());
+            // console.log($(this).parent().hasClass('hidden'));
+            if(!$(this).parent().hasClass('hidden'))
+            {
+                // console.log($(this));
+                $(this).find('select').each(function(i,d)
+                {
+                    option = $(this).val();
+                })
+            }
+        })
+        var search_value = $(main_search_input_selector).val();
+        args = {option:option,search_value:search_value,table_head:table_head};
+        perform_search('/chart/searchitem/',args);
+    });
+
+    $(document).on('click',clear_filter_selector,function(event)
+    {
+        // console.log("clear_filter_selector");
+        $('li[role=presentation]').removeClass('active');
+        var option = '';
+        $('.top-category').each(function(i,d)
+        {
+            // console.log($(this).parent());
+            // console.log($(this).parent().hasClass('hidden'));
+            if(!$(this).parent().hasClass('hidden'))
+            {
+                // console.log($(this));
+                $(this).find('select').each(function(i,d)
+                {
+                    option = $(this).val();
+                })
+            }
+        })
+        var search_value = $(main_search_input_selector).val();
+        args = {option:option,search_value:search_value};
+        perform_search('/chart/searchitem/',args);
+        event.stopPropagation();
+    });
+
     function render_search_result_to_table(option,metrics)
     {
+        $(search_result_panel_selector).find('.panel').each(function(i,d)
+            {
+                $(this).remove();
+            });
         // console.log(metrics);
         var result_str = '';
+        var display_metric_result_count = 0;
         for (var table_title in metrics) {
+            display_metric_result_count += metrics[table_title]['metric_count'];
             if (metrics[table_title]['metric_count'] > 0) {
                 result_str += '<div class="panel panel-default">';
                 // result_str += '<div class=' + search_result_div_class + '>';
@@ -1086,9 +1376,43 @@ function window_base()
                 result_str += '</table>';
                 result_str += '</div>';
             };
-        };
+        }
+        if (result_str == '') {
+            show_specific_child(search_result_panel_selector,message_class);
+            add_message_2_query_message_selector('Have No Metrics Result. Please try a different.','info');
+        }
+        else
+        {
+            show_all_child(search_result_panel_selector);
+            add_message_2_query_message_selector('Showing the <b>' + display_metric_result_count + '</b> matching metrics. You can refine your search or try Browsing Metrics.','info');
+        }
         // console.log(result_str);
         $(search_result_panel_selector).append(result_str);
+    }
+
+    function show_specific_child(parent,visiable_child)
+    {
+        // console.log($(parent).children());
+        $(parent).children().each(function(i,d)
+        {
+            $(this).removeClass("hidden");
+            var current_class_name = $(this).attr("class");
+            // console.log(visiable_child,current_class_name);
+            if (current_class_name != visiable_child) {
+                $(this).addClass("hidden");
+            }
+            else{
+                $(this).removeClass("hidden");
+            }
+        });
+    }
+
+    function show_all_child(parent)
+    {
+        $(parent).children().each(function(i,d)
+        {
+            $(this).removeClass("hidden");
+        });
     }
 
     function render_to_browsemetrics_panel(option_metrics)
@@ -1173,7 +1497,7 @@ function window_base()
 
             result_str += '<div class="navbar-form">';
             result_str += browsemetric_button_str;
-            result_str += search_input_str;
+            result_str += dashboard_search_input_str;
             result_str +='</div></div>';
                         
             $(main_board_selector).append(result_str);
@@ -1191,9 +1515,18 @@ function window_base()
         // show_chart();
         // $(main_board_selector).append();
         // $("div.main").append(option);
-        add_search_result_message();
+        // add_search_result_message();
         add_billing_top_category();
-        add_search_result_panel();
+
+        var pre_set_filter_str = '';
+        pre_set_filter_str += '<ul class="nav nav-pills hidden" role="tablist" style="border-bottom:solid 1px #bbb;padding-bottom:2px;">';
+        pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By All<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+        pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By ServiceName and LinkedAccount<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+        pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By ServiceName<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+        pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By LinkedAccount<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+        pre_set_filter_str += '</ul>';
+
+        add_search_result_panel(pre_set_filter_str);
         add_chart_main_panel();
 
         // searched_value = searched_value || 'EC2';
@@ -1201,14 +1534,15 @@ function window_base()
         if (searched_value == undefined || searched_value == null) {
             searched_value = 'EC2';
         };
-
-        perform_search('/chart/searchitem/','billing',searched_value);
+        var args = {option:'billing',search_value:searched_value}
+        perform_search('/chart/searchitem/',args);
 	}
 
 	function metric_render_main(option,searched_value,browse_flag)
 	{
         // console.log(option);
         clear_main();
+        
 
         // option = option || default_selected;
         browse_flag = browse_flag || default_browse_flag;
@@ -1216,12 +1550,30 @@ function window_base()
             
             add_top_category(option,searched_value);
             if (! browse_flag) {
-                add_search_result_message();
-                add_search_result_panel();
+                // add_search_result_message();
+                var pre_set_filter_str = '';
+                if (option == 'billing') {
+                    pre_set_filter_str += '<ul class="nav nav-pills hidden" role="tablist" style="border-bottom:solid 1px #bbb;padding-bottom:2px;">';
+                    pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By All<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+                    pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By ServiceName and LinkedAccount<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+                    pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By ServiceName<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+                    pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By LinkedAccount<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+                    pre_set_filter_str += '</ul>';
+                }
+                else
+                {
+                    pre_set_filter_str += '<ul class="nav nav-pills hidden" role="tablist" style="border-bottom:solid 1px #bbb;padding-bottom:2px;">';
+                    pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">per_instance_result<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+                    pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">by_group_result<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
+                    pre_set_filter_str += '</ul>';
+                }
+                
+                
+                add_search_result_panel(pre_set_filter_str);
                 add_chart_main_panel();
                 
-                
-                perform_search('/chart/searchitem/',option,searched_value);
+                args = {option:option,search_value:searched_value}
+                perform_search('/chart/searchitem/',args);
                 // show_chart();
                 // console.log("show select");
             }
@@ -1233,6 +1585,9 @@ function window_base()
                 // console.log("hidden");
             }
         }
+
+        // console.log($(top_category_main_selector).attr("class"));        
+        // console.log($())
 	}
 
     function get_bind_option()
@@ -1276,6 +1631,46 @@ function window_base()
         $(billing_search_input_selector).attr("value",searched_value);
     }
 
+    function add_select()
+    {
+        $.getJSON('/item/service_json',function(data)
+        {
+            if (data.load_service_result_bool) {
+
+                result_str = '';
+                result_str = '<select class="form-control" id="metricoptions">';
+                result_str += '<option>All</option>';
+                result_str += '<option>Basic Metrics</option>';
+                bind_result = data.load_service_result;
+                // console.log(bind_result);
+                for (var i = 0; i < bind_result.length; i++) {
+                    if (bind_result[i] != undefined) {
+                        result_str += '<option>';
+                        result_str += bind_result[i] + '</option>';
+                    }
+                }
+                result_str += '<option>billing</option>';
+                result_str += '<option>Browse Metrics</option>';
+
+                result_str += '</select>';
+
+                $(main_search_input_selector).closest('div').before(result_str);
+
+                // $('div.top-category').append(result_str);
+
+                // form_wrapper += '<div class="form-group" >' + '<input type=text class="form-control main-search" placeholder="input Metrics Name" value="' + searched_value + '" autocomplete="on" />' + '</div>';
+
+
+                
+            }
+            else
+            {
+                add_message_2_query_message_selector(data.info,'danger');
+            }
+                
+        })
+    }
+
 
     function add_top_category(selected_value,searched_value)
     {
@@ -1284,40 +1679,53 @@ function window_base()
 
 
         if ($(top_category_main_selector).length <= 0) {
-            panel_wrapper = '<div class="panel panel-default ' + top_category_main_class + '" >';
-            form_wrapper = '<div class="navbar-form top-category" >';
 
-            
-
-            select_str = '<select class="form-control" id="metricoptions">';
-            select_str += '<option>All</option>';
-            bind_result = get_bind_option();
-            // console.log(bind_result);
-            for (var i = 0; i < bind_result.length; i++) {
-                if (bind_result[i].attr("option") != undefined) {
-                    select_str += '<option>';
-                    select_str += bind_result[i].attr("option") + '</option>';
-                }
-            }
-
-            select_str += '<option>Browse Metrics</option>';
-
-            select_str += '</select>';
-
-            form_wrapper += select_str;
-            form_wrapper += '<div class="form-group" >' + search_input_str + '</div>';
-
-            form_wrapper += '</div>';
-            // form_wrapper += div_wapper + '</form>';
-            panel_wrapper += form_wrapper + '</div>';
-
-            if ($(message_selector).length > 0) {
-                $(message_selector).before(panel_wrapper);
-            }
-            else
+            $.getJSON('/item/service_json',function(data)
             {
-                $(main_board_selector).append(panel_wrapper);
-            }
+                if (data.load_service_result_bool) {
+                    panel_wrapper = '<div class="panel panel-default ' + top_category_main_class + '" >';
+                    form_wrapper = '<div class="navbar-form top-category" >';
+
+                    
+
+                    select_str = '<select class="form-control" id="metricoptions">';
+                    select_str += '<option>All</option>';
+                    select_str += '<option>Basic Metrics</option>';
+                    bind_result = data.load_service_result;
+                    // console.log(bind_result);
+                    for (var i = 0; i < bind_result.length; i++) {
+                        if (bind_result[i] != undefined) {
+                            select_str += '<option>';
+                            select_str += bind_result[i] + '</option>';
+                        }
+                    }
+
+                    select_str += '<option>Browse Metrics</option>';
+
+                    select_str += '</select>';
+
+                    form_wrapper += select_str;
+                    form_wrapper += '<div class="form-group" >' + '<input type=text class="form-control main-search" placeholder="input Metrics Name" value="' + searched_value + '" autocomplete="on" />' + '</div>';
+
+                    form_wrapper += '</div>';
+                    // form_wrapper += div_wapper + '</form>';
+                    panel_wrapper += form_wrapper + '</div>';
+
+                    if ($(message_selector).length > 0) {
+                        $(message_selector).before(panel_wrapper);
+                    }
+                    else
+                    {
+                        $(main_board_selector).append(panel_wrapper);
+                    }
+                }
+                else
+                {
+                    add_message_2_query_message_selector(data.info,'danger');
+                }
+                
+            });
+            
 
             
         }
@@ -1326,21 +1734,62 @@ function window_base()
             $(top_category_main_selector).removeClass('hidden');
         }
 
-        
-
-        $(search_input_selector).attr("value",searched_value);
+        $(main_search_input_selector).attr("value",searched_value);
         $(option_select_selector).val(selected_value);
     }
 
-    function add_search_result_panel()
+    // $(chart_div_selector).load(function() {
+    //     console.log("chart:",$(this).height());
+    // });
+    
+    this.set_other_height = function(height)
     {
+        // this.div_chart_height = height;
+        // console.log(this.div_chart_height);
+        other_height = height;
+        // console.log(height);
+    }
+
+    this.set_display_container_width = function(width)
+    {
+        chart_main_display_width = width;
+        // console.log(width);
+    }
+
+    function add_search_result_panel(tmp_pre_set_filter_str)
+    {
+        // console.log(this.div_chart_height);
         if ($(search_result_panel_selector).length <= 0) {
+            // console.log(this.div_main_height,this.div_chart_height,this.top_category_height);
+            // console.log(tmp_panel_height);
+            var panel_height = this.div_main_height - 10 - other_height - 5;
+            // console.log("panel_height",panel_height);
+
             var result_str = '';
-            result_str += '<div style="height:280px;" class=' + search_result_main_class + '>';
+
+            
+
+
+            result_str += '<div style="height:' + panel_height + 'px;" class=' + search_result_main_class + '>';
             // result_str += '<'
             result_str += '<div class=' + search_result_panel_class + ' >';
-            result_str += '<a href="javascript:;" class="' + uncheck_all_class + '"> Uncheck All </a>';
+////
+////
+/////
+//// to do  
+            
+            result_str += '<div class="' + message_class + ' hidden"></div>';
+
+            if (tmp_pre_set_filter_str != undefined) {
+                result_str += tmp_pre_set_filter_str;
+            };
+            
+            result_str += '<div class="tmp hidden" >';
+            result_str += '<a href="javascript:;" class="' + check_all_class + '" style="margin-left:15px">Check All </a>';
+            result_str += '/';
+            result_str += '<a href="javascript:;" class="' + uncheck_all_class + '">Uncheck All </a>';
             // result_str += '<div id="resizable" class="' + search_result_panel_class + '" style="width: 100px;  height: 100px;  background: #ccc;"></div>';
+            result_str += '</div>';
             result_str += '</div></div>';
 
             $(main_board_selector).append(result_str);
@@ -1349,17 +1798,32 @@ function window_base()
 
             $(search_result_main_selector).resizable({
                 handles: 's',
-                // maxHeight: dashboard_main_height,
-                // resize:function()
-                // {
-                //     $(chart_div_selector).height(dashboard_main_height - $(search_result_main_selector).height());
-                // }
+                maxHeight: this.div_main_height - 10 - 5 - 50 - 99 ,
+                stop:function(event,ui)
+                {
+                    var div_change_height = ui.size.height - ui.originalSize.height;
+                    var chart_change_height = 0 - div_change_height;
+                    var chart_origin_height = $(chart_main_display_container_selector).height();
+                    if (display_chart.get_chart() != undefined) {
+                        $(chart_main_display_container_selector).height(chart_origin_height + chart_change_height);
+                        display_chart.get_chart().setSize(chart_main_display_width,chart_origin_height + chart_change_height,false);
+                    };
+                }
             });
         }
         else
         {
             $(search_result_panel_selector).empty();
-            var result_str = '<a href="javascript:;" class="' + uncheck_all_class + '"> Uncheck All </a>';
+            var result_str = '';
+            result_str += '<div class="' + message_class + ' hidden"></div>';
+            if (tmp_pre_set_filter_str != undefined) {
+                result_str += tmp_pre_set_filter_str;
+            };
+            result_str += '<div class="tmp hidden" >';
+            result_str += '<a href="javascript:;" class="' + check_all_class + '" style="margin-left:15px">Check All </a>';
+            result_str += '|';
+            result_str += '<a href="javascript:;" class="' + uncheck_all_class + '">Uncheck All </a>';
+            result_str += '</div>';
             $(search_result_panel_selector).append(result_str);
             $(search_result_main_selector).removeClass('hidden');
         }
@@ -1512,14 +1976,14 @@ function window_base()
         $(chart_sidebar_config_selector).append(result_str);
 
         $(from_time_selector).datetimepicker({
-            // pick12HourFormat: false,
-            // autoclose: true
-            
-            autoclose: true
+            format: 'YYYY/MM/DD HH:mm',
+            // pickSeconds: false,
+            pick12HourFormat: false,
+            autoclose:true 
         });
         $(to_time_selector).datetimepicker({
-            // pick12HourFormat: false,
-            autoclose: false
+            format: 'YYYY/MM/DD HH:mm',
+            pick12HourFormat: false,
         });
         // $(to_time_selector).data("DateTimePicker").
 
@@ -1572,15 +2036,18 @@ function window_base()
         result_str += message;
         result_str += '</div>';
 
-        if ($(message_selector).length <= 0) {
-            add_search_result_message();        
-        };
-        
+        // if ($(message_selector).length <= 0) {
+        //     add_search_result_message();        
+        // };
+
+        // var origin_height = $(message_selector).height();
+        // console.log(origin_height);
+        $(message_selector).empty();
         $(message_selector).append(result_str);
-        setTimeout(function()
-        {
-            $(message_selector).empty();
-        },5000);
+        // setTimeout(function()
+        // {
+        //     $(message_selector).empty();
+        // },5000);
     }
 
 
@@ -1698,4 +2165,8 @@ function window_base()
         allow_check_multiple_flag = flag;
     }
 
+    this.is_select_empty = function()
+    {
+        return !check_selected_metric();
+    }
 }

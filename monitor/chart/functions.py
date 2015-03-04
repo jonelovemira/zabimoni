@@ -8,11 +8,12 @@ from subprocess import call
 from datetime import datetime
 # from send_email import monitor_status_notification
 from monitor.MonitorException import *
-import string,random
+import string
 from flask import current_app
 from boto.s3.connection import S3Connection
 from crontab import CronTab
 from monitor.decorators import async
+from monitor.functions import construct_random_str
 
 from config import PHANTOMJS,HIGHCHART_CONVERT,REPORT_OUTPUT_DIR,REPORT_OUTPUT_WIDTH,\
 				REPORT_OUTPUT_TYPE,REPORT_OUTPUT_SCALE,GENERATE_REPORT_PATH,\
@@ -973,8 +974,7 @@ def get_series_info(series):
 
 
 
-def construct_random_str(size=6, chars=string.ascii_uppercase + string.digits):
-	return ''.join(random.choice(chars) for _ in range(size))
+
 
 def upload_img_to_s3(filename):
 	try:

@@ -1,4 +1,5 @@
 from monitor import db
+from monitor.models import Attr
 # from flask.ext.sqlalchemy import SQLAlchemy
 # db = SQLAlchemy()
 
@@ -10,7 +11,6 @@ class Itemtype(db.Model):
 	zabbixvaluetype = db.Column(db.Integer)
 	items = db.relationship('Item',backref='itemtype',lazy='dynamic')
 	aws_id = db.Column(db.Integer,db.ForeignKey('aws.awsid'))
-	series = db.relationship('Series',backref='itemtype',lazy='dynamic')
 	Itemdatatype_id = db.Column(db.Integer,db.ForeignKey('itemdatatype.itemdatatypeid'))
 	normalitemtype_id = db.Column(db.Integer,db.ForeignKey('normalitemtype.normalitemtypeid'))
 	zbxitemtype_id = db.Column(db.Integer,db.ForeignKey('zbxitemtype.zbxitemtypeid'))
@@ -307,26 +307,30 @@ class Calculateditem(db.Model):
 
 class Action(db.Model):
 	actionid = db.Column(db.Integer,primary_key=True,autoincrement=False)
-	autoscalegroupname = db.Column(db.String(100))
-	autoscaletype = db.Column(db.Integer)
-	areaid = db.Column(db.Integer)
-	command = db.Column(db.String(512))
 	actionname = db.Column(db.String(80))
+	operations = db.relationship('Operation',backref='action',lazy='dynamic')
+	trigger_id = db.Column(db.Integer,db.ForeignKey('trigger.triggerid'))
 
-	def __init__(self,actionid,autoscalegroupname,autoscaletype,areaid,command,actionname):
+	def __init__(self,actionid,actionname,trigger):
 		self.actionid = actionid
-		self.autoscalegroupname = autoscalegroupname
-		self.autoscaletype = autoscaletype
-		self.areaid = areaid
-		self.command = command
 		self.actionname = actionname
+		self.trigger = trigger
 
 	def __repr__(self):
 		return '<Action %s>' % (self.actionid)
 
-action_trigger = db.Table('action_trigger',
-				db.Column('action_id',db.Integer,db.ForeignKey('action.actionid')),
-				db.Column('trigger_id',db.Integer,db.ForeignKey('trigger.triggerid')))
+class Operation(db.Model):
+	operationid = db.Column(db.Integer,primary_key=True)
+	operationname = db.Column(db.String(80))
+	action_id = db.Column(db.Integer,db.ForeignKey('action.actionid'))
+	attrs = db.relationship('Attr',backref='operation',lazy='dynamic')
+
+	def __init__(self,operationname,action):
+		self.operationname = operationname
+		self.action = action
+
+	def __repr__(self):
+		return '<Operation %s>' % (self.operationname)
 
 	
 
@@ -336,40 +340,26 @@ class Trigger(db.Model):
 	triggervalue = db.Column(db.Float)
 	timeshift = db.Column(db.Integer)
 	triggerfunction = db.Column(db.String(64))
+	metricname = db.Column(db.String(80))
+	comparetype = db.Column(db.String(80))
 
 	calculateditem_id = db.Column(db.Integer,db.ForeignKey('calculateditem.calculateditemid'))
 
-	actions = db.relationship('Action',
-				secondary=action_trigger,
-				primaryjoin=(action_trigger.c.trigger_id == triggerid),
-				secondaryjoin=(action_trigger.c.action_id == Action.actionid),
-				backref=db.backref('triggers',lazy='dynamic'),
-				lazy = 'dynamic'
-	)
+	# action_id = db.Column(db.Integer,db.ForeignKey('action.actionid'))
+	actions = db.relationship('Action',backref='trigger',lazy='dynamic')
 
 	
 	# serviceid = db.Column(db.In)
 
-	def __init__(self,triggerid,triggername,triggervalue,timeshift,calcitem,triggerfunction):
+	def __init__(self,triggerid,triggername,triggervalue,timeshift,calcitem,triggerfunction,metricname,comparetype):
 		self.triggerid = triggerid
 		self.triggername = triggername
 		self.triggervalue = triggervalue
 		self.timeshift = timeshift
 		self.calcitem = calcitem
 		self.triggerfunction = triggerfunction
+		self.metricname = metricname
+		self.comparetype = comparetype
 
 	def __repr__(self):
 		return '<Trigger %r>' % ( self.triggername )
-
-	def add_action(self,action):
-		if not self.has_action(action):
-			self.actions.append(action)
-			return self
-
-	def rm_action(self,action):
-		if self.has_action(action):
-			self.actions.remove(action)
-			return self
-
-	def has_action(self,action):
-		return self.actions.filter_by(actionid = action.actionid).count() > 0

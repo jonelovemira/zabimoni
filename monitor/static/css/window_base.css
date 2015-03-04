@@ -74,7 +74,7 @@
 .main {
   padding: 10px;
   overflow: hidden;
-  height: 90vh;
+  /*height: 90vh;*/
   display:table-row-group;
 }
 @media (min-width: 768px) {
@@ -85,6 +85,16 @@
 }
 .main .page-header {
   margin-top: 0;
+}
+
+.top-category-main
+{
+  margin-bottom: 10px;
+}
+
+.billing-top-category
+{
+  margin-bottom: 10px;
 }
 
 
@@ -107,8 +117,16 @@
   border-radius: 50%;
 }
 
-.search {
+.dashboard-search {
   margin-left:10px;
+}
+
+.main-search {
+  margin-left:10px;
+}
+
+.billing-search {
+  margin-left: 10px;
 }
 
 .refresh-chart{
@@ -164,14 +182,31 @@
   margin-left: 10px;
 }
 
-.row.chart
+/*.row.chart
 {
   height: auto;
-}
+}*/
 
 .basicmetrics-panel
 {
     overflow:scroll;
-    height:80vh; 
+    height:85vh; 
     overflow-x:hidden
+}
+
+.ui-autocomplete {
+    max-height: 100px;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+}
+
+ul.ui-autocomplete.ui-menu {
+  z-index: 1000;
+}
+  /* IE 6 doesn't support max-height
+   * we use height instead, but this forces the menu to always be this tall
+   */
+* html .ui-autocomplete {
+    height: 100px;
 }

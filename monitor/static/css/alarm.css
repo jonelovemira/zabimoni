@@ -1,0 +1,22 @@
+
+.row
+{
+	margin: 0px;
+	background:#fff;
+	padding: 3px;
+}
+
+.jumbotron p
+{
+	font-size: 14px;
+}
+
+.selectmetric-label
+{
+	font-weight: 300;
+}
+
+.pull-right
+{
+	margin-left: 10px;
+}

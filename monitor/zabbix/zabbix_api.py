@@ -5,18 +5,20 @@ import sys,traceback
 from monitor.zabbix.models import Zabbixhosts,Zabbixitems,Zabbixhostgroup,Zabbixinterface,Zabbixtriggers,Zabbixactions,Zabbixdrules,loadSession
 from monitor.MonitorException import *
 
-import os,StringIO,ConfigParser
+from monitor.functions import get_zabbix_server_ip
 
-def get_zabbix_server_ip():
-	config = StringIO.StringIO()
-	config.write('[dummysection]\n')
-	config.write(open('/etc/zabbix/zabbix_agentd.conf').read())
-	config.seek(0, os.SEEK_SET)
-	cp = ConfigParser.ConfigParser()
-	cp.readfp(config)
-	Hostname = cp.get('dummysection', 'Hostname')
-	config.close()
-	return Hostname
+# import os,StringIO,ConfigParser
+
+# def get_zabbix_server_ip():
+# 	config = StringIO.StringIO()
+# 	config.write('[dummysection]\n')
+# 	config.write(open('/etc/zabbix/zabbix_agentd.conf').read())
+# 	config.seek(0, os.SEEK_SET)
+# 	cp = ConfigParser.ConfigParser()
+# 	cp.readfp(config)
+# 	Hostname = cp.get('dummysection', 'Hostname')
+# 	config.close()
+# 	return Hostname
 
 class zabbix_api:
 	

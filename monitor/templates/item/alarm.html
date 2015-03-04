@@ -1,0 +1,487 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<link href="{{url_for('static',filename='css/alarm.css')}}" rel="stylesheet"></link>
+<script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/window_base.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/email.js')}}"></script>
+
+<link type="text/css" href="{{url_for('static',filename='css/window_base.css')}}" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/jquery-ui.min.css')}}">
+<script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
+
+<script type="text/javascript">
+$(function()
+{
+	// var pills_selector = 'li[role=presentation]';
+
+	// $(document).on('click',pills_selector,function()
+	// {
+	// 	$(pills_selector).removeClass("active");
+	// 	$(this).addClass("active");
+	// });
+    var itemtypetags = {{ itemtypenames|safe }};
+    var aws_itemtypetags = {{ aws_itemtypenames|safe }};
+    // console.log(aws_itemtypetags);
+    // console.log(itemtypetags);
+
+    set_auto_complete_in_dashboard();
+    set_auto_complete_in_main();
+    set_auto_complete_in_billing();
+
+    function set_auto_complete_in_dashboard()
+    {
+        // var new_arr = $.merge( itemtypetags, aws_itemtypetags);
+        var db_search_input_selector = "input.dashboard-search";
+        $(db_search_input_selector).autocomplete({
+            source: itemtypetags
+        });
+    }
+
+    function set_auto_complete_in_main()
+    {
+        var main_search_input_selector = "input.main-search";
+        $(main_search_input_selector).autocomplete({
+            source: itemtypetags
+        });
+    }
+
+    function set_auto_complete_in_billing()
+    {
+        var billing_search_input_selector = 'input.billing-search';
+        $(billing_search_input_selector).autocomplete({
+            source: aws_itemtypetags
+        });
+    }
+    console.log("window base in alarm");
+	var f = new window_base();
+	// f.set_allow_check_multiple(false);
+
+	// if (f.get_display_chart() != undefined) {
+	// 	f.update_call();
+ //    };
+
+    init_window_base();
+
+    function init_window_base()
+    {
+        
+        f.div_chart_height = $(chart_div_selector).height();
+        f.top_category_height = $(top_category_main_selector).height();
+        f.set_other_height(f.div_chart_height + f.top_category_height + 200);
+        var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+        var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+        // // console.log(chart_main_header_config_height,chart_main_pagination_height);
+        // // console.log(top_category_height);
+        var tmp_chart_main_display_height = f.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 10;
+        var tmp_chart_main_display_width = $(chart_main_display_container_selector).width();
+        f.set_display_container_width(tmp_chart_main_display_width);
+        $(chart_main_display_container_selector).height(tmp_chart_main_display_height);
+        // $(chart_div_selector).addClass("hidden");
+        // $(top_category_main_selector).addClass("hidden");
+        // if (f.get_display_chart() != undefined) {
+        //     f.update_call();
+        // };
+        
+        
+        // $(chart_div_selector).removeClass("hidden");
+        // $(top_category_main_selector).removeClass("hidden");
+    }
+
+    var select_metric_nav_id = 'nav-selectmetric';
+    var define_alarm_nav_id = 'nav-definealarm';
+    var sm_message_class = 'message-in-selectmetric';
+    var sm_message_selector = 'div.' + sm_message_class;
+    var actiontype_container_class = 'actiontype-container';
+    var actiontype_container_selector = 'div.' + actiontype_container_class;
+
+    var add_action_button_class = 'add-action';
+    var add_action_button_selector = 'a.' + add_action_button_class;
+
+    var delete_current_panel_class = 'delete-current-panel';
+    var delete_current_panel_selector = 'a.' + delete_current_panel_class;
+
+    var select_asg_group_class = 'select-asg-group';
+    var select_asg_group_selector = 'select.' + select_asg_group_class;
+
+    var ad_message_class = 'message-in-alramdefine';
+    var ad_message_selector = 'div.' + ad_message_class;
+
+    var email_receiver_selector = 'input[name="receivers"]';
+
+    var sm_label_selector = 'label.' + 'selectmetric-label';
+
+    var email_current_object = null;
+    var hiddenselectedmetric_selector = 'input[name="hiddenselectedmetric"]';
+
+    var sm_next_selector = 'button.' + 'sm-next';
+
+	$(document).on('click',"#myTab a",function(e)
+	{
+		e.preventDefault();
+        // $(this).tab('show');
+        // console.log($(this).attr("href"));
+        if ($(this).attr("href") == '#' + define_alarm_nav_id) {
+        	if (!f.is_select_empty()) {
+        		$(this).tab('show');
+        		if (f.get_display_chart() != undefined) {
+					f.get_display_chart().clear_chart();
+			    };
+        		var current_metric_name = selected_metric_2_name(f.get_selected_metric_result()); 
+        		$(sm_label_selector).text(current_metric_name);
+
+
+        		var selected_metric_result = jQuery.extend(true, {}, f.get_selected_metric_result());
+
+		        var hidden_series_info_value = JSON.stringify(selected_metric_result);
+		        $(hiddenselectedmetric_selector).val(hidden_series_info_value);
+        	}
+        	else
+        	{
+        		console.log(sm_message_selector);
+        		add_message_2_selector('Please select a metric before continuing','danger',sm_message_selector);
+        	}
+        }
+        else
+        {
+        	if (f.get_display_chart() != undefined) {
+					f.update_call();
+			};
+        	$(this).tab('show');
+        }
+	});
+
+	function selected_metric_2_name(current_selected_metrics)
+	{
+		var name = '';
+		for (var option in current_selected_metrics)
+        {
+            // console.log(selected_metric_result[option]);
+            for (var table_title in current_selected_metrics[option])
+            {
+                // console.log(table_title);
+                var metric_count = current_selected_metrics[option][table_title]['metric_count'];
+                if (metric_count > 0) {
+                	var table_head = current_selected_metrics[option][table_title]['table_head'];
+
+                	for (var metric_index in current_selected_metrics[option][table_title]['metric_result']) {
+                    // console.log(selected_metric_result[option][table_title]['metric_result'][metric_index]);
+	                    var name_str = '';
+	                    name_str = current_selected_metrics[option][table_title]['metric_result'][metric_index][table_head.indexOf('Metric Name')];
+	                    name += name_str + ';';
+	                };
+                };
+            }
+        }
+        // console.log(name);
+        return name;
+	}
+
+	function add_message_2_selector(message,type,selector)
+    {
+    	console.log(selector);
+        result_str = '';
+        result_str += '<div class="alert alert-' + type + '">';
+        result_str += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+        result_str += message;
+        result_str += '</div>';
+        
+        $(selector).append(result_str);
+        setTimeout(function()
+        {
+            $(selector).empty();
+        },5000);
+       
+    }
+
+    function add_specific_panel_2_actiontype_container(head,body_html)
+    {
+    	result_str = '';
+    	result_str += '<div class="panel panel-default">';
+
+    	result_str += '<div class="panel-heading">';
+    	result_str += head;
+    	result_str += '<a href="javascript:;" class="pull-right delete-current-panel">delete</a>';
+    	result_str += '</div>';
+
+    	result_str += '<div class="form-horizontal alarm-threshold" style="margin-top:10px;">';
+    	result_str += body_html;
+    	result_str += '</div>';
+
+		result_str += '</div>';
+
+		$(actiontype_container_selector).append(result_str);
+    }
+
+    $(document).on('click',delete_current_panel_selector,function()
+    {
+    	// console.log(delete)
+    	// console.log($(this).closest('.panel'));
+    	$(this).closest('.panel').remove();
+    })
+
+    $(document).on('click',add_action_button_selector,function()
+    {
+    	// console.log($(this).text());
+    	var action_text = $(this).attr("role");
+    	var html_body = html_body_for_action(action_text);
+    	add_specific_panel_2_actiontype_container(action_text,html_body);
+    	load_render_by_action(action_text);
+    });	
+
+    $(document).on('click',sm_next_selector,function()
+    {
+    	if (!f.is_select_empty()) {
+        	$('a[href="#nav-definealarm"]').tab('show');
+        	if (f.get_display_chart() != undefined) {
+				f.get_display_chart().clear_chart();
+			};
+        	var current_metric_name = selected_metric_2_name(f.get_selected_metric_result()); 
+        	$(sm_label_selector).text(current_metric_name);
+
+
+        	var selected_metric_result = jQuery.extend(true, {}, f.get_selected_metric_result());
+
+		    var hidden_series_info_value = JSON.stringify(selected_metric_result);
+		    $(hiddenselectedmetric_selector).val(hidden_series_info_value);
+        }
+        else
+        {
+        	console.log(sm_message_selector);
+        	add_message_2_selector('Please select a metric before continuing','danger',sm_message_selector);
+        }
+
+    });
+
+
+    function load_render_by_action(action_text)
+    {
+    	switch(action_text)
+    	{
+    		case 'Auto Scaling Action':
+    			$.getJSON('/item/autoscalegroup',function(data)
+		        {
+		        	if (data.load_result_bool) {
+		        		$(select_asg_group_selector).empty();
+		        		for(datait = 0 ; datait < data.load_result.length ; datait ++)
+			            {
+			                $(select_asg_group_selector).append('<option>' + data.load_result[datait] + '</option>');
+			            }
+		        	}
+		        	else
+		        	{
+		        		add_message_2_selector(data.info,'danger',ad_message_selector);
+		        	}
+		            
+		           
+		        });
+    			break;
+    	}
+    }
+
+    function html_body_for_action(action_text)
+    {
+    	result_str = '';
+
+    	switch(action_text)
+    	{
+    		case 'Notification by Mail':
+    			result_str += '<div class="form-group">';
+    			result_str += '<label class="col-sm-3 control-label">Topic Name:</label>';
+    			result_str += '<div class="col-sm-5">';
+    			result_str += '<input type="text" class="form-control" name="topicname" required>';
+    			result_str += '</div>';
+    			result_str += '</div>';
+
+    			result_str += '<div class="form-group">';
+    			result_str += '<label class="col-sm-3 control-label">Send Notification to:</label>';
+    			result_str += '<div class="col-sm-5">';
+    			result_str += '<input type="text" class="form-control test" placeholder="click to add" name="receivers" readonly >';
+    			result_str += '</div>';
+    			result_str += '</div>';
+    			break;
+
+    		case 'Auto Scaling Action':
+    			result_str += '<div class="form-group">';
+    			result_str += '<label class="col-sm-3 control-label">From the group:</label>';
+    			result_str += '<div class="col-sm-5">';
+    			result_str += '<select class="form-control select-asg-group" name="asggroup">';
+    			result_str += '<option>Loading...</option>';
+    			result_str += '</select>';
+    			result_str += '</div>';
+    			result_str += '</div>';
+
+    			result_str += '<div class="form-group">';
+    			result_str += '<label class="col-sm-3 control-label">Take this action:</label>';
+    			result_str += '<div class="col-sm-5">';
+    			result_str += '<select class="form-control" name="asgactiontype">';
+    			result_str += '<option>Up</option>';
+    			result_str += '<option>Down</option>';
+    			result_str += '</select>';
+    			result_str += '</div>';
+    			result_str += '</div>';
+    			break;
+    	}
+
+    	return result_str;
+    }
+
+    $(document).on('click',email_receiver_selector,function()
+    {
+    	email_current_object = $(this);
+    	$('#foremailaddress').modal({
+            keyboard: false
+        });
+        $('#foremailaddress').modal('show');
+    });
+
+    $(document).on('click','button.confirmemailaddress',function()
+    {
+        $('#foremailaddress').modal('hide');
+        email_arr = [];
+        $('input[name="email[]"]').each(function(i,d)
+        {
+            if (d.value.length > 0) {
+                email_arr.push(d.value);
+            };
+        });
+        tmp_str = email_arr.join(';');
+        email_current_object.attr('value',tmp_str);
+        // console.log(tmp_str);
+    })
+
+
+
+	// $("#myTab a").click(function(e){
+ //        e.preventDefault();
+ //        $(this).tab('show');
+ //    });
+});
+</script>
+
+
+
+<ul class="nav nav-pills" id="myTab">
+	<li role="presentation" class="active"><a href="#nav-selectmetric">1.Select Metric</a></li>
+	<li role="presentation"><a href="#nav-definealarm">2.Define Alarm</a></li>
+</ul>
+
+
+<div class="tab-content">
+	<div id="nav-selectmetric" class="tab-pane fade in active" >
+		<div class="row">
+		<div class="message-in-selectmetric"></div>
+			{% include 'chart/window_main.html' %}
+
+			<hr width="100%">
+			<div class="col-sm-5 col-sm-offset-3">
+				<button type="button" class="btn btn-primary pull-right sm-next">next >>></button>
+			</div>
+			
+		</div>
+		
+	</div>
+	<div id="nav-definealarm" class="tab-pane fade">
+		<div class="row">
+			<div class="message-in-alarmdefine"></div>
+			<form class="form-horizontal alarm-threshold" style="margin:5px;" method="POST">
+				<h3 style="border-bottom:1px solid #eee">Alarm Threshold</h3>
+				<p>Provide the details and threshold for your alarm.</p>
+				<div class="form-group">
+			        <label class="col-sm-3 control-label" >Name:</label>
+			        <div class="col-sm-5">
+			            <input type="text" class="form-control"  name="alarmname" required>
+			        </div>
+			    </div>
+		    	
+		    	<hr width=100%>
+
+			    <div class="form-group">
+			    	<label class="col-sm-3 control-label">Whenever:</label>
+			    	<div class="col-sm-5">
+			    		<label class="control-label selectmetric-label"></label>
+			    	</div>
+			    	<input type="text" class="form-control hidden" name="hiddenselectedmetric" >
+			    </div>
+
+			    <div class="form-group">
+			    	<label class="col-sm-3 control-label">is:</label>
+			    	<div class="col-sm-2">
+			            <select class="form-control" name="comparetype">
+			            	<option>></option>
+			            	<option><</option>
+			            	<option>=</option>
+			            </select>
+			        </div>
+			        <div class="col-sm-3">
+			            <input type="text" class="form-control"  name="alarmvalue" required>
+			        </div>
+			    </div>
+
+			    <div class="form-group">
+			    	<label class="col-sm-3 control-label">for:</label>
+			    	<div class="col-sm-2">
+			            <input type="text" class="form-control"  name="timeshift" required>
+			        </div>
+			        <div class="col-sm-3">
+			            <label class="control-label" style="font-weight:300;">consecutive period(s)</label>
+			        </div>
+			    </div>
+
+			    <h3 style="border-bottom:1px solid #eee">Actions</h3>
+				<p>Define what actions are taken when your alarm changes state.</p>
+				
+				<div class="actiontype-container"></div>
+				
+
+				<div class="form-group">
+					<div class="col-sm-8">
+						<a href="javascript:;" type="button" class="btn btn-default pull-right add-action" role="Notification by Mail">
+							<span class="glyphicon glyphicon-plus" aria-hidden="true" ></span>Notification by Mail</a>
+						<a href="javascript:;" type="button" class="btn btn-default pull-right add-action" role="Auto Scaling Action">
+							<span class="glyphicon glyphicon-plus" aria-hidden="true" ></span>Auto Scaling Action</a>
+					</div>
+				</div>
+
+				<hr width=100%>
+
+				<div class="form-group">
+					<div class="col-sm-5 col-sm-offset-3">
+						<button type="submit" class="btn btn-primary">Create Alarm</button>
+					</div>
+				</div>
+
+			</form>
+		</div>
+		
+	</div>
+</div>
+
+<div class="modal fade" id="foremailaddress" tabindex="-1" role="dialog" aria-labelledby="emailaddress" aria-hidden="true">
+  <div class="modal-dialog page">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="emailaddress">Add email address</h4>
+      </div>
+      <div class="modal-body">
+        <div id="fieldIconsForm" class="form-horizontal" >
+            {% include 'email.html'%}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary confirmemailaddress">Confirm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}

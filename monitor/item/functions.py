@@ -1,14 +1,15 @@
 #! flask/bin/python
 
-from monitor.zabbix.zabbix_api import zabbix_api,get_zabbix_server_ip
+from monitor.zabbix.zabbix_api import zabbix_api
+from monitor.functions import get_zabbix_server_ip
 from monitor import db
 from monitor.item.models import Area,Service,Host,Item,Itemtype,Normalitemtype,Zbxitemtype,Itemdatatype,Calculateditem,Trigger,Action
-from monitor.chart.models import Series
+# from monitor.chart.models import Series
 import boto.ec2
 import boto.ec2.elb
 from config import HOST_GROUP_NAME,TEMPLATE_NAME,BY_ALL,BY_AREA,BY_SERVICE,BY_HOST,AREA
 from monitor.zabbix.models import Zabbixitems,Zabbixinterface,Zabbixhosts,loadSession
-from monitor.chart.functions import construct_random_str
+from monitor.functions import construct_random_str
 from monitor.MonitorException import *
 from datetime import datetime
 import sys,traceback

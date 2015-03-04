@@ -2,7 +2,8 @@ from monitor.item.models import Item,Host,Service,Itemtype,Zbxitemtype,Normalite
 from monitor.zabbix.models import Zabbixhosts,Zabbixinterface
 from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,\
 					TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_HEAD_IP,\
-					TABLE_HEAD_METRIC_NAME,PER_INSTANCE_TABLE_HEAD,AWS_FEE_TABEL_HEAD
+					TABLE_HEAD_METRIC_NAME,PER_INSTANCE_TABLE_HEAD,AWS_FEE_TABEL_HEAD,\
+					NO_FEE_RESULT_SET
 
 
 def by_group_name(row):
@@ -214,7 +215,7 @@ class ItemtypeSearchValue2Filter():
 		if search_value == '' or search_value == None:
 			filter_result = True
 		else:
-			filter_result = Itemtype.itemtypename.like('%' + search_value + '%')
+			filter_result = Itemtype.itemtypename.ilike('%' + search_value + '%')
 
 		return filter_result
 
@@ -226,7 +227,7 @@ class ItemSearchValue2Filter():
 		if search_value == '' or search_value == None:
 			filter_result = True
 		else:
-			filter_result = Item.itemname.like('%' + search_value + '%')
+			filter_result = Item.itemname.ilike('%' + search_value + '%')
 
 		return filter_result
 
@@ -235,7 +236,7 @@ class ItemSearchValue2Filter():
 class SearchWithBasicMetrics(BaseSearch):
 	
 	@classmethod
-	def search(cls,search_value=None,asg_name=None):
+	def search(cls,search_value=None,asg_name=None,desire_result_set=NO_FEE_RESULT_SET):
 
 		result = {}
 
@@ -251,10 +252,18 @@ class SearchWithBasicMetrics(BaseSearch):
 			item_search_result += BaseSearch.search(it.items,filter_boolean)
 
 		by_group_result = ItemSearch.generate_by_group_result_no_fee(item_search_result)
-		result[BY_GROUP_RESULT] = by_group_result
-
 		per_instance_result = ItemSearch.generate_per_instance_result_no_fee(item_search_result)
-		result[PER_INSTANCE_RESULT] = per_instance_result
+
+		tablehead_result_map = {
+			BY_GROUP_RESULT : by_group_result,
+			PER_INSTANCE_RESULT : per_instance_result
+		}
+
+		for result_head in desire_result_set:
+			result[result_head] = tablehead_result_map.get(result_head,None)
+
+		# result[BY_GROUP_RESULT] = by_group_result
+		# result[PER_INSTANCE_RESULT] = per_instance_result
 
 		return result
 
@@ -287,7 +296,7 @@ class BrowseMetrics():
 class SearchInASGGroup():
 
 	@classmethod
-	def search(cls,search_value=None,asg_name=None):
+	def search(cls,search_value=None,asg_name=None,desire_result_set=NO_FEE_RESULT_SET):
 		result = {}
 
 		filter_boolean = ItemSearchValue2Filter.parse(search_value)
@@ -306,10 +315,20 @@ class SearchInASGGroup():
 				item_search_result += BaseSearch.search(it.items,filter_boolean)			
 
 			by_group_result = ItemSearch.generate_by_group_result_no_fee(item_search_result,asg_name)
-			result[BY_GROUP_RESULT] = by_group_result
+			
 
 			per_instance_result = ItemSearch.generate_per_instance_result_no_fee(item_search_result,asg_name)
-			result[PER_INSTANCE_RESULT] = per_instance_result
+
+			tablehead_result_map = {
+				BY_GROUP_RESULT : by_group_result,
+				PER_INSTANCE_RESULT : per_instance_result
+			}
+
+			for result_head in desire_result_set:
+				result[result_head] = tablehead_result_map.get(result_head,None)
+
+			# result[BY_GROUP_RESULT] = by_group_result
+			# result[PER_INSTANCE_RESULT] = per_instance_result
 
 		return result
 
@@ -317,7 +336,7 @@ class SearchInASGGroup():
 class SearchWithAll():
 
 	@classmethod
-	def search(cls,search_value=None,asg_name=None):
+	def search(cls,search_value=None,asg_name=None,desire_result_set=NO_FEE_RESULT_SET):
 		result = {}
 
 		filter_boolean = ItemSearchValue2Filter.parse(search_value)
@@ -325,26 +344,43 @@ class SearchWithAll():
 		item_search_result = ItemSearch.search(filter_boolean)
 
 		by_group_result = ItemSearch.generate_by_group_result_no_fee(item_search_result)
-		result[BY_GROUP_RESULT] = by_group_result
+		
 
 		per_instance_result = ItemSearch.generate_per_instance_result_no_fee(item_search_result)
-		result[PER_INSTANCE_RESULT] = per_instance_result
+
+		tablehead_result_map = {
+			BY_GROUP_RESULT : by_group_result,
+			PER_INSTANCE_RESULT : per_instance_result
+		}
+
+		for result_head in desire_result_set:
+			result[result_head] = tablehead_result_map.get(result_head,None)
+
+		# result[BY_GROUP_RESULT] = by_group_result
+		# result[PER_INSTANCE_RESULT] = per_instance_result
 
 		return result
 
 class SearchWithBilling():
 
 	@classmethod
-	def search(cls,search_value=None,option=''):
+	def search(cls,search_value=None,option='',desire_result_set=None):
 		result = {}
 
 		filter_boolean = ItemSearchValue2Filter.parse(search_value)
 
 		item_search_result = ItemSearch.search(filter_boolean)
 
+		if desire_result_set == None:
+			desire_result_set = []
+			for aws in Aws.query.all():
+				desire_result_set.append(aws.awsname)
+
 		for aws in Aws.query.all():
 			per_aws_fee_result = ItemSearch.generate_fee_data(item_search_result,aws.awsname)
-			result[aws.awsname] = per_aws_fee_result
+			# print aws.awsname, desire_result_set
+			if aws.awsname in desire_result_set:
+				result[aws.awsname] = per_aws_fee_result
 
 		# per_instance_result = ItemSearch.generate_fee_data(item_search_result)
 

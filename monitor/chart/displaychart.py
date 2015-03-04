@@ -432,3 +432,13 @@ class Chart():
 		result['chart_config'] = chart_config
 
 		return result
+
+	@classmethod
+	def smr_2_itemlist(cls,selected_metrics):
+		row_result = cls.selected_metrics_2_metric_content(selected_metrics)
+		convert_result = []
+		for row in row_result:
+			item_list = ItemSearch.row_2_item_list(row['row_type'],row['row'])
+			convert_result = list( set(convert_result) | set(item_list) )
+
+		return convert_result

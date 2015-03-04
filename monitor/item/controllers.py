@@ -1,7 +1,7 @@
 from flask import Blueprint, request, render_template, \
                   flash, g, session, redirect, url_for
 from flask.ext.login import login_required
-from monitor import db
+from monitor import db,app
 
 from monitor.item.models import Area,Service,Host,Itemdatatype,Itemtype,Zbxitemtype,Aws,Action
 # from monitor.item.functions import mass_add_1_level,mass_add_host_item_for_area,mass_add_itemtype,add_host
@@ -10,13 +10,13 @@ from monitor.zabbix.zabbix_api import zabbix_api
 from monitor.MonitorException import *
 import json
 import boto.ec2.autoscale
-from config import AUTOSCALE_COMMAND_PATH ,AUTOSCALE,EMAILNOTIFICATION,MAIL_USE_SNS,EMAIL_SNS_PATH,EMAIL_NORMAL_PATH
+from config import AUTOSCALE_COMMAND_PATH ,AUTOSCALE,EMAILNOTIFICATION,MAIL_USE_SNS,EMAIL_SNS_PATH,EMAIL_NORMAL_PATH,AREA
 
 from flask.ext.principal import Permission, RoleNeed
 admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
 
 from monitor.zabbix.models import Zabbixhosts,Zabbixinterface
-
+from monitor.item.alarm import Alarm
 
 mod_item = Blueprint('item', __name__, url_prefix='/item')
 
@@ -114,6 +114,7 @@ def area():
 				db.session.add(a)
 
 			db.session.commit()
+			app.logger.info(g.user.username + ' add an area type : ' + areaname)
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'danger')
@@ -134,6 +135,7 @@ def areadelete(areaid):
 		area = Area.query.filter_by(areaid=areaid).first()
 		db.session.delete(area)
 		db.session.commit()
+		app.logger.info(g.user.username + ' delete an area record : ' + areaid )
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'danger')
@@ -168,6 +170,9 @@ def service():
 				add_host_register_in_elb(servicename,areaid)
 
 			db.session.commit()
+
+			app.logger.info(g.user.username + ' add a service type : ' + servicename)
+
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'danger')
@@ -180,6 +185,29 @@ def service():
 			
 	# return render_template('item/service.html')
 	return render_template('item/service.html',area = area)
+
+@mod_item.route('/service_json',methods=['POST','GET'])
+@login_required
+def service_json():
+	result = {}
+	load_service_result = None
+	load_service_result_bool = False
+	info = None
+	try:
+		load_service_result = []
+		for s in Service.query.all():
+			load_service_result.append(s.servicename)
+		load_service_result_bool = True
+		info = 'success'
+	except Exception, e:
+		info = str(e)
+
+	result['load_service_result'] = load_service_result
+	result['load_service_result_bool'] = load_service_result_bool
+	result['info'] = info
+
+	return json.dumps(result)
+
 
 @mod_item.route('/service/host_json/<serviceid>',methods=['POST','GET'])
 @login_required
@@ -226,6 +254,7 @@ def servicedelete(serviceid):
 		service = Service.query.filter_by(serviceid=serviceid).first()
 		db.session.delete(service)
 		db.session.commit()
+		app.logger.info(g.user.username + ' delete a service group : ' + serviceid)
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'danger')
@@ -256,6 +285,7 @@ def host():
 			# print hostname,host_ip,servicename,areaname
 			add_host(hostname, servicename,host_ip,areaname)
 			db.session.commit()
+			app.logger.info(g.user.username + ' add a host : ' + hostname)
 		except Exception, e:
 			db.session.rollback()
 			flash(str(e),'danger')
@@ -275,6 +305,8 @@ def hostdelete(hostid):
 	try:
 		delete_host(hostid)
 		db.session.commit()
+		app.logger.info(g.user.username + ' delete a host : ' + hostid)
+
 	except Exception, e:
 		db.session.rollback()
 		flash(str(e),'danger')
@@ -307,6 +339,8 @@ def itemtype():
 			# print kinds,indexid,key,itemdatatypename,unitname,zabbixvaluetype
 			add_key(kinds,indexid,key,itemdatatypename,unitname,zabbixvaluetype,zabbix)
 			db.session.commit()
+			app.logger.info(g.user.username + ' add an item : ' + key)
+
 		except Exception, e:
 			zabbix.rollback()
 			db.session.rollback()
@@ -337,6 +371,8 @@ def itemtypedelete(itemtypeid):
 			zabbix.item_delete(itemids)
 			db.session.delete(it)
 			db.session.commit()
+			app.logger.info(g.user.username + ' delete an item : ' + itemtypeid)
+
 			# hosts = Host.query.all()
 			# for h in hosts:
 			# 	update_host(h.hostid,h.hostname,h.area.areaid,h.service.serviceid)
@@ -441,6 +477,9 @@ def trigger_action():
 				db.session.add(ttmp)
 				
 			db.session.commit()
+
+			app.logger.info(g.user.username + ' add a trigger and action : ')
+
 		except Exception, e:
 			db.session.rollback()
 			zabbix.rollback()
@@ -461,24 +500,12 @@ def trigger_action():
 def trigger_delete(triggerid):
 	zabbix = zabbix_api()
 	try:
-		t = Trigger.query.get(triggerid)
-		if t != None:
-			zabbix.item_delete([t.calcitem.calculateditemid])
-			cali = Calculateditem.query.get(t.calcitem.calculateditemid)
-			if cali != None:
-				db.session.delete(cali)
+		Alarm.delete_alarm(zabbix,triggerid)
+		db.session.commit()
+		app.logger.info(g.user.username + ' delete an alarm : ' + triggerid)
 
-			zabbix.trigger_delete([t.triggerid])
-			actionids = []
-			for a in t.actions.all():
-				actionids.append(a.actionid)
-				db.session.delete(a)
-			zabbix.action_delete(actionids)
-			db.session.delete(t)
-			db.session.commit()
 	except Exception, e:
 		db.session.rollback()
-		zabbix.rollback()
 		flash(str(e),'danger')
 	else:
 		flash('delete a trigger','success')
@@ -486,6 +513,37 @@ def trigger_delete(triggerid):
 	# 	db.session.remove()
 	
 	return redirect(url_for('item.mainboard'))
+
+@mod_item.route('/trigger/<triggerid>',methods=['GET','POST'])
+@login_required
+@admin_permission.require(http_exception=403)
+def trigger_load(triggerid):
+	result = {}
+	load_result = None
+	load_result_bool = False
+	info = None
+	try:
+		load_result = Alarm.load_alarm(triggerid)
+		load_result_bool = True
+		info = 'success'
+		# load_result['Threshold'] = 'net.if.in[eth1] > 12345.0 for 300s'
+		# load_result['Actions'] = 'sending email to topic including addresses in below: xuzhongyong@tp-link.net ; 670271826@qq.com'
+		# load_result['Namespace'] = 'Monitor'
+		# load_result['Metric Name'] = 'net.if.in[eth1]'
+		# load_result['Period'] = '1 minute'
+		# load_result['Statistic'] = 'Average'
+
+	except Exception, e:
+		load_result = None
+		load_result_bool = False
+		info = str(e)
+
+	result['load_result'] = load_result
+	result['load_result_bool'] = load_result_bool
+	result['info'] = info
+
+	return json.dumps(result)
+
 
 @mod_item.route('/generateformula',methods=['GET','POST'])
 @login_required
@@ -510,24 +568,74 @@ def generateformula():
 @admin_permission.require(http_exception=403)
 def autoscalegroup():
 
-	areaid = request.args.get('areaid')
-	areaname = Area.query.filter_by(areaid=areaid).first().areaname
-
-	result = []
-
-	con = boto.ec2.autoscale.connect_to_region(areaname)
-	asg = []
+	result = {}
+	load_result = None
+	load_result_bool = False
+	info = None
 	try:
+		areaname = AREA
+		con = boto.ec2.autoscale.connect_to_region(areaname)
 		asg = con.get_all_groups()
+		
+		load_result = []
+		for a in asg:
+			load_result.append(a.name)
+		load_result_bool = True
+		info = 'success'
+
 	except Exception, e:
-		pass
+		info = str(e)
+		print info
 	
-
-	for a in asg:
-		result.append(a.name)
-
+	result['load_result'] = load_result
+	result['load_result_bool'] = load_result_bool
+	result['info'] = info
 
 	return json.dumps(result)
+
+@mod_item.route('/alarm',methods=['GET','POST'])
+@login_required
+def alarm():
+	itemtypes = Itemtype.query.all()
+	tmp_arr = []
+	aws_tmp_arr = []
+	for it in itemtypes:
+		if it.aws == None:
+			tmp_arr.append(it.itemtypename)
+		else:
+			item = it.items.first()
+			aws_tmp_arr.append(item.itemname)
+	itemtypenames = json.dumps(tmp_arr)
+	aws_itemtypenames = json.dumps(aws_tmp_arr)
+
+	if request.method == 'POST':
+		# print request.form
+		try:
+			zabbix = zabbix_api()
+			f = request.form
+			form_arg = {}
+			for key in f.keys():
+				form_arg[key] = []
+				for value in f.getlist(key):
+					if len(value) != 0:
+						form_arg[key].append(value)
+
+			for key in form_arg:
+				print key,form_arg[key]
+
+			Alarm.create_alarm(form_arg,zabbix)
+			db.session.commit()
+			app.logger.info(g.user.username + ' create an alarm')
+			flash('You created an alarm','success')
+			return redirect(url_for('item.mainboard'))
+		except Exception, e:
+			db.session.rollback()
+			zabbix.rollback()
+			import traceback,sys
+			traceback.print_exc(file=sys.stdout)
+			flash(str(e),'danger')
+
+	return render_template('item/alarm.html',itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
 
 # @mod_item.route('/test')

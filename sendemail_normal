@@ -1,7 +1,7 @@
 #! /bin/bash
 
 receivers=$1
-admin_email_address="670271826@qq.com"
+# admin_email_address="670271826@qq.com"
 
 content=$2
 
@@ -14,4 +14,4 @@ for r in $rvs
 do
 	echo $content | mail -s 'Monitor trigger notifications' $r
 done
-echo $content | mail -s 'Monitor trigger notifications' $admin_email_address
+# echo $content | mail -s 'Monitor trigger notifications' $admin_email_address

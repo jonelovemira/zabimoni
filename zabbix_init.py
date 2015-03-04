@@ -110,7 +110,7 @@ def create_auto_registration_action(name,groupid,command,zabbix):
 	def_longdata = 'Host name: {HOST.HOST}\r\nHost IP: {HOST.IP}\r\nAgent port: {HOST.PORT}'
 	zabbix.action_create(name,eventsource,conditions,operations,def_shortdata,def_longdata)
 
-def create_unreachable_action(zabbix,command,action_name='agent is unreachable',trigger_name='is unreachable for 5 minutes'):
+def create_unreachable_action(zabbix,command,command_2,action_name='agent is unreachable',trigger_name='is unreachable for 5 minutes'):
 	name = action_name
 	eventsource = 0
 	conditions = [
@@ -144,6 +144,21 @@ def create_unreachable_action(zabbix,command,action_name='agent is unreachable',
 				"command":command,
 				"execute_on":1
 			}
+		},
+		{
+			"operationtype":1,
+			"opcommand_hst":
+			[
+				{
+					"hostid":0
+				}
+			],
+			"opcommand" :
+			{
+				"type": 0,
+				"command":command_2,
+				"execute_on":1
+			}
 		}
 	]
 
@@ -166,6 +181,7 @@ if __name__ == '__main__':
 
 	zbx_groupname = sys.argv[3]
 	unreachable_action_command = sys.argv[4]
+	unreachable_action_command_2 = sys.argv[5]
 
 	# print discovery_command_path,prototype_command_path,zbx_groupname
 
@@ -199,8 +215,9 @@ if __name__ == '__main__':
 		update_itemprototype(zabbix)
 
 		ua = Zabbixactions.query.filter_by(name=unreachable_action_name).first()
-		if ua == None:
-			create_unreachable_action(zabbix,unreachable_action_command,unreachable_action_name)
+		if ua != None:
+			zabbix.action_delete([ua.actionid])
+		create_unreachable_action(zabbix,unreachable_action_command,unreachable_action_command_2,unreachable_action_name)
 
 		# print 1/0
 	except Exception, e:

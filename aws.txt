@@ -180,3 +180,25 @@ aws fee items :
 	AmazonEC2 102964196778	0	USD
 -----------------------------
 	AmazonS3 102964196778	0	USD
+Traceback (most recent call last):
+  File "/home/monitor/project/monitor-0.3.7/unregister_unreachable_host.py", line 44, in <module>
+    delete_host(hostid)
+  File "/home/monitor/project/monitor-0.3.7/monitor/item/functions.py", line 224, in delete_host
+    zabbix.host_delete([hostid])
+  File "/home/monitor/project/monitor-0.3.7/monitor/zabbix/zabbix_api.py", line 312, in host_delete
+    api_result = self.request_api(data)
+  File "/home/monitor/project/monitor-0.3.7/monitor/zabbix/zabbix_api.py", line 238, in request_api
+    raise MonitorException('request api fail,' + str(response))
+MonitorException: 'request api fail,{u\'jsonrpc\': u\'2.0\', u\'id\': 1, u\'error\': {u\'message\': u\'Application error.\', u\'code\': -32500, u\'data\': u\'SQL statement execution has failed "DELETE FROM events WHERE (source IN (\\\'0\\\',\\\'3\\\')) AND (objectid IN (\\\'20877\\\',\\\'20878\\\',\\\'20879\\\',\\\'20880\\\',\\\'20881\\\',\\\'20882\\\',\\\'20883\\\',\\\'20884\\\',\\\'20885\\\',\\\'20886\\\',\\\'20887\\\',\\\'20888\\\',\\\'20889\\\',\\\'20890\\\',\\\'20891\\\',\\\'20892\\\')) AND object=\\\'0\\\'"\'}}'
+Traceback (most recent call last):
+  File "/home/monitor/project/monitor-0.3.7/unregister_unreachable_host.py", line 53, in <module>
+    zabbix = zabbix_api()
+NameError: name 'zabbix_api' is not defined
+Traceback (most recent call last):
+  File "/home/monitor/project/monitor-0.3.7/unregister_unreachable_host.py", line 55, in <module>
+    zabbix.host_delete([hostid])
+  File "/home/monitor/project/monitor-0.3.7/monitor/zabbix/zabbix_api.py", line 312, in host_delete
+    api_result = self.request_api(data)
+  File "/home/monitor/project/monitor-0.3.7/monitor/zabbix/zabbix_api.py", line 238, in request_api
+    raise MonitorException('request api fail,' + str(response))
+MonitorException: 'request api fail,{u\'jsonrpc\': u\'2.0\', u\'id\': 1, u\'error\': {u\'message\': u\'Application error.\', u\'code\': -32500, u\'data\': u\'SQL statement execution has failed "DELETE FROM events WHERE (source IN (\\\'0\\\',\\\'3\\\')) AND (objectid IN (\\\'20915\\\',\\\'20916\\\',\\\'20917\\\',\\\'20918\\\',\\\'20919\\\',\\\'20920\\\',\\\'20921\\\',\\\'20922\\\',\\\'20923\\\',\\\'20924\\\',\\\'20925\\\',\\\'20926\\\',\\\'20927\\\',\\\'20928\\\',\\\'20929\\\',\\\'20930\\\')) AND object=\\\'0\\\'"\'}}'

@@ -21,7 +21,7 @@ from monitor.chart.displaychart import Chart
 from monitor.decorators import async
 from boto.s3.connection import S3Connection
 from datetime import datetime
-from monitor.chart.functions import construct_random_str
+from monitor.functions import construct_random_str
 
 head_grouptype_map = {
 	BY_GROUP_RESULT:BY_GROUP_TABLE_HEAD,
@@ -135,21 +135,53 @@ class generate_report():
 
 	@classmethod
 	def create_report_chart_json(cls,series_data_str,reportname,y_title):
-		tmp_series_data = '''[{'data': [[1423453200000, 17352.0]], 'name': '192.168.1.101'}]'''
-
 		tmp = '''{
-
-			rangeSelector : {
-                        // selected : 1,
-                        inputEnabled: true
-            },
-            title : {
-            	text : ''' + "'" + reportname + "'" + '''
-            },
-
-			series:''' + series_data_str + ''' 
-
-
+					legend: {
+	                    enabled: true,
+	                    align: 'center',
+	                    backgroundColor: '#FCFFC5',
+	                    borderColor: 'black',
+	                    borderWidth: 2,
+	                    layout: 'vertical',
+	                    verticalAlign: 'bottom',
+	                    y: 0,
+	                    shadow: true,
+	                    labelFormatter : function()
+	                    {
+	                        return this.name;
+	                    }
+	                },
+	                rangeSelector : {
+	                        // selected : 1,
+	                        inputEnabled: true
+	                },
+	                title : {
+	                    text : ''' + "'" + reportname + "'" + '''
+	                },
+	                navigator:
+	                {
+	                	enabled:false
+	                },
+	                scrollbar:
+	                {
+	                	enabled:false
+	                },
+	                plotOptions:{
+	                    line:{
+	                        turboThreshold:1000000
+	                    }
+	                },
+	                yAxis: {
+	                        min: 0,
+	                        startOnTick: false,
+	                        title: {
+	                        	text: ''' + "'" + y_title + "'" + '''
+	                        }
+	                },
+	                credits:{
+	                    enabled:false
+	                },
+	                series:''' + series_data_str + ''' 
 		}'''
 		return tmp
 
@@ -291,21 +323,21 @@ class generate_schedule():
 
 	@classmethod
 	@async
-	def update_schedule_data_2_s3(cls):
+	def update_schedule_data_2_s3(cls,all_es):
 		try:
+			print "update_schedule_data_2_s3"
 			con = S3Connection()
 			bucket = con.get_bucket(S3_MONITOR_BUCKET_NAME)
 			schedule_data_file = bucket.get_key(S3_MONITOR_SCHEDULE_FOLDER + S3_MONITOR_SHEDULE_ALL_FILENAME)
 			if schedule_data_file == None:
 				schedule_data_file = bucket.new_key(S3_MONITOR_SCHEDULE_FOLDER + S3_MONITOR_SHEDULE_ALL_FILENAME)
-			all_es = Emailschedule.query.all()
+			# all_es = Emailschedule.query.all()
 			result = []
 			for es in all_es:
 				report_info = []
 				result.append({'starttime':es.starttime,'frequency':es.frequency,'esid':es.emailscheduleid,'timezone':es.timezone})
 
 			result_str = json.dumps(result)
-			
 			schedule_data_file.set_contents_from_string(result_str)
 			schedule_data_file.make_public()
 		except Exception, e:
@@ -313,7 +345,7 @@ class generate_schedule():
 			con = S3Connection()
 			bucket = con.get_bucket(S3_BUCKET_NAME)
 			schedule_data_file = bucket.get_key(S3_SCHEDULE_FOLDER+SCHEDULE_ALL_FILENAME)
-			all_es = Emailschedule.query.all()
+			# all_es = Emailschedule.query.all()
 			result = []
 			for es in all_es:
 				report_info = []

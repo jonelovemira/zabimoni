@@ -1,12 +1,32 @@
 <div class="row indexmain">
-                <div class="jumbotron dashboard-main">
-                    <h1>Metric Summary</h1>
-                    <p>Monitor monitors operational and performance metrics for your cloud resources and applications.</p>
-                    <p>Browse or search your metrics to get started graphing data.</p>
-                    <div class="navbar-form">
-                        <button class='btn btn-primary form-control browsemetric' type="button">Browse Metrics</button>
-                        <input type=text class="form-control search" placeholder="input Metrics Name"/>
-                    </div>
+    <div class="jumbotron dashboard-main">
+        <h1>Metric Summary</h1>
+        <p>Monitor monitors operational and performance metrics for your cloud resources and applications.</p>
+        <p>Browse or search your metrics to get started graphing data.</p>
+        <div class="navbar-form">
+            <button class='btn btn-primary form-control browsemetric' type="button">Browse Metrics</button>
+            <input type=text class="form-control dashboard-search" placeholder="input Metrics Name"  />
+        </div>
                     
-                </div>
+    </div>
+                
+    <div class="panel panel-default top-category-main">
+        <div class="navbar-form top-category">
+            <div class="form-group">
+                <input type="text" class="form-control main-search" placeholder="input Metrics Name" value="" />
             </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default billing-top-category hidden">
+        <div class="navbar-form top-category">
+            <select class="form-control">
+                <option checked="">billing</option>
+            </select>
+            <div class="form-group">
+                <input type="text" class="form-control billing-search" placeholder="input Metrics Name">
+            </div>
+        </div>
+    </div>
+</div>
+

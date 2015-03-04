@@ -7,8 +7,9 @@
     <title>Monitor</title>
     {% endif %}
     <link href="{{url_for('static',filename='css/style.css')}}" rel="stylesheet"></link>
-    <link href="{{url_for('static',filename='css/page.css')}}" rel="stylesheet"></link>
+    
     <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet" media="screen"></link>
+    <link href="{{url_for('static',filename='css/page.css')}}" rel="stylesheet"></link>
     <link href="{{url_for('static',filename='css/bootstrap-theme.min.css')}}" rel="stylesheet" ></link>
     <link href="{{url_for('static',filename='css/carousel.css')}}" rel="stylesheet" ></link>
     <script type="text/javascript" src="{{url_for('static',filename='js/jquery-2.1.1.js')}}"></script>
@@ -17,6 +18,14 @@
     <script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
     <script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
     <script type="text/javascript" src="{{url_for('static',filename='js/window_base.js')}}"></script>
+
+    <link type="text/css" href="{{url_for('static',filename='css/window_base.css')}}" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/jquery-ui.min.css')}}">
+    <script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -52,11 +61,20 @@ $(function()
 {
     //global variable
     var current_window_index = null;
+    var callback = null;
     var nine_charts = {};
 
     //add chart button in page
     add_chart_page_class = 'page';
     add_chart_page_selector = 'button.' + add_chart_page_class;
+
+    load_single_chart_history_class = 'load_sc';
+    load_single_chart_history_selector = 'button.' + load_single_chart_history_class;
+
+    confirm_load_sc_class = 'confirm-load-sc';
+    confirm_load_sc_selector = 'button.' + confirm_load_sc_class;
+
+    window_radio_input_selector = 'input[name="window"]';
 
     add_chart_modal_class = 'addchart';
     add_chart_modal_selector = 'button.' + add_chart_modal_class;
@@ -76,6 +94,7 @@ $(function()
     chart_container_selector = 'div.' + chart_container_class ;
 
     display_chart_modal_selector = '#myModal';
+    load_sc_chart_modal_selector = '#load-sc-history';
 
     save_button_class = 'saveButton';
     save_button_selector = 'button.' + save_button_class;
@@ -92,6 +111,43 @@ $(function()
     remove_span_selector = 'span.' + remove_span_class;
 
     saved_list_selector = 'div[udf="savedlist"]';
+
+    var itemtypetags = {{ itemtypenames|safe }};
+    var aws_itemtypetags = {{ aws_itemtypenames|safe }};
+    // console.log(aws_itemtypetags);
+    // console.log(itemtypetags);
+
+    set_auto_complete_in_dashboard();
+    set_auto_complete_in_main();
+    set_auto_complete_in_billing();
+
+    function set_auto_complete_in_dashboard()
+    {
+        // var new_arr = $.merge( itemtypetags, aws_itemtypetags);
+        var db_search_input_selector = "input.dashboard-search";
+        $(db_search_input_selector).autocomplete({
+            source: itemtypetags,
+            appendTo: "#myModal"
+        });
+    }
+
+    function set_auto_complete_in_main()
+    {
+        var main_search_input_selector = "input.main-search";
+        $(main_search_input_selector).autocomplete({
+            source: itemtypetags,
+            appendTo: "#myModal"
+        });
+    }
+
+    function set_auto_complete_in_billing()
+    {
+        var billing_search_input_selector = 'input.billing-search';
+        $(billing_search_input_selector).autocomplete({
+            source: aws_itemtypetags,
+            appendTo: "#myModal"
+        });
+    }
 
 
     var f = new window_base();
@@ -119,7 +175,65 @@ $(function()
         $(display_chart_modal_selector).modal('show');
     });
 
-    
+    $(document).on('click',load_single_chart_history_selector,function()
+    {
+        console.log("click");
+        current_window_index = $(this).attr("sortId");
+        $(load_sc_chart_modal_selector).modal({
+            keyboard: false
+        });
+        $(load_sc_chart_modal_selector).modal('show');
+    });
+
+    $(document).on('click',confirm_load_sc_selector,function()
+    {
+        // console.log($('input[name=window]').val());
+        var selected_windowid;
+        $(window_radio_input_selector).each(function(i,d)
+        {
+            if (d.checked) {
+                selected_windowid = $(this).attr("value");
+            };
+        });
+        if (selected_windowid == undefined) {
+            alert("you should select single chart before load");
+        }
+        else
+        {
+           // console.log(selected_windowid);
+            $(load_sc_chart_modal_selector).modal('hide');
+            load_window_chart(selected_windowid,current_window_index); 
+        }
+        
+    });
+
+    function load_window_chart(windowid,render_index)
+    {
+        $.getJSON('/chart/load/window',{windowid:windowid,render_index:render_index},function(data)
+        {
+            // console.log(data);
+            if (data.load_result_bool && data.index != undefined) {
+                var tmp_selected_metric_result = {};
+                tmp_selected_metric_result = data.load_result['selected_metrics'];
+                var tmp_chart_config = {};
+                tmp_chart_config = data.load_result['chart_config'];
+                var index = parseInt(data.index);
+                tmp_chart_config['container_class'] = chart_container_class;
+                tmp_chart_config['container_selector'] = 'div.' + chart_container_class + '[sortId="' + index + '"]';
+                refresh_specific_chart(index,tmp_selected_metric_result,tmp_chart_config);
+            }
+            else
+            {
+                if (data.index != undefined) {
+                    add_message_2_query_message_selector(data.info,'danger');
+                }
+                else
+                {
+                    add_message_2_query_message_selector('Have no index','danger');
+                }
+            }
+        });
+    }
 
     $(document).on('click',add_chart_modal_selector,function()
     {
@@ -145,6 +259,7 @@ $(function()
         local_display_chart.set_chart_config(refresh_cc);
         local_display_chart.clear_chart();
         local_display_chart.set_highchart();
+        local_display_chart.set_callback(callback);
 
         // delete nine_charts[current_window_index];
         clear_old_by_index(refresh_index);
@@ -175,16 +290,16 @@ $(function()
         // console.log(sortId);
         current_window_index = sortId;
 
-        if (nine_charts[current_window_index] != undefined) {
-            f.set_smr_cc(nine_charts[current_window_index]['selected_metric_result'],nine_charts[current_window_index]['chart_config']);
-            f.update_select_badge_from_outer();
-            f.render_current_selected_metrics_from_outer();
-        };
-
         $(display_chart_modal_selector).modal({
             keyboard: false
         });
         $(display_chart_modal_selector).modal('show');
+
+        if (nine_charts[current_window_index] != undefined) {
+            f.set_smr_cc(nine_charts[current_window_index]['selected_metric_result'],nine_charts[current_window_index]['chart_config']);
+            // f.update_select_badge_from_outer();
+            // f.render_current_selected_metrics_from_outer();
+        };
     });
 
     $(document).on('click',button_remove_selector,function()
@@ -196,9 +311,28 @@ $(function()
     })
 
     $(display_chart_modal_selector).on('shown.bs.modal', function () {
+        
+        // var chart_div_selector = 'div.' + chart_div_class; 
+        // var top_category_main_selector = 'div.' + top_category_main_class;
+        $(chart_div_selector).removeClass("hidden");
+        $(top_category_main_selector).removeClass("hidden");
+        f.div_chart_height = $(chart_div_selector).height();
+        f.top_category_height = $(top_category_main_selector).height();
+        f.set_other_height(f.div_chart_height + f.top_category_height + 70);
+        var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+        var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+        // // console.log(chart_main_header_config_height,chart_main_pagination_height);
+        // // console.log(top_category_height);
+        var tmp_chart_main_display_height = f.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 10;
+        var tmp_chart_main_display_width = $(chart_main_display_container_selector).width();
+        f.set_display_container_width(tmp_chart_main_display_width);
+        $(chart_main_display_container_selector).height(tmp_chart_main_display_height);
+        $(chart_div_selector).addClass("hidden");
+        $(top_category_main_selector).addClass("hidden");
         if (f.get_display_chart() != undefined) {
             f.update_call();
         };
+
     });
 
     $(display_chart_modal_selector).on('hidden.bs.modal',function()
@@ -236,7 +370,7 @@ $(function()
         event.stopPropagation();
     });
 
-    load_first();
+    // load_first();
 
     function load_first()
     {
@@ -244,7 +378,10 @@ $(function()
         // var indexId = first_page
         // console.log(first_page.attr("indexid"));
         var indexid = first_page.attr("indexid");
-        load_page(indexid);
+        if (indexid != undefined) {
+            load_page(indexid);
+        };
+        
     }
 
     function delete_page(indexId_to_delete)
@@ -270,14 +407,43 @@ $(function()
             add_sepecific_template(i);
         };
 
+
+
         $.getJSON('/chart/load/page',{pageid:indexId},function(data)
         {
             if (data.load_result_bool) {
                 // console.log(data);
-                for( index in data.load_result)
+                // var index = data.load_result
+                var index_arr = [];
+                // var save_index = 0;
+                for ( var key in data.load_result) {
+                    index_arr.push(key);
+                };
+                var tmp = 0;
+                callback = $.Callbacks();
+                
+                // console.log("callbacks in page",callback);
+                var foo = function()
                 {
-                    refresh_specific_chart(index,data.load_result[index]['selected_metrics'],data.load_result[index]['chart_config'])
+                    if (tmp < index_arr.length) {
+                        var index = index_arr[tmp];
+                        // console.log(callback);
+                        refresh_specific_chart(index,data.load_result[index]['selected_metrics'],data.load_result[index]['chart_config']);
+                        tmp += 1;
+                    }
+                    else
+                    {
+                        callback = null;
+                    }
                 }
+
+                callback.add( foo );
+                callback.fire();
+                // for( index in data.load_result)
+                // {
+                //     refresh_specific_chart(index,data.load_result[index]['selected_metrics'],data.load_result[index]['chart_config']);
+                //     // pause(3000);
+                // }
             }
             else
             {
@@ -285,6 +451,11 @@ $(function()
             }
         });
     }
+
+    // function pause(milliseconds) {
+    //     var dt = new Date();
+    //     while ((new Date()) - dt <= milliseconds) { /* Do nothing */ }
+    // }
 
 
 
@@ -345,7 +516,11 @@ $(function()
         // <div container='col-lg-4 page' class='chartinpage' sortId='{{i}}'><button class='btn btn-primary btn-lg center-block page' sortId='{{i}}' style="margin-top:25%">Add chart</button></div>
         var result_str = '';
         result_str += '<div container="col-lg-4 page" class="chartinpage" sortId="' + sortId + '">';
-        result_str += '<button class="btn btn-primary btn-lg center-block page" sortId="' + sortId + '" style="margin-top:25%">Add chart</button>';
+        result_str += '<div class="row">';
+        result_str += "<button class='btn btn-info btn-lg load_sc' sortId='" + sortId + "'>Import Single Chart Saved</button>";
+        result_str += "<button class='btn btn-primary btn-lg page' sortId='" + sortId + "' style='margin-left:4px'>New Generate</button>";
+        // result_str += '<button class="btn btn-primary btn-lg center-block page" sortId="' + sortId + '" style="margin-top:25%">Add chart</button>';
+        result_str += '</div>';
         result_str += '</div>';
 
         $(add_selector).append(result_str);
@@ -400,10 +575,10 @@ $(function()
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="myModalLabel">Choose monitor items</h4>
+        <h4 class="modal-title" id="myModalLabel">New Generate Chart</h4>
       </div>
-      <div class="modal-body">
-        {% include 'chart/window_base.html'%}
+      <div class="modal-body page-modal-body">
+        {% include 'chart/window_main.html' %}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -413,6 +588,38 @@ $(function()
   </div>
 </div>
 
+
+<div class="modal fade bs-example-modal-sm" id="load-sc-history" tabindex="-1" role="dialog" aria-labelledby="load-sc-head" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title" id="load-sc-head">Load Chart From Single Chart History Saved</h4>
+      </div>
+      <div class="modal-body">
+        <div>
+        {% set i = 0 %}
+        {% for w in windows %}
+            {% set wn = i / 4 %}
+            {% if i % 4 == 0 %}
+                <div class="row">
+            {% endif %}
+            <div class="col-sm-3"><label class="radiobox-inline no_indent"><input type="radio" value="{{w.windowid}}" name="window">{{w.windowname}}</div>
+            {% if i % 4 == 3 %}
+                </div>
+            {% endif %}
+
+            {% set i = i + 1 %}
+        {% endfor %}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary confirm-load-sc">Load</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 
 

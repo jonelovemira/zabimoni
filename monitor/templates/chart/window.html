@@ -28,17 +28,52 @@
 <script type="text/javascript">
 $(document).ready(function()
 {
-    var f = new window_base();
-    $('button.test').click(function()
+
+    var itemtypetags = {{ itemtypenames|safe }};
+    var aws_itemtypetags = {{ aws_itemtypenames|safe }};
+    // console.log(aws_itemtypetags);
+    // console.log(itemtypetags);
+
+    set_auto_complete_in_dashboard();
+    set_auto_complete_in_main();
+    set_auto_complete_in_billing();
+
+    function set_auto_complete_in_dashboard()
     {
-        selected_metric_result = f.get_selected_metric_result();
-        console.log(selected_metric_result);
-    });
+        // var new_arr = $.merge( itemtypetags, aws_itemtypetags);
+        var db_search_input_selector = "input.dashboard-search";
+        $(db_search_input_selector).autocomplete({
+            source: itemtypetags
+        });
+    }
+
+    function set_auto_complete_in_main()
+    {
+        var main_search_input_selector = "input.main-search";
+        $(main_search_input_selector).autocomplete({
+            source: itemtypetags
+        });
+    }
+
+    function set_auto_complete_in_billing()
+    {
+        var billing_search_input_selector = 'input.billing-search';
+        $(billing_search_input_selector).autocomplete({
+            source: aws_itemtypetags
+        });
+    }
+
+    var f = new window_base();
+    
+
+
+
+
 });
 </script>
 
 
-<body class="window-base-body">
+<body class="window-base-body" style="padding-bottom:0px">
 
 
 <div class="navbar navbar-default navbar-fixed-top" role="navigation">

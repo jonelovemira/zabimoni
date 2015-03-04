@@ -54,6 +54,7 @@ def login():
                 flash('user do not exists','danger')
                 return redirect(url_for('auth.login'))
             login_user(user)
+            app.logger.info('user login : ' + user.username)
             identity_changed.send(current_app._get_current_object(),identity=Identity(user.userid))
             flash('Welcome %s' % user.username,'info')
             return redirect(request.args.get('next') or url_for('index'))
@@ -82,6 +83,7 @@ def after_login(userid,username,usertype,emailaddress):
         db.session.add(user)
         db.session.commit()
         login_user(user)
+        app.logger.info('user login : ' + user.username)
         identity_changed.send(current_app._get_current_object(),identity=Identity(user.userid))
     except Exception, e:
         db.session.rollback()
@@ -96,12 +98,15 @@ def after_login(userid,username,usertype,emailaddress):
 @mod_auth.route('/logout/')
 @login_required
 def logout():
+    app.logger.info('user logout : ' + g.user.username)
     logout_user()
 
     for key in ('identity.name', 'identity.auth_type'):
         session.pop(key, None)
 
     identity_changed.send(current_app._get_current_object(),identity=AnonymousIdentity())
+    
+
     flash('You were logged out.','info')
     return redirect(url_for('auth.login'))
 
@@ -148,6 +153,7 @@ def userdelete(userid):
         user = User.query.filter_by(userid=userid).first()
         db.session.delete(user)
         db.session.commit()
+        app.logger.info(g.user.username + ' delete an user')
     except Exception, e:
         db.session.rollback()
         flash(str(e),'danger')

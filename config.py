@@ -3,7 +3,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 
-SQLALCHEMY_DATABASE_URI = 'mysql://monitor:monitor@127.0.0.1/monitor2'
+SQLALCHEMY_DATABASE_URI = 'mysql://monitor:monitor@127.0.0.1/monitor'
 SQLALCHEMY_POOL_RECYCLE = 3600
 ZBX_DATABASE_URL = 'mysql://zabbix:zabbix@127.0.0.1/zabbix'
     
@@ -123,6 +123,8 @@ PER_INSTANCE_TABLE_HEAD = [TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_
 
 AWS_FEE_TABEL_HEAD = [TABLE_HEAD_METRIC_NAME]
 
+NO_FEE_RESULT_SET = [BY_GROUP_RESULT,PER_INSTANCE_RESULT]
+
 # chart config
 FUNC_TYPE_COUNT = 0
 FUNC_TYPE_AVG = 1
@@ -134,5 +136,22 @@ FUNC_TYPE_SUM = 5
 # chart type
 WINDOW_CHART = 0
 PAGE_CHART = 1
+
+# SNS operation args label
+SNS_TOPIC_NAME_LABEL = 'Topic Name'
+SNS_SEND_SNS_2_LABLE = 'Send Notification to'
+
+# ASG operation args label
+ASG_FROM_GROUP_LABEL = 'From the group'
+ASG_ACTION_TYPE_LABEL = 'Take this action'
+ASG_ACTION_NUMBER = 'Instance number'
+
+## Operation name
+SNS_OPERATION_NAME = 'Notification by Mail'
+ASG_OPERATION_NAME = 'Auto Scaling Action'
+SNS_OPERATION_ATTR = [SNS_TOPIC_NAME_LABEL,SNS_SEND_SNS_2_LABLE]
+ASG_OPERATION_ATTR = [ASG_FROM_GROUP_LABEL,ASG_ACTION_TYPE_LABEL]
+ASG_SCALE_UP = 'Up'
+ASG_SCALE_DOWN = 'Down'
 
 

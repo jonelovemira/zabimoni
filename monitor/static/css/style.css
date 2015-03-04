@@ -111,10 +111,7 @@
   margin-right: 0;
 }
 
-.modal-dialog.page
-{
-	min-width: 1000px;
-}
+
 .fa-plus:before {
 		content : "\2b";
 }

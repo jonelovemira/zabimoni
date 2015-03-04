@@ -16,6 +16,54 @@ $(document).ready(function(){
     	};
     	
     });
+
+    var radio_selector = 'input[type="radio"]';
+    var more_info_selector = 'div.' + 'more-info-body';
+    $(document).on('click',radio_selector,function()
+    {
+    	var titlename = $(this).closest('.tab-pane').attr("id");
+    	var indexId = $(this).attr("indexId");
+    	var route = '/item/' + titlename + '/' + indexId;
+    	var head = "Showing detail information of <b><I>" + titlename + "</I></b> in #" + indexId;
+    	render_panel_2_more_info(route,head);
+    });
+
+    function render_panel_2_more_info(route,head)
+    {
+    	$.getJSON(route,function(data)
+    	{
+    		$(more_info_selector).empty();
+    		$(more_info_selector).append('<div class="panel-heading">' + head + '</div>');
+    		// $(more_info_selector).empty();
+    		if (data.load_result_bool) {
+    			// console.log(data);
+    			var result_str = '<div class="form-horizontal">';
+    			for( key in data.load_result )
+    			{
+    				// var result_str = '';
+	    			
+	    			result_str += '<div class="form-group">';
+			        result_str += '<label class="col-md-2 control-label">' + key + ':' + '</label>';
+			        result_str += '<div class="col-md-8">';
+			        result_str += '<label class="control-label" style="font-weight:300">' + data.load_result[key] + '</label>';
+			        result_str += '</div>';
+			        result_str += '</div>';
+			        
+    			}
+    			result_str += '</div>';
+    			$(more_info_selector).append(result_str);
+    		}
+    		else
+    		{
+    			var result_str = '';
+    			result_str += '<div class="alert alert-danger">';
+        		result_str += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+        		result_str += data.info;
+        		result_str += '</div>';
+        		$(more_info_selector).append(result_str);
+    		}
+    	});
+    }
 });
 </script>
 
@@ -26,6 +74,7 @@ $(document).ready(function(){
   <li role="presentation"><a href="#itemtype">itemtype</a></li>
   <li role="presentation"><a href="#trigger">trigger</a></li>
 </ul>
+
 
 <div class="tab-content">
 	<div id="area" class="tab-pane fade in active">
@@ -45,7 +94,7 @@ $(document).ready(function(){
 							<td>{{a.areaid}}</td>
 							<td>{{a.areaname}}</td>
 							<td><a href="/item/area/itemtype/{{a.areaid}}">Itemtype</a></td>
-							<td><a href="#" path="/item/area/delete/{{a.areaid}}" info="area:{{a.areaname}}" delete="1">delete</a></td>
+							<td><a href="javascript:;" path="/item/area/delete/{{a.areaid}}" info="area:{{a.areaname}}" delete="1">delete</a></td>
 						</tr>
 						{% endfor %}
 					</tbody>
@@ -70,7 +119,7 @@ $(document).ready(function(){
 							<td>{{s.servicename}}</td>
 							<td><a href="/item/service/host/{{s.serviceid}}">hosts</a></td>
 							<td><a href="/item/service/itemtype/{{s.serviceid}}">Itemtype</a></td>
-							<td><a href="#" path="/item/service/delete/{{s.serviceid}}" info="service:{{s.servicename}}" delete="1">delete</a></td>
+							<td><a href="javascript:;" path="/item/service/delete/{{s.serviceid}}" info="service:{{s.servicename}}" delete="1">delete</a></td>
 						</tr>
 						{% endfor %}
 					</tbody>
@@ -94,27 +143,18 @@ $(document).ready(function(){
 		  <!-- Default panel contents -->
 		  	<table class="table table-striped">
 					<thead>
-						<th>#</th>
-						<th>formula</th>
-						<th>triggerfunction</th>
-						<th>triggervalue</th>
-						<th>timeshift</th>
-						<th>actions</th>
+						<td></td>
+						<th>Name</th>
+						<th>Threshold</th>
 					</thead>
 					<tbody>
 						{% for t in trigger %}
 						<tr>
-							<td>{{t.triggerid}}</td>
-							<td>{{t.calcitem.formula}}</td>
-							<td>{{t.triggerfunction}}</td>
-							<td>{{t.triggervalue}}</td>
-							<td>{{t.timeshift}}</td>
-							<td>
-								{% for a in t.actions.all() %}
-								{{ a.actionname }}
-								{% endfor %}
-							</td>
-							<td><a href="#" path="/item/trigger/delete/{{t.triggerid}}" info="key:{{t.triggerid}}" delete="1">delete</a></td>
+							<td><input type="radio" name="trigger" indexId="{{t.triggerid}}"></td>
+							<td>{{t.triggername}}</td>
+							<td>{{t.metricname}} {{t.comparetype}} {{t.triggervalue}}&nbspfor&nbsp{{t.timeshift}}s</td>
+							
+							<td><a href="javascript:;" path="/item/trigger/delete/{{t.triggerid}}" info="key:{{t.triggerid}}" delete="1">delete</a></td>
 						</tr>
 						{% endfor %}
 					</tbody>
@@ -125,11 +165,17 @@ $(document).ready(function(){
 
 
 
+<!-- <div class="more-info" style="border-top:solid 3px #fff;border-bottom:solid 3px #fff"> -->
+<div class="more-info" >
+<div class="panel panel-default more-info-body">
+	<div class="panel-heading">Choose one record in table above to see detail</div>
+</div>
+</div>
 
 
 <a href='{{url_for("item.area")}}'>Add Area</a>
 <a href='{{url_for("item.service")}}'>Add Service</a>
 <a href='{{url_for("item.host")}}'>Add Host</a>
 <a href='{{url_for("item.itemtype")}}'>Add Key</a>
-<a href='{{url_for("item.trigger_action")}}'>Add Trigger</a>
+<a href='{{url_for("item.alarm")}}'>Add Trigger</a>
 {% endblock %}

@@ -1,10 +1,11 @@
 #! /home/monitor/project/monitor-0.3.7/flask/bin/python
 
 from monitor.item.models import Host,Service
-from monitor.zabbix.zabbix_api import zabbix_api,get_zabbix_server_ip
+from monitor.zabbix.zabbix_api import zabbix_api
+from monitor.functions import get_zabbix_server_ip
 from monitor.zabbix.models import Zabbixinterface,loadSession
 from monitor import db
-import sys,traceback
+import sys,traceback,time
 from datetime import datetime
 import boto.ec2
 from monitor.item.functions import add_update_host
@@ -14,15 +15,16 @@ if __name__ == '__main__':
 	zabbix = zabbix_api()
 	session = loadSession()
 	try:
-		content = 'new content'
-		if len(sys.argv) > 1:
-			content = 	sys.argv[1]
-		today = datetime.today()
+		
+		time_format = '%Y-%m-%d %H:%M:%S %Z'
+		current_time = time.strftime(time_format,time.gmtime(time.time()))
+
 		output = open(REMOTE_COMMAND_LOG,'a')
-		output.write('\n')
-		output.write(str(today))
-		output.write(' ' + 'auto registration' + ' ')
-		output.write(' ' + content)
+		output.write( '\n' + current_time + ' ')
+
+		for a in sys.argv:
+			output.write(a + ' ')
+
 		output.close()
 
 		# update name in zabbix
