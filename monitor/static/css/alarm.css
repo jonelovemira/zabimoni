@@ -20,3 +20,7 @@
 {
 	margin-left: 10px;
 }
+
+.dataTables_filter{
+  display: none; 
+}

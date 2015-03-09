@@ -12,9 +12,13 @@
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/jquery-ui.min.css')}}">
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/dataTables.bootstrap.css')}}">
 <script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
+
+<script type="text/javascript" src="{{url_for('static',filename='js/jquery.dataTables.min.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/dataTables.bootstrap.js')}}"></script>
 
 <script type="text/javascript">
 $(function()
@@ -59,40 +63,42 @@ $(function()
             source: aws_itemtypetags
         });
     }
-    console.log("window base in alarm");
+    // console.log("window base in alarm");
 	var f = new window_base();
 	// f.set_allow_check_multiple(false);
 
-	// if (f.get_display_chart() != undefined) {
-	// 	f.update_call();
- //    };
+    f.window_load_set();
+	if (f.get_display_chart() != undefined) {
+		f.update_call();
+    };
 
-    init_window_base();
+    // init_window_base();
 
-    function init_window_base()
-    {
+    // function init_window_base()
+    // {
+    //     console.log("init");
+    //     f.div_chart_height = $(chart_div_selector).height();
+    //     // f.top_category_height = $(top_category_main_selector).height();
+    //     // f.set_other_height(f.div_chart_height + f.top_category_height + 200);
+    //     var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+    //     var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+    //     // // // console.log(chart_main_header_config_height,chart_main_pagination_height);
+    //     // // // console.log(top_category_height);
+    //     var tmp_chart_main_display_height = f.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 60;
+    //     // var tmp_chart_main_display_width = $(chart_main_display_container_selector).width();
+    //     // f.set_display_container_width(tmp_chart_main_display_width);
+    //     console.log(tmp_chart_main_display_height);
+    //     $(chart_main_display_container_selector).height(tmp_chart_main_display_height);
+    //     // // $(chart_div_selector).addClass("hidden");
+    //     // // $(top_category_main_selector).addClass("hidden");
+    //     // // if (f.get_display_chart() != undefined) {
+    //     // //     f.update_call();
+    //     // // };
         
-        f.div_chart_height = $(chart_div_selector).height();
-        f.top_category_height = $(top_category_main_selector).height();
-        f.set_other_height(f.div_chart_height + f.top_category_height + 200);
-        var chart_main_header_config_height = $(chart_main_header_div_selector).height();
-        var chart_main_pagination_height = $(chart_main_pagination_selector).height();
-        // // console.log(chart_main_header_config_height,chart_main_pagination_height);
-        // // console.log(top_category_height);
-        var tmp_chart_main_display_height = f.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 10;
-        var tmp_chart_main_display_width = $(chart_main_display_container_selector).width();
-        f.set_display_container_width(tmp_chart_main_display_width);
-        $(chart_main_display_container_selector).height(tmp_chart_main_display_height);
-        // $(chart_div_selector).addClass("hidden");
-        // $(top_category_main_selector).addClass("hidden");
-        // if (f.get_display_chart() != undefined) {
-        //     f.update_call();
-        // };
         
-        
-        // $(chart_div_selector).removeClass("hidden");
-        // $(top_category_main_selector).removeClass("hidden");
-    }
+    //     // $(chart_div_selector).removeClass("hidden");
+    //     // $(top_category_main_selector).removeClass("hidden");
+    // }
 
     var select_metric_nav_id = 'nav-selectmetric';
     var define_alarm_nav_id = 'nav-definealarm';

@@ -210,3 +210,7 @@ ul.ui-autocomplete.ui-menu {
 * html .ui-autocomplete {
     height: 100px;
 }
+
+.dataTables_filter{
+  display: none; 
+}

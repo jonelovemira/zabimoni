@@ -89,7 +89,7 @@ function chart()
         $(this.chart_config['container_selector']).append('<button class="btn btn-lg btn-info"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Loading...</button>');
         // var series_for_current_window = [];
         // console.log(chart_title);
-        console.log("this.callback",this.callback);
+        // console.log("this.callback",this.callback);
         create_highstock_chart = function(current_series_data,tmp_current_class,current_yAxis,current_tooltip){
                  // $(tmp_current_class.get_chart_config()['container_selector']).highcharts({
                  $(tmp_current_class.get_chart_config()['container_selector']).highcharts('StockChart',{

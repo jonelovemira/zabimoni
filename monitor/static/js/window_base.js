@@ -201,7 +201,12 @@ function window_base(itemtypetags , aws_itemtypetags)
     var chart_main_display_width;
     // var chart_main_header_config_height;
     // var chart_main_pagination_height;
-    $(window).load(function () {
+    // $(window).load(function () {
+        
+    // });
+
+    this.window_load_set = function()
+    {
         console.log("load");
         this.div_chart_height = $(chart_div_selector).height();
         this.top_category_height = $(top_category_main_selector).height();
@@ -216,7 +221,7 @@ function window_base(itemtypetags , aws_itemtypetags)
         $(chart_div_selector).addClass("hidden");
         $(top_category_main_selector).addClass("hidden");
         other_height = this.div_chart_height + this.top_category_height;
-    });
+    }
     
     function set_init_height()
     {
@@ -333,14 +338,26 @@ function window_base(itemtypetags , aws_itemtypetags)
         };
     });
 
-    $(document).on('keypress',main_search_input_selector,function(event)
+    // $(main_search_input_selector).on("keyup click",function()
+    // {
+    //     console.log($(this).val());
+    // })
+
+    $(document).on('keyup click',main_search_input_selector,function(event)
     {
-        if ( event.which == 13) {
-            option = $(option_select_selector).val();
-            search_value = $(this).val();
-            option = option || default_selected;
-            search_value = search_value || default_searched_value;
-            metric_render_main(option,search_value);
+        search_value = $(this).val();
+        // console.log($(this).val());
+        // if ( event.which == 13) {
+        //     option = $(option_select_selector).val();
+        //     // search_value = $(this).val();
+        //     option = option || default_selected;
+        //     search_value = search_value || default_searched_value;
+        //     metric_render_main(option,search_value);
+        // };
+
+        for (var i = 0; i < current_table_id_arr.length; i++) {
+            $("#" + current_table_id_arr[i]).DataTable().search(
+                search_value,false,true).draw();
         };
     });
 
@@ -446,7 +463,8 @@ function window_base(itemtypetags , aws_itemtypetags)
     $(document).on('click',select_metric_input_selector,function()
     {
         title_text = null;
-        $(this).closest('div').find('.' + search_result_table_title_class).each(function(i,d)
+        console.log($(this).closest('.' + search_result_table_title_class));
+        $(this).closest('div.panel').find('.' + search_result_table_title_class).each(function(i,d)
         {
             title_text = $(this).text();
         });
@@ -503,11 +521,21 @@ function window_base(itemtypetags , aws_itemtypetags)
         // pre_set_filter_str += '</ul>';
         add_search_result_panel();
         add_chart_main_panel();
+
+        // console.log("data in render_current_selected_metrics",selected_metric_result);
         // show_chart();
         for (var option in selected_metric_result)
         {
-            render_search_result_to_table(option,selected_metric_result[option]);
+            var tmp_metric_count = 0;
+            for (var table_title in selected_metric_result[option]) {
+                tmp_metric_count += selected_metric_result[option][table_title]['metric_count'];
+            }
+            if (tmp_metric_count > 0) {
+                render_search_result_to_table(option,selected_metric_result[option]);
+            };
+            
         }
+        $(message_selector).empty();
     }
 
 
@@ -745,7 +773,7 @@ function window_base(itemtypetags , aws_itemtypetags)
                 $(this).prop("checked","checked");
 
                 var title_text = null;
-                $(this).closest('div').find('.' + search_result_table_title_class).each(function(i,d)
+                $(this).closest('div.panel').find('.' + search_result_table_title_class).each(function(i,d)
                 {
                     title_text = $(this).text();
                 });
@@ -800,7 +828,7 @@ function window_base(itemtypetags , aws_itemtypetags)
 
 
                 var title_text = null;
-                $(this).closest('div').find('.' + search_result_table_title_class).each(function(i,d)
+                $(this).closest('div.panel').find('.' + search_result_table_title_class).each(function(i,d)
                 {
                     title_text = $(this).text();
                 });
@@ -910,6 +938,8 @@ function window_base(itemtypetags , aws_itemtypetags)
             if (data.load_result_bool) {
                 selected_metric_result = {};
                 selected_metric_result = data.load_result['selected_metrics'];
+
+                console.log("data in load_chart",selected_metric_result);
                 chart_config = {};
                 chart_config = data.load_result['chart_config'];
                 console.log(chart_config);
@@ -1229,6 +1259,12 @@ function window_base(itemtypetags , aws_itemtypetags)
         if (search_result.search_result_bool) {
             option = search_result.request_option;
             // clear_search_result_panel();
+
+            $(search_result_panel_selector).find('.panel').each(function(i,d)
+            {
+                $(this).remove();
+            });
+
             render_search_result_to_table(option,search_result.search_result);
             // add_message_2_query_message_selector(search_result.info,'success');
         }   
@@ -1328,15 +1364,19 @@ function window_base(itemtypetags , aws_itemtypetags)
         event.stopPropagation();
     });
 
+    var current_table_id_arr;
+
     function render_search_result_to_table(option,metrics)
     {
-        $(search_result_panel_selector).find('.panel').each(function(i,d)
-            {
-                $(this).remove();
-            });
+        // $(search_result_panel_selector).find('.panel').each(function(i,d)
+        //     {
+        //         $(this).remove();
+        //     });
         // console.log(metrics);
         var result_str = '';
         var display_metric_result_count = 0;
+
+        
         for (var table_title in metrics) {
             display_metric_result_count += metrics[table_title]['metric_count'];
             if (metrics[table_title]['metric_count'] > 0) {
@@ -1385,9 +1425,50 @@ function window_base(itemtypetags , aws_itemtypetags)
         {
             show_all_child(search_result_panel_selector);
             add_message_2_query_message_selector('Showing the <b>' + display_metric_result_count + '</b> matching metrics. You can refine your search or try Browsing Metrics.','info');
+        
+
         }
         // console.log(result_str);
-        $(search_result_panel_selector).append(result_str);
+        if (result_str != '') {
+            // console.log("data in render_search_result_to_table",metrics);
+            $(search_result_panel_selector).append(result_str);
+            // console.log($(search_result_panel_selector));
+            // $(search_result_main_selector).children().each(function(i,d)
+            // {
+            //     console.log($(this));
+            // });
+            // $(search_result_table_selector).dataTable({
+            //     // "searching":false,
+            //     "paging":false,
+            // });
+            // console.log($(search_result_table_selector).attr("id"));
+            current_table_id_arr = [];
+            $(search_result_panel_selector).find('.' + search_result_table_class).each(function(i,d)
+            {
+
+                if ($(this).attr("id") == undefined) {
+                    // console.log($(this));
+                    $(this).dataTable({
+                        // "searching":false,
+                        "paging":false,
+                        // "bFilter": false,
+                    });
+                };
+                
+
+                // if ( $.fn.dataTable.isDataTable( '#example' ) ) {
+                //     table = $('#example').DataTable();
+                // }
+                // else {
+                //     table = $('#example').DataTable( {
+                //         paging: false
+                //     } );
+                // }
+                current_table_id_arr.push($(this).attr("id")); 
+            });
+            // console.log(tableid_arr.join(' '));
+            // $(main_search_input_selector).attr("aria-controls",tableid_arr.join(' '));
+        };
     }
 
     function show_specific_child(parent,visiable_child)
@@ -2156,6 +2237,7 @@ function window_base(itemtypetags , aws_itemtypetags)
 
     this.update_call = function()
     {
+        console.log("update");
         metric_render_main('All','',false);
         chart_update();
     }

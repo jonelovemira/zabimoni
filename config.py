@@ -3,7 +3,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 
-SQLALCHEMY_DATABASE_URI = 'mysql://monitor:monitor@127.0.0.1/monitor'
+SQLALCHEMY_DATABASE_URI = 'mysql://monitor:monitor@127.0.0.1/monitor2'
 SQLALCHEMY_POOL_RECYCLE = 3600
 ZBX_DATABASE_URL = 'mysql://zabbix:zabbix@127.0.0.1/zabbix'
     
