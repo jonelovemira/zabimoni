@@ -147,9 +147,6 @@ function chart()
                         type: 'datetime',
                         tickPixelInterval: 150
                     },
-                    // yAxis: {
-                    //     min : 0
-                    // },
                     yAxis: current_yAxis,
                     plotOptions:{
                         line:{
@@ -161,12 +158,12 @@ function chart()
                             }
                         }
                     },
+                    
                     credits:{
                         enabled:false
                     },
                     tooltip: current_tooltip,
                     series : current_series_data
-
                  });
         }
         // var series_name = [];

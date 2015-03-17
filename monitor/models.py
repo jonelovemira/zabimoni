@@ -20,7 +20,7 @@ class Attr(db.Model):
 		self.operation = operation
 
 	def __repr__(self):
-		return '<Attr key: %r value: %r>' % (attrname,attrvalue)
+		return '<Attr key: %r value: %r>' % (self.attrname,self.attrvalue)
 
 
 # series_item = db.Table('series_item',

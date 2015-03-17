@@ -36,6 +36,12 @@ def history_data_2_arr(s):
 		return result
 	return None
 
+def query_data_2_arr(s):
+	result = [[int(x[0]),float(x[1]),float(x[2]),float(x[3]),long(x[4]),float(x[5])] for x in s]
+	if len(result) > 0:
+		return result
+	return None
+
 
 class Zabbixhistory(db.Model):
 	__bind_key__ = 'zabbix'
@@ -123,26 +129,36 @@ class Zabbixhistory(db.Model):
 
 	@classmethod
 	def get_interval_history(cls,query_itemids,ground,time_since,time_till):
-		tmp_s = []
-		for qi in query_itemids:
-			time_frequency = Item.query.get(qi).itemtype.time_frequency
-			s1 = db.session.query(cls.itemid,\
-				db.func.count(cls.itemid).label('count'),\
-				db.func.avg(cls.value).label('avg'),\
-				db.func.max(cls.value).label('max'),\
-				db.func.min(cls.value).label('min'),\
-				db.func.floor((cls.clock)/ground).label('minute'),
-				cls.value ).\
-			filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
+		# tmp_s = []
+		# for qi in query_itemids:
+		# 	time_frequency = Item.query.get(qi).itemtype.time_frequency
+		# 	s1 = db.session.query(cls.itemid,\
+		# 		db.func.count(cls.itemid).label('count'),\
+		# 		db.func.avg(cls.value).label('avg'),\
+		# 		db.func.max(cls.value).label('max'),\
+		# 		db.func.min(cls.value).label('min'),\
+		# 		db.func.floor((cls.clock)/ground).label('minute'),
+		# 		cls.value ).\
+		# 	filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
+		# 	group_by('minute').all()
+
+		# 	# print s1
+		# 	tmp_s += s1
+
+		# s = sorted(tmp_s,key = lambda x:x[5])
+
+		s = db.session.query(\
+			db.func.count(cls.itemid).label('count'),\
+			db.func.avg(cls.value).label('avg'),\
+			db.func.max(cls.value).label('max'),\
+			db.func.min(cls.value).label('min'),\
+			db.func.floor((cls.clock)/ground).label('minute'),\
+			db.func.sum(cls.value)).filter(cls.itemid.in_(query_itemids)).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
-			# print s1
-			tmp_s += s1
 
-		s = sorted(tmp_s,key = lambda x:x[5])
-
-
-		return history_data_2_arr(s)
+		return query_data_2_arr(s)
+		# return history_data_2_arr(s)
 
 class Zabbixhistoryuint(db.Model):
 	__bind_key__ = 'zabbix'
@@ -229,25 +245,40 @@ class Zabbixhistoryuint(db.Model):
 
 	@classmethod
 	def get_interval_history(cls,query_itemids,ground,time_since,time_till):
-		tmp_s = []
-		for qi in query_itemids:
-			time_frequency = Item.query.get(qi).itemtype.time_frequency
-			s1 = db.session.query(cls.itemid,\
-				db.func.count(cls.itemid).label('count'),\
-				db.func.avg(cls.value).label('avg'),\
-				db.func.max(cls.value).label('max'),\
-				db.func.min(cls.value).label('min'),\
-				db.func.floor((cls.clock)/ground).label('minute'),\
-				cls.value).\
-			filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
+		# tmp_s = []
+		# for qi in query_itemids:
+		# 	time_frequency = Item.query.get(qi).itemtype.time_frequency
+		# 	s1 = db.session.query(cls.itemid,\
+		# 		db.func.count(cls.itemid).label('count'),\
+		# 		db.func.avg(cls.value).label('avg'),\
+		# 		db.func.max(cls.value).label('max'),\
+		# 		db.func.min(cls.value).label('min'),\
+		# 		db.func.floor((cls.clock)/ground).label('minute'),\
+		# 		cls.value).\
+		# 	filter_by(itemid = qi).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
+		# 	group_by('minute').all()
+
+		# 	# print s1
+		# 	tmp_s += s1
+
+		# s = sorted(tmp_s,key = lambda x:x[5])
+
+		# return history_data_2_arr(s)
+
+		s = db.session.query(\
+			db.func.count(cls.itemid).label('count'),\
+			db.func.avg(cls.value).label('avg'),\
+			db.func.max(cls.value).label('max'),\
+			db.func.min(cls.value).label('min'),\
+			db.func.floor((cls.clock)/ground).label('minute'),\
+			db.func.sum(cls.value)).filter(cls.itemid.in_(query_itemids)).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
-			# print s1
-			tmp_s += s1
 
-		s = sorted(tmp_s,key = lambda x:x[5])
+		return query_data_2_arr(s)
 
-		return history_data_2_arr(s)
+
+
 
 # def get_init_result(query_itemids,ground):
 

@@ -70,7 +70,8 @@ class Chart():
 		origin = from_t
 		# last_value = None
 
-		while from_t <= to_t + ground:
+		# while from_t <= to_t + ground:
+		while from_t < to_t :
 			if data_index < len(data) and from_t > data[data_index][4]*ground:
 				# last_value = data[data_index][functiontype]
 				data_index += 1
@@ -156,7 +157,12 @@ class Chart():
 
 		time_till = int(time.time())
 		time_since = time_till - int(chart_config['init_time_length'])
+		# time_since = time_till - int(chart_config['frequency'])
 		ground = int(chart_config['frequency'])
+		# console.log("ground",ground)
+		print "ground",ground
+		time_since = time_since / ground * ground
+		# ground = int(chart_config['frequency'])
 		function_type = function_type_map.get(chart_config['function_type'],FUNC_TYPE_AVG)
 		shared_yaxis = chart_config.get('shared_yaxis',True)
 		# no_history_count = 0
@@ -236,10 +242,14 @@ class Chart():
 		for aws in Aws.query.all():
 			head_grouptype_map[aws.awsname] = AWS_FEE_TABEL_HEAD
 
-		tmp_window = user.windows.filter_by(windowname=windowname).filter_by(type=window_type).first()
+		print windowname
 
-		if tmp_window != None:
-			raise Exception('same name for saving is already exists')
+		if window_type == WINDOW_CHART:
+			tmp_window = user.windows.filter_by(windowname=windowname).filter_by(type=window_type).first()
+			if tmp_window != None:
+				raise Exception('same name for saving is already exists')
+
+		
 
 		window = Window(windowname,window_type,index,user,page)
 
@@ -308,7 +318,8 @@ class Chart():
 
 			## chart title can be saved in nine_charts
 			
-			windowname = pagename + ' in ' + str(index)
+			# windowname = pagename + ' in ' + str(index)
+			windowname = nine_charts[index]['chart_name']
 			window_type = PAGE_CHART
 			cls.save_chart(selected_metrics,chart_config,windowname,user,index,window_type,page)
 
@@ -428,8 +439,14 @@ class Chart():
 			for attr in chartconfig.attrs.all():
 				chart_config[attr.attrname] = attr.attrvalue
 
+		if chart_config['use_utc'] == '0':
+			chart_config['use_utc'] = False
+		elif chart_config['use_utc'] == '1':
+			chart_config['use_utc'] = True
+
 		result['selected_metrics'] = selected_metrics
 		result['chart_config'] = chart_config
+		result['chart_name'] = window.windowname
 
 		return result
 

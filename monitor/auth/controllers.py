@@ -35,16 +35,20 @@ def login():
         password = request.form['password']
 
         if not IN_LOCAL:
-            login_result = try_login(username,password)
+            try:
+                login_result = try_login(username,password)
 
-            if login_result['success'] == True:
-                return after_login(    login_result['result']['userid'],\
-                    login_result['result']['username'],\
-                    login_result['result']['usertype'],
-                    login_result['result']['email'])
-            else:
-                error = login_result['info']
-                flash(error,'danger')
+                if login_result['success'] == True:
+                    return after_login(    login_result['result']['userid'],\
+                        login_result['result']['username'],\
+                        login_result['result']['usertype'],
+                        login_result['result']['email'])
+                else:
+                    error = login_result['info']
+                    flash(error,'danger')
+            except Exception, e:
+                flash('Authentication error, plz try later.','danger')
+            
 
             return render_template("auth/login.html")
 

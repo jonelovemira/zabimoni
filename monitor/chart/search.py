@@ -307,12 +307,12 @@ class SearchInASGGroup():
 			item_search_result = []
 
 			##### contains all basic metrics  ####
-			# for h in asg_group.hosts.all():
-			# 	item_search_result += BaseSearch.search(h.items,filter_boolean)
+			for h in asg_group.hosts.all():
+				item_search_result += BaseSearch.search(h.items,filter_boolean)
 
 			# only for group-specific metrics
-			for it in asg_group.itemtypes.all():
-				item_search_result += BaseSearch.search(it.items,filter_boolean)			
+			# for it in asg_group.itemtypes.all():
+			# 	item_search_result += BaseSearch.search(it.items,filter_boolean)			
 
 			by_group_result = ItemSearch.generate_by_group_result_no_fee(item_search_result,asg_name)
 			

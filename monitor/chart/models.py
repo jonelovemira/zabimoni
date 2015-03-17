@@ -54,7 +54,7 @@ class Option(db.Model):
 		self.selectedmetrics = selectedmetrics
 
 	def __repr__(self):
-		return '<Option %r>' % optionname
+		return '<Option %r>' % self.optionname
 
 class Displaytable(db.Model):
 	displaytableid = db.Column(db.Integer,primary_key=True)
@@ -69,7 +69,7 @@ class Displaytable(db.Model):
 		self.option = option
 
 	def __repr__(self):
-		return '<Displaytable %r>' % displaytablename
+		return '<Displaytable %r>' % self.displaytablename
 
 class Displaytablerow(db.Model):
 	displaytablerowid = db.Column(db.Integer,primary_key=True)
@@ -82,7 +82,7 @@ class Displaytablerow(db.Model):
 		self.displaytable = displaytable
 
 	def __repr__(self):
-		return '<Displaytablerow %r>' % displaytablerowid
+		return '<Displaytablerow %r>' % self.displaytablerowid
 
 
 
@@ -96,7 +96,7 @@ class Chartconfig(db.Model):
 		self.window = window
 
 	def __repr__(self):
-		return '<Chartconfig %r>' % (chartconfigid)
+		return '<Chartconfig %r>' % self.chartconfigid
 
 
 class Report(db.Model):

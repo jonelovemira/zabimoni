@@ -320,6 +320,9 @@ def init():
 			init_result_bool = True
 			info = 'success'
 		except Exception, e:
+			# import traceback,sys
+			# traceback.print_exc(file=sys.stdout)
+
 			print str(e)
 			info = str(e)
 
@@ -437,11 +440,13 @@ def load_window():
 	load_result_bool = False
 	load_result = None
 	index = None
+	selected_windowname = None
 
 	if request.method == 'GET':
 		try:
 			windowid = request.args.get('windowid',None)
 			index = request.args.get('render_index',None)
+			selected_windowname = request.args.get('selected_windowname',None)
 			load_result = Chart.load_window_chart(windowid)
 			info = 'success'
 			load_result_bool = True
@@ -453,6 +458,7 @@ def load_window():
 	result['load_result_bool'] = load_result_bool
 	result['load_result'] = load_result
 	result['index'] = index
+	result['selected_windowname'] = selected_windowname
 
 	return json.dumps(result)
 
@@ -541,6 +547,8 @@ def save_page():
 
 			info = 'success'
 		except Exception, e:
+			# import traceback,sys
+			# traceback.print_exc(file=sys.stdout)
 			db.session.rollback()
 			print str(e)
 			info = str(e)

@@ -144,21 +144,6 @@ def create_unreachable_action(zabbix,command,command_2,action_name='agent is unr
 				"command":command,
 				"execute_on":1
 			}
-		},
-		{
-			"operationtype":1,
-			"opcommand_hst":
-			[
-				{
-					"hostid":0
-				}
-			],
-			"opcommand" :
-			{
-				"type": 0,
-				"command":command_2,
-				"execute_on":1
-			}
 		}
 	]
 
