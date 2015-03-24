@@ -1,4 +1,4 @@
-function window_base(itemtypetags , aws_itemtypetags)
+function window_base(content_height,content_width)
 {
     // sidebar a href
     sidebar_page_class = 'sidebar-page';
@@ -150,7 +150,7 @@ function window_base(itemtypetags , aws_itemtypetags)
     clear_filter_class = 'clear-filter';
     clear_filter_selector = 'span.' + clear_filter_class;
 
-
+    var meaningful_td_content_length = 4;
 
     // flag for if browse or search
     default_browse_flag = false;
@@ -190,15 +190,18 @@ function window_base(itemtypetags , aws_itemtypetags)
 
     // calc_init_chart_height();
     set_init_height();
-    add_chart_main_panel();
+    // add_chart_main_panel();
     var other_height;
     this.div_main_height = null;
+    var whole_height = content_height;
+    // console.log(this.div_main_height);
 
     this.div_chart_height = null;
     this.top_category_height = null;
 
     var chart_main_display_height;
     var chart_main_display_width;
+    var current_object = this;
     // var chart_main_header_config_height;
     // var chart_main_pagination_height;
     // $(window).load(function () {
@@ -224,79 +227,142 @@ function window_base(itemtypetags , aws_itemtypetags)
     
     function set_init_height()
     {
-        // console.log("body : ",$('body').height());
-        // console.log("navbar navbar-default navbar-fixed-top:", $('div.navbar-fixed-top').height());
-        // console.log("container-fluid:",$('div.container-fluid').height());
-        // console.log('window height:',$(window).height());
-        // console.log('calc height: ' ,$(window).height() - $('div.navbar-fixed-top').height());
-        // console.log('document height:',$(document).height())
-        // main_height = $('div.sidebar').outerHeight();
-        this.div_main_height = $(window).height() - $('div.navbar-fixed-top').height() - 20;
-        $('div.main').height(this.div_main_height);
-        // console.log("div_main_height",this.div_main_height);
-        // console.log(main_height);
-        // console.log($(chart_sidebar_config_selector).outerHeight());
+        $('div.main').height(whole_height);
     }
 
-    $(window).resize(function( e )
+
+
+    this.resize_caller = function(tmp_height,tmp_width)
     {
-        if (e.target == window)
-        {
-            this.div_main_height = $(document).height() - $('div.navbar-fixed-top').height() - 20;
-            $('div.main').height(this.div_main_height);
+        current_object.div_main_height = tmp_height;
+        $('div.main').height(current_object.div_main_height);
+        var chart_hidden_flag = false;
+        var top_category_hidden_flag = false;
 
-            var chart_hidden_flag = $(chart_div_selector).attr("class").indexOf("hidden") > 0;
-            var top_category_hidden_flag = $(top_category_main_selector).attr("class").indexOf("hidden") > 0;
+        if ($(chart_div_selector).attr("class") != undefined) {
 
-            $(chart_div_selector).removeClass("hidden");
-            $(top_category_main_selector).removeClass("hidden");
+            chart_hidden_flag = $(chart_div_selector).attr("class").indexOf("hidden") > 0;
+        };
 
-            chart_main_display_width = $(chart_main_display_container_selector).width();
-            var chart_main_header_config_height = $(chart_main_header_div_selector).height();
-            var chart_main_pagination_height = $(chart_main_pagination_selector).height();
-            chart_main_display_height = $(chart_sidebar_config_selector).outerHeight() - chart_main_header_config_height - chart_main_pagination_height - 10 + 4;
-            this.div_chart_height = $(chart_sidebar_config_selector).outerHeight() + 4;
-            // console.log(chart_main_display_height);
-            $(chart_main_display_container_selector).height(chart_main_display_height);
+        if ($(top_category_main_selector).attr("class") != undefined) {
 
-            var tmp_top_category_height = $(top_category_main_selector).height();
-            other_height = this.div_chart_height + tmp_top_category_height;
-            $(search_result_main_selector).height(this.div_main_height - 10 - other_height - 5);
-            $(search_result_main_selector).resizable("option","maxHeight",this.div_main_height - 10 - 5 - 50 - 99 );
+            top_category_hidden_flag = $(top_category_main_selector).attr("class").indexOf("hidden") > 0;
+        };
+
+
+        $(chart_div_selector).removeClass("hidden");
+        $(top_category_main_selector).removeClass("hidden");
+
+        chart_main_display_width = $(chart_main_header_div_selector).width();
+        var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+        var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+        chart_main_display_height = $(chart_sidebar_config_selector).outerHeight() - chart_main_header_config_height - chart_main_pagination_height - 10 + 4;
+        current_object.div_chart_height = $(chart_sidebar_config_selector).outerHeight() + 4;
+        $(chart_main_display_container_selector).height(chart_main_display_height);
+        $(chart_main_display_container_selector).width(chart_main_display_width);
+
+        if (display_chart.get_chart() != undefined) {
+            display_chart.get_chart().setSize(chart_main_display_width,chart_main_display_height,false);
+        };
+
+        var tmp_top_category_height = $(top_category_main_selector).height();
+
+
+
+        other_height = current_object.div_chart_height + tmp_top_category_height;
+        $(search_result_main_selector).height(current_object.div_main_height - 10 - other_height - 5);
+        $(search_result_main_selector).resizable("option","maxHeight",current_object.div_main_height - 10 - 5 - 50 - 99 );
+
+        if (chart_hidden_flag) {
+            $(chart_div_selector).addClass("hidden");
+        };
+
+        if (top_category_hidden_flag) {
+            $(top_category_main_selector).addClass("hidden");
+        };
+    }
+
+    // $(window).resize(function( e )
+    // {
+    //     if (e.target == window)
+    //     {
+
+
+
+    //         current_object.div_main_height = $(window).height() - $('div.navbar-fixed-top').height() - 20;
+    //         $('div.main').height(current_object.div_main_height);
+    //         var chart_hidden_flag = false;
+    //         var top_category_hidden_flag = false;
+
+    //         if ($(chart_div_selector).attr("class") != undefined) {
+
+    //             chart_hidden_flag = $(chart_div_selector).attr("class").indexOf("hidden") > 0;
+    //         };
+
+    //         if ($(top_category_main_selector).attr("class") != undefined) {
+
+    //             top_category_hidden_flag = $(top_category_main_selector).attr("class").indexOf("hidden") > 0;
+    //         };
+
+
+    //         $(chart_div_selector).removeClass("hidden");
+    //         $(top_category_main_selector).removeClass("hidden");
+
+    //         chart_main_display_width = $(chart_main_display_container_selector).width();
+    //         var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+    //         var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+    //         chart_main_display_height = $(chart_sidebar_config_selector).outerHeight() - chart_main_header_config_height - chart_main_pagination_height - 10 + 4;
+    //         current_object.div_chart_height = $(chart_sidebar_config_selector).outerHeight() + 4;
+    //         // console.log(chart_main_display_height);
+    //         $(chart_main_display_container_selector).height(chart_main_display_height);
+
+    //         var tmp_top_category_height = $(top_category_main_selector).height();
+
+    //         // if (tmp_top_category_height <= 0) {
+    //         //     tmp_top_category_height = $(billing_top_category_selector).height();
+    //         // }
+
+    //         // if (tmp_top_category_height <= 0) {
+    //         //     tmp_top_category_height = 50;
+    //         // };
+
+    //         other_height = current_object.div_chart_height + tmp_top_category_height;
+    //         $(search_result_main_selector).height(current_object.div_main_height - 10 - other_height - 5);
+    //         $(search_result_main_selector).resizable("option","maxHeight",current_object.div_main_height - 10 - 5 - 50 - 99 );
 
             
 
 
 
-            if (chart_hidden_flag) {
-                $(chart_div_selector).addClass("hidden");
-            };
+    //         if (chart_hidden_flag) {
+    //             $(chart_div_selector).addClass("hidden");
+    //         };
 
-            if (top_category_hidden_flag) {
-                $(top_category_main_selector).addClass("hidden");
-            };
-        }
+    //         if (top_category_hidden_flag) {
+    //             $(top_category_main_selector).addClass("hidden");
+    //         };
+    //     }
         
 
         
 
-        // console.log("load");
-        // $(chart_div_selector).removeClass("hidden");
-        // $(top_category_main_selector).removeClass("hidden");
-        // this.div_chart_height = $(chart_div_selector).height();
-        // this.top_category_height = $(top_category_main_selector).height();
-        // // console.log(div_chart_height,top_category_height);
-        // var chart_main_header_config_height = $(chart_main_header_div_selector).height();
-        // var chart_main_pagination_height = $(chart_main_pagination_selector).height();
-        // // console.log(chart_main_header_config_height,chart_main_pagination_height);
-        // // console.log(top_category_height);
-        // chart_main_display_height = this.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 10;
-        // chart_main_display_width = $(chart_main_display_container_selector).width();
-        // $(chart_main_display_container_selector).height(chart_main_display_height);
-        // $(chart_div_selector).addClass("hidden");
-        // $(top_category_main_selector).addClass("hidden");
-        // other_height = this.div_chart_height + this.top_category_height;
-    });
+    //     // console.log("load");
+    //     // $(chart_div_selector).removeClass("hidden");
+    //     // $(top_category_main_selector).removeClass("hidden");
+    //     // this.div_chart_height = $(chart_div_selector).height();
+    //     // this.top_category_height = $(top_category_main_selector).height();
+    //     // // console.log(div_chart_height,top_category_height);
+    //     // var chart_main_header_config_height = $(chart_main_header_div_selector).height();
+    //     // var chart_main_pagination_height = $(chart_main_pagination_selector).height();
+    //     // // console.log(chart_main_header_config_height,chart_main_pagination_height);
+    //     // // console.log(top_category_height);
+    //     // chart_main_display_height = this.div_chart_height - chart_main_header_config_height - chart_main_pagination_height - 10;
+    //     // chart_main_display_width = $(chart_main_display_container_selector).width();
+    //     // $(chart_main_display_container_selector).height(chart_main_display_height);
+    //     // $(chart_div_selector).addClass("hidden");
+    //     // $(top_category_main_selector).addClass("hidden");
+    //     // other_height = this.div_chart_height + this.top_category_height;
+    // });
     // function calc_init_chart_height()
     // {
     //     var tmp_height = 0;
@@ -355,10 +421,13 @@ function window_base(itemtypetags , aws_itemtypetags)
         }
         else
         {
-            for (var i = 0; i < current_table_id_arr.length; i++) {
-                $("#" + current_table_id_arr[i]).DataTable().search(
-                    search_value,false,true).draw();
+            if (current_table_id_arr != undefined) {
+                for (var i = 0; i < current_table_id_arr.length; i++) {
+                    $("#" + current_table_id_arr[i]).DataTable().search(
+                        search_value,false,true).draw();
+                };
             };
+            
         }
 
         
@@ -496,7 +565,7 @@ function window_base(itemtypetags , aws_itemtypetags)
         td_content = [];
         $(this).closest('tr').find('td').each(function(i,d)
         {
-            if ($(this).text().length > 0) {
+            if ($(this).text().length > 0 && td_content.length <= 4) {
                 td_content.push($(this).text());
             };
         });
@@ -510,6 +579,7 @@ function window_base(itemtypetags , aws_itemtypetags)
         select_metric_change(option,table_title,table_head,td_content,metrics_checkbox_result);
         chart_update();
     });
+    
 
     $(document).on('click',selected_metric_li_selector,function(event)
     {
@@ -518,6 +588,8 @@ function window_base(itemtypetags , aws_itemtypetags)
 
     function render_current_selected_metrics()
     {
+        // console.log('in render current sm',$(chart_main_div_selector));
+
         clear_main();
         add_top_category('All','');
         // add_search_result_message();
@@ -527,8 +599,8 @@ function window_base(itemtypetags , aws_itemtypetags)
         // pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">per_instance_result<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
         // pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">by_group_result<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
         // pre_set_filter_str += '</ul>';
-        add_search_result_panel();
         add_chart_main_panel();
+        add_search_result_panel();
 
         // console.log("data in render_current_selected_metrics",selected_metric_result);
         // show_chart();
@@ -585,21 +657,22 @@ function window_base(itemtypetags , aws_itemtypetags)
         var init_time_length = $(this).attr("value");
         chart_config['init_time_length'] = parseInt(init_time_length);
         // console.log(chart_config['to_clock']);
-        if (chart_config['to_clock'] == undefined) {
-            var now = (new Date()).getTime();
-            chart_config['to_clock'] = now / 1000;
-            chart_config['from_clock'] = chart_config['to_clock'] - init_time_length;
-            set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
-            set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
-        }
-        else
-        {
-            if (chart_config['to_clock'] > init_time_length) {
-                chart_config['from_clock'] = chart_config['to_clock'] - init_time_length;
-                set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
-                set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
-            };
-        }
+        // if (chart_config['to_clock'] == undefined) {
+        var now = (new Date()).getTime();
+        chart_config['update_flag'] = false;
+        chart_config['to_clock'] = now / 1000;
+        chart_config['from_clock'] = chart_config['to_clock'] - init_time_length;
+        set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
+        set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
+        // }
+        // else
+        // {
+        //     if (chart_config['to_clock'] > init_time_length) {
+        //         chart_config['from_clock'] = chart_config['to_clock'] - init_time_length;
+        //         set_date_to_timepicker(from_time_selector,chart_config['from_clock']);
+        //         set_date_to_timepicker(to_time_selector,chart_config['to_clock']);
+        //     };
+        // }
         
         // console.log(init_time_length);
         chart_update();
@@ -627,6 +700,8 @@ function window_base(itemtypetags , aws_itemtypetags)
     {
         // console.log("update graph");
 
+        
+
         if (chart_config['from_clock'] == undefined || chart_config['to_clock'] == undefined) {
 
             add_message_2_sidebar_config_message('FROM or TO is empty','danger');
@@ -644,6 +719,7 @@ function window_base(itemtypetags , aws_itemtypetags)
                 chart_update();
             }
         }
+
         
     });
 
@@ -756,6 +832,7 @@ function window_base(itemtypetags , aws_itemtypetags)
     {
         var indexId = $(this).attr("indexId"); 
         // var windowid = 11;
+        console.log($(chart_main_div_selector));
         load_chart(indexId);
     });
 
@@ -944,6 +1021,8 @@ function window_base(itemtypetags , aws_itemtypetags)
         $.getJSON('/chart/load/window',{windowid:saved_windowid},function(data)
         {
             if (data.load_result_bool) {
+                // console.log('after load',$(chart_main_div_selector));
+
                 selected_metric_result = {};
                 selected_metric_result = data.load_result['selected_metrics'];
 
@@ -1447,7 +1526,18 @@ function window_base(itemtypetags , aws_itemtypetags)
 
                     
                     for (var td in metrics[table_title]['metric_result'][row]) {
-                        result_str += '<td>' + metrics[table_title]['metric_result'][row][td] + '</td>';
+                        if (td == 4) {
+                            if (metrics[table_title]['metric_result'][row][td] == 2) {
+                                result_str += '<td>' + '<span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true" style="color:#a94442"></span><div class="hidden">' + metrics[table_title]['metric_result'][row][td] + '</div>' + '</td>';
+                            }
+                            else if(metrics[table_title]['metric_result'][row][td] == 1)
+                            {
+                                result_str += '<td>' + '<span class="glyphicon glyphicon-ok-sign" aria-hidden="true" style="color:#3c763d"></span><div class="hidden">' + metrics[table_title]['metric_result'][row][td] + '</div>' + '</td>';
+                            }
+                        }
+                        else{
+                            result_str += '<td>' + metrics[table_title]['metric_result'][row][td] + '</td>';
+                        }
                     };
                     result_str += '</tr>';
                 };
@@ -1646,8 +1736,8 @@ function window_base(itemtypetags , aws_itemtypetags)
         pre_set_filter_str += '<li role="presentation"><a href="javascript:;" class="' + filter_class + '">By LinkedAccount<span class="glyphicon glyphicon-remove ' + clear_filter_class + '" aria-hidden="true"></span></a></li>';
         pre_set_filter_str += '</ul>';
 
-        add_search_result_panel(pre_set_filter_str);
         add_chart_main_panel();
+        add_search_result_panel(pre_set_filter_str);
 
         // searched_value = searched_value || 'EC2';
 
@@ -1689,8 +1779,8 @@ function window_base(itemtypetags , aws_itemtypetags)
                 }
                 
                 
-                add_search_result_panel(pre_set_filter_str);
                 add_chart_main_panel();
+                add_search_result_panel(pre_set_filter_str);
                 
                 args = {option:option,search_value:searched_value}
                 perform_search('/chart/searchitem/',args);
@@ -1880,10 +1970,29 @@ function window_base(itemtypetags , aws_itemtypetags)
     {
         // console.log(this.div_chart_height);
         if ($(search_result_panel_selector).length <= 0) {
+
+            // this.div_chart_height = $(chart_div_selector).height();
+            // this.top_category_height = $(top_category_main_selector).height();
             // console.log(this.div_main_height,this.div_chart_height,this.top_category_height);
             // console.log(tmp_panel_height);
-            var panel_height = this.div_main_height - 10 - other_height - 5;
+            var tmp_category_height = $(top_category_main_selector).height();
+            if (tmp_category_height <= 0) {
+                tmp_category_height = $(billing_top_category_selector).height();
+            }
+
+            if (tmp_category_height <= 0) {
+                tmp_category_height = 50;
+            };
+
+            var tmp_other_height = $(chart_div_selector).height() + tmp_category_height ;
+
+            var panel_height = whole_height - 10 - tmp_other_height - 5;
+            // console.log($(chart_div_selector).height() , $(top_category_main_selector).height());
             // console.log("panel_height",panel_height);
+            // console.log("this.div_main_height",whole_height);
+            
+            // console.log('add search_result panel',$(chart_main_div_selector));
+
 
             var result_str = '';
 
@@ -1924,9 +2033,10 @@ function window_base(itemtypetags , aws_itemtypetags)
                     var div_change_height = ui.size.height - ui.originalSize.height;
                     var chart_change_height = 0 - div_change_height;
                     var chart_origin_height = $(chart_main_display_container_selector).height();
+                    $(chart_main_display_container_selector).height(chart_origin_height + chart_change_height);
+                    var tmp_chart_main_display_width = $(chart_main_header_div_selector).width();
                     if (display_chart.get_chart() != undefined) {
-                        $(chart_main_display_container_selector).height(chart_origin_height + chart_change_height);
-                        display_chart.get_chart().setSize(chart_main_display_width,chart_origin_height + chart_change_height,false);
+                        display_chart.get_chart().setSize(tmp_chart_main_display_width,chart_origin_height + chart_change_height,false);
                     };
                 }
             });
@@ -1981,6 +2091,8 @@ function window_base(itemtypetags , aws_itemtypetags)
 
     function add_chart_main_panel()
     {
+        // console.log('add chart before',$(chart_main_div_selector));
+
         if ($(chart_div_selector).length <= 0) {
             result_str = '';
             result_str += '<div class="row ' + chart_div_class + '">';
@@ -2001,6 +2113,27 @@ function window_base(itemtypetags , aws_itemtypetags)
         {
             $(chart_div_selector).removeClass('hidden');
         }
+
+        var tmp_div_chart_height = $(chart_div_selector).height();
+        var tmp_top_category_height = $(top_category_main_selector).height();
+
+        if (tmp_top_category_height <= 0) {
+            tmp_top_category_height = $(billing_top_category_selector).height();
+        }
+
+        if (tmp_top_category_height <= 0) {
+            tmp_top_category_height = 50;
+        };
+        // console.log(div_chart_height,top_category_height);
+        var tmp_chart_main_header_config_height = $(chart_main_header_div_selector).height();
+        var tmp_chart_main_pagination_height = $(chart_main_pagination_selector).height();
+        // console.log(chart_main_header_config_height,chart_main_pagination_height);
+        // console.log(top_category_height);
+        var tmp_chart_main_display_height = tmp_div_chart_height - tmp_chart_main_header_config_height - tmp_chart_main_pagination_height - 10;
+        // chart_main_display_width = $(chart_main_display_container_selector).width();
+        $(chart_main_display_container_selector).height(tmp_chart_main_display_height);
+        // console.log('add chart after',$(chart_main_div_selector));
+
     }
 
     function add_pagination_panel()
@@ -2027,9 +2160,13 @@ function window_base(itemtypetags , aws_itemtypetags)
         if (timezone > 0) {
             signed_tag = '+';
         }
-        else
+        else if ( timezone < 0)
         {
             signed_tag = '-';
+        }
+        else
+        {
+            signed_tag = '';
         }
 
         result_str += '<div class="form-group">';

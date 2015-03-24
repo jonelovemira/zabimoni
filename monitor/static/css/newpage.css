@@ -1,0 +1,95 @@
+.dataTables_filter{
+  display: none; 
+}
+
+
+.DivToScroll{   
+    /*background-color: #F5F5F5;*/
+    border: 1px solid #DDDDDD;
+    border-radius: 4px 0 4px 0;
+    color: #3B3C3E;
+    left: -1px;
+    padding: 10px 7px 5px;
+}
+
+.DivWithScroll{
+    height: 100%;
+    overflow:scroll;
+    overflow-x:hidden;
+}
+
+
+.dashboard-search {
+  margin-left:10px;
+}
+
+.main-search {
+  margin-left:10px;
+}
+
+.billing-search {
+  margin-left: 10px;
+}
+
+.top-category-main
+{
+  margin-bottom: 10px;
+}
+
+.billing-top-category
+{
+  margin-bottom: 10px;
+}
+
+
+.chart-main-header-config
+{
+  margin-top: 6px;
+  margin-bottom: 4px;
+}
+
+.chart-main-header-config .panel-heading
+{
+    padding:0px 15px;
+    display: right;
+}
+
+.chart-sidebar-config
+{
+    margin-top: 6px;
+    border: 1px solid #DDDDDD;
+    border-radius: 4px 0 4px 0;
+    color: #3B3C3E;
+    /*left: -1px;*/
+    padding: 10px 7px 5px;
+    /*height:390px;*/
+}
+
+
+.pager {
+  margin:0px;
+}
+
+.basicmetrics-panel
+{
+    overflow:scroll;
+    height:85vh; 
+    overflow-x:hidden
+}
+
+.ui-autocomplete {
+    max-height: 100px;
+    overflow-y: auto;
+    /* prevent horizontal scrollbar */
+    overflow-x: hidden;
+}
+
+ul.ui-autocomplete.ui-menu {
+  z-index: 1000;
+}
+  /* IE 6 doesn't support max-height
+   * we use height instead, but this forces the menu to always be this tall
+   */
+* html .ui-autocomplete {
+    height: 100px;
+}

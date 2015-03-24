@@ -1,6 +1,10 @@
 {% extends "layout.html" %}
 {% block body %}
 
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/dataTables.bootstrap.css')}}">
+<script type="text/javascript" src="{{url_for('static',filename='js/jquery.dataTables.min.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/dataTables.bootstrap.js')}}"></script>
+
 <script type="text/javascript">
 $(document).ready(function(){
     $("#myTab a").click(function(e){
@@ -64,6 +68,18 @@ $(document).ready(function(){
     		}
     	});
     }
+
+    $('table.table').each(function(i,d)
+    {
+    	if ($(this).attr("id") == undefined) {
+                    // console.log($(this));
+            $(this).dataTable({
+                        // "searching":false,
+                        // "paging":false,
+                        // "bFilter": false,
+        	});
+        };
+    });
 });
 </script>
 
@@ -74,6 +90,7 @@ $(document).ready(function(){
   <li role="presentation"><a href="#itemtype">itemtype</a></li>
   <li role="presentation"><a href="#trigger">trigger</a></li>
 </ul>
+
 
 
 <div class="tab-content">

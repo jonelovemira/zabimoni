@@ -155,7 +155,11 @@ function chart()
                             dataGrouping:
                             {
                                 enabled:false
-                            }
+                            },
+                            stickyTracking: false
+                        },
+                        series:{
+                            stickyTracking: false
                         }
                     },
                     
@@ -292,7 +296,8 @@ function chart()
                             // });
 
                             return s;
-                        }
+                        },
+                        snap: 1/1
                     }
 
                     // console.log(tmp_yAxis);

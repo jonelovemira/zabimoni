@@ -63,13 +63,22 @@ $(document).ready(function()
         });
     }
 
-    var f = new window_base();
-    
+    var f = new window_base($(window).height() - $('div.navbar-fixed-top').height() - 20);
 
-    $(window).load(function()
+    // f.set_main_height($(window).height() - $('div.navbar-fixed-top').height() - 20);
+    
+    $(window).resize(function(e)
     {
-        f.window_load_set();
+        if (e.target == window)
+        {
+            f.resize_caller($(window).height() - $('div.navbar-fixed-top').height() - 20);
+        }
     });
+
+    // $(window).load(function()
+    // {
+    //     f.window_load_set();
+    // });
 
 
 });

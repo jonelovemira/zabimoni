@@ -1,5 +1,10 @@
 {% extends "layout.html" %}
 {% block body %}
+
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/dataTables.bootstrap.css')}}">
+<script type="text/javascript" src="{{url_for('static',filename='js/jquery.dataTables.min.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/dataTables.bootstrap.js')}}"></script>
+
 <script type="text/javascript">
 $(document).ready(function(){
 	$('a[delete=1]').click(function()
@@ -9,6 +14,18 @@ $(document).ready(function(){
     		href = $(this).attr("path")
     		window.location.href=href;
     	};
+    });
+
+  $('table.table').each(function(i,d)
+    {
+      if ($(this).attr("id") == undefined) {
+                    // console.log($(this));
+            $(this).dataTable({
+                        // "searching":false,
+                        // "paging":false,
+                        // "bFilter": false,
+          });
+        };
     });
 });
 </script>

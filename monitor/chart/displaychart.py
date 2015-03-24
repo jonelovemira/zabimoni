@@ -2,7 +2,7 @@
 from monitor.chart.search import ItemSearch
 from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,PER_INSTANCE_TABLE_HEAD,\
 					FUNC_TYPE_COUNT,FUNC_TYPE_AVG,FUNC_TYPE_MAX,FUNC_TYPE_MIN,FUNC_TYPE_SUM,WINDOW_CHART,\
-					AWS_FEE_TABEL_HEAD,PAGE_CHART,DESIRED_DISPLAY_POINTS
+					AWS_FEE_TABEL_HEAD,PAGE_CHART,DESIRED_DISPLAY_POINTS,TABLE_HEAD_AVAILABILITY
 from monitor.zabbix.models import Zabbixhistory,Zabbixhistoryuint
 import time
 
@@ -160,7 +160,7 @@ class Chart():
 		# time_since = time_till - int(chart_config['frequency'])
 		ground = int(chart_config['frequency'])
 		# console.log("ground",ground)
-		print "ground",ground
+		# print "ground",ground
 		time_since = time_since / ground * ground
 		# ground = int(chart_config['frequency'])
 		function_type = function_type_map.get(chart_config['function_type'],FUNC_TYPE_AVG)
@@ -432,6 +432,11 @@ class Chart():
 						tmp_arr = list(table_head)
 						for attr in dtr.attrs.all():
 							tmp_arr[table_head.index(attr.attrname)] = attr.attrvalue
+
+						if table_head.index(TABLE_HEAD_AVAILABILITY) > 0:
+							tmp_hostid = ItemSearch.find_hostid_for_table_row_instance(tmp_arr)
+							if tmp_hostid != None:
+								tmp_arr[table_head.index(TABLE_HEAD_AVAILABILITY)] = ItemSearch.hostid_2_availability(tmp_hostid)
 
 						selected_metrics[option.optionname][dt.displaytablename]['metric_result'].append(tmp_arr)
 

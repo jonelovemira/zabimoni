@@ -1,15 +1,15 @@
 {% extends "layout.html" %}
 {% block body %}
 <link href="{{url_for('static',filename='css/report.css')}}" rel="stylesheet"></link>
-<script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
-<script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
-<script type="text/javascript" src="{{url_for('static',filename='js/window_base.js')}}"></script>
-
 <link type="text/css" href="{{url_for('static',filename='css/window_base.css')}}" rel="stylesheet">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-glyphicons.css')}}">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/bootstrap-datetimepicker.css')}}">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/jquery-ui.min.css')}}">
 <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/dataTables.bootstrap.css')}}">
+
+<script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/window_base.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/bootstrap-datetimepicker.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
@@ -29,9 +29,27 @@ $(function()
 	confirm_item_selector = 'button.' + confrim_item_class;
 
 	hidden_series_info_selector = '#hiddenselectedmetrics';
+    var modal_content_selector = 'div.modal-main';
 
 	// var current_selected_metrics = null;
 	// var current_chart_config = null;
+
+    var modal_height = $(window).height()*0.9 - 56 - 65 - 10;
+    var modal_width = $(window).width()*0.8 - 30 - 30 ;
+    $(modal_content_selector).height(modal_height);
+    $(modal_content_selector).width(modal_width);
+
+    $(window).resize(function(e)
+    {
+        if (e.target == window)
+        {
+            modal_height = $(window).height()*0.9 - 56 - 65 - 10;
+            modal_width = $(window).width()*0.8 - 30 - 30 ;
+            $(modal_content_selector).height(modal_height);
+            $(modal_content_selector).width(modal_width);
+            f.resize_caller(modal_height);
+        };
+    })
 
     var itemtypetags = {{ itemtypenames|safe }};
     var aws_itemtypetags = {{ aws_itemtypenames|safe }};
@@ -70,7 +88,7 @@ $(function()
         });
     }
 
-	var f = new window_base(itemtypetags,aws_itemtypetags);
+	var f = new window_base(($(window).height() - $('div.navbar-static-top').height() + 25)* 0.8);
 
     // f.set_allow_check_multiple(false);
 
@@ -277,20 +295,22 @@ $(function()
 
 
 <div class="modal fade bs-example-modal-lg" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-				<h4 class="modal-title" id="myModalLabel">Choose monitor items</h4>
-			</div>
-			<div class="modal-body">
-				{% include 'chart/window_main.html'%}
-			</div>
-			<div class="modal-footer">
-				<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-				<button type="button" class="btn btn-primary confirm">Choose these Items</button>
-			</div>
-		</div>
-	</div>
-</div>
+            <div class="modal-dialog page" style="height:80% ; width:80%;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Choose Report Metrics</h4>
+                    </div>
+                    <div class="modal-body page-modal-body">
+                        <div class="modal-main" style="overflow:hidden;padding:15px;">
+                            {% include 'chart/window_main.html' %}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary confirm">Confirm Metrics</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 {% endblock %}

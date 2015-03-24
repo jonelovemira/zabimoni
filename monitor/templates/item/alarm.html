@@ -23,6 +23,8 @@
 <script type="text/javascript">
 $(function()
 {
+
+    // $('div.jumbotron').width($(window).width()*0.95);
 	// var pills_selector = 'li[role=presentation]';
 
 	// $(document).on('click',pills_selector,function()
@@ -64,7 +66,7 @@ $(function()
         });
     }
     // console.log("window base in alarm");
-	var f = new window_base();
+	var f = new window_base(($(window).height() - $('div.navbar-static-top').height())* 0.74);
 	// f.set_allow_check_multiple(false);
 
     f.window_load_set();
@@ -371,14 +373,10 @@ $(function()
 });
 </script>
 
-
-
 <ul class="nav nav-pills" id="myTab">
 	<li role="presentation" class="active"><a href="#nav-selectmetric">1.Select Metric</a></li>
 	<li role="presentation"><a href="#nav-definealarm">2.Define Alarm</a></li>
 </ul>
-
-
 <div class="tab-content">
 	<div id="nav-selectmetric" class="tab-pane fade in active" >
 		<div class="row">
@@ -468,6 +466,10 @@ $(function()
 		
 	</div>
 </div>
+
+
+
+
 
 <div class="modal fade" id="foremailaddress" tabindex="-1" role="dialog" aria-labelledby="emailaddress" aria-hidden="true">
   <div class="modal-dialog page">

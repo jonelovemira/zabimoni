@@ -329,6 +329,8 @@ def init():
 	result['init_result_bool'] = init_result_bool
 	result['init_result'] = init_result
 	result['info'] = info
+
+
 	return json.dumps(result)
 
 @mod_chart.route('/update2/', methods=['GET', 'POST'])
@@ -761,7 +763,9 @@ def searchitem():
 			search_result_bool = True
 			info = 'success'
 		except Exception, e:
-			info = str(e)
+			import traceback,sys
+			traceback.print_exc(file=sys.stdout)
+			# info = str(e)
 
 	result['search_result_bool'] = search_result_bool
 	result['search_result'] = search_result
@@ -817,9 +821,24 @@ def smr2item():
 	result['convert_result_bool'] = convert_result_bool
 	return json.dumps(result)
 
-# @mod_chart.route('/schedule/data/')
-# def all_schedule_data():
-# 	return send_schedule_data()
+@mod_chart.route('/newpage')
+@login_required
+def newpage():
+	services = Service.query.all()
+	pages = g.user.pages.all()
+	windows = g.user.windows.filter_by(type=WINDOW_CHART).all()
+	itemtypes = Itemtype.query.all()
+	tmp_arr = []
+	aws_tmp_arr = []
+	for it in itemtypes:
+		if it.aws == None:
+			tmp_arr.append(it.itemtypename)
+		else:
+			item = it.items.first()
+			aws_tmp_arr.append(item.itemname)
+	itemtypenames = json.dumps(tmp_arr)
+	aws_itemtypenames = json.dumps(aws_tmp_arr)
+	return render_template("chart/newpage.html",title='Page',services=services,pages=pages,windows=windows,itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
 
 # @mod_chart.route('/schedule/data/<esid>')

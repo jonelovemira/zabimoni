@@ -49,6 +49,7 @@
                     <li><a href="{{url_for('item.mainboard')}}">Item </a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
+                    <li><a href="{{ url_for('chart.newpage') }}">New Version</a></li>
                     {% if g.user.is_authenticated() %}
                     <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
                     {% else %}
@@ -529,8 +530,8 @@ $(function()
 
     $(display_chart_modal_selector).on('shown.bs.modal', function () {
         
-        // var chart_div_selector = 'div.' + chart_div_class; 
-        // var top_category_main_selector = 'div.' + top_category_main_class;
+        var chart_div_selector = 'div.' + chart_div_class; 
+        var top_category_main_selector = 'div.' + top_category_main_class;
         $(chart_div_selector).removeClass("hidden");
         $(top_category_main_selector).removeClass("hidden");
         f.div_chart_height = $(chart_div_selector).height();

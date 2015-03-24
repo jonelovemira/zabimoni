@@ -87,6 +87,16 @@ class ItemSearch(BaseSearch):
 		return result
 
 	@classmethod
+	def find_hostid_for_table_row_instance(cls,row):
+		ip = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)]
+		z_hostname = ip
+		h = Zabbixhosts.query.filter_by(name=z_hostname).first()
+		hostid = None
+		if h != None:
+			hostid = h.hostid
+		return hostid
+
+	@classmethod
 	def find_item_list_for_table_row_aws_fee(cls,row):
 		result = []
 		metric_name = row[AWS_FEE_TABEL_HEAD.index(TABLE_HEAD_METRIC_NAME)]
@@ -126,6 +136,15 @@ class ItemSearch(BaseSearch):
 
 		return type_name_map.get(row_type,None)(row)
 
+	@classmethod
+	def hostid_2_availability(cls,hostid):
+		available_status = None
+
+		zh = Zabbixhosts.query.get(hostid)
+		if zh != None:
+			available_status = zh.available
+
+		return available_status
 	
 	@classmethod
 	def generate_per_instance_result_no_fee(cls,item_search_result,asg_name=None):
@@ -154,7 +173,9 @@ class ItemSearch(BaseSearch):
 
 			metric_name = s.itemname
 
-			row = [group_name,instance_name,ip,metric_name]
+			available_status = cls.hostid_2_availability(s.host.hostid)
+
+			row = [group_name,instance_name,ip,metric_name,available_status]
 			assert len(row) == len(table_head)
 
 			metric_result.append(row)

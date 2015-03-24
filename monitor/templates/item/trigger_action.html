@@ -37,7 +37,7 @@ $(function () {
 
     var current_selector = null;
 
-    var f = new window_base();
+    var f = new window_base(($(window).height() - $('div.navbar-static-top').height() + 25)* 0.8);
 
     f.set_allow_check_multiple(false);
 

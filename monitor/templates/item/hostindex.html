@@ -2,8 +2,7 @@
 	<thead>
 		<th>#</th>
 		<th>Host Name</th>
-		<th>Belongs to Area</th>
-		<th>Belongs to Service</th>
+		<th>ASG group</th>
 		<th>IP address</th>
 		<th>Available</th>
 		<th>Items</th>
@@ -14,7 +13,6 @@
 		<tr>
 			<td>{{i.host.hostid}}</td>
 			<td>{{i.host.hostname}}</td>
-			<td>{{i.host.area.areaname}}</td>
 			<td>{{i.host.service.servicename}}</td>
 			<td>{{i.ip}}</td>
 			<td>{% if i.available == 2 %}
