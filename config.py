@@ -24,10 +24,12 @@ ADMINS = ['xuzhongyong@tp-link.net']
 AREA = 'ap-northeast-1'
 SERVICE = 'monitor'
 
+COMMAND_FOLDER = '/command'
+
 # different path
-GENERATE_REPORT_PATH = basedir + '/generate_report.py '
+GENERATE_REPORT_PATH = basedir + COMMAND_FOLDER + '/generate_report.py '
 TMP_FILE = basedir + '/tmp/monitor.log'
-REMOTE_COMMAND_LOG = basedir + '/remote_command'
+REMOTE_COMMAND_LOG = basedir + '/tmp' + '/remote_command'
 AGENT_CONFIG_FILE = '/etc/zabbix/zabbix_agentd.conf'
 GENERATE_REPORT_ROUTE = '/chart/report/generate'
 PHANTOMJS = basedir + '/monitor/static/js/export/generate/phantomjs'
@@ -49,9 +51,10 @@ S3_MONITOR_SHEDULE_ALL_FILENAME = 'all'
 
 LOCAL_XML_EXPORT_PATH = basedir + '/monitor.xml'
 
-AUTOSCALE_COMMAND_PATH = basedir + '/autoscale_group.py'
+AUTOSCALE_COMMAND_PATH = basedir + COMMAND_FOLDER + '/autoscale_group.py'
 
-EMAIL_SNS_PATH = basedir + '/sendemail_sns.py'
+EMAIL_SNS_PATH = basedir + '/sendemail_alarm.py'
+EMAIL_SNS_NEW_PATH = basedir + COMMAND_FOLDER + '/sendemail_alarm.py'
 
 EMAIL_NORMAL_PATH = basedir + '/sendemail_normal'
 
@@ -71,7 +74,7 @@ EMAILNOTIFICATION = 1
 
 # bind to read only zabbix database
 SQLALCHEMY_BINDS = {
-	'zabbix': 'mysql://zabbix:zabbix@127.0.0.1/zabbix'
+	'zabbix': ZBX_DATABASE_URL
 }
 
 # host group name
@@ -91,7 +94,7 @@ TEXT = 4
 CURRENT_SERVER_IP = '192.168.221.130'
 
 # generate report script path
-GENERATE_REPORT_SCRIPT_PATH = '/home/jone/flask_project/monitor-0.3.6/'
+GENERATE_REPORT_SCRIPT_PATH = basedir + '/'
 
 # kinds of adding itemtype
 BY_ALL = 1
@@ -116,11 +119,13 @@ BY_GROUP_RESULT = 'by_group_result'
 PER_INSTANCE_RESULT = 'per_instance_result'
 TABLE_HEAD_GROUP_NAME = 'Group Name'
 TABLE_HEAD_METRIC_NAME = 'Metric Name'
+TABLE_HEAD_ALIAS = 'Alias'
+TABLE_HEAD_DESCRIPTION = 'Description'
 TABLE_HEAD_INSTANCE_NAME = 'Instance Name'
 TABLE_HEAD_IP = 'IP'
 TABLE_HEAD_AVAILABILITY = 'Availability'
-BY_GROUP_TABLE_HEAD = [TABLE_HEAD_GROUP_NAME,TABLE_HEAD_METRIC_NAME]
-PER_INSTANCE_TABLE_HEAD = [TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_HEAD_IP,TABLE_HEAD_METRIC_NAME,TABLE_HEAD_AVAILABILITY]
+BY_GROUP_TABLE_HEAD = [TABLE_HEAD_GROUP_NAME,TABLE_HEAD_METRIC_NAME,TABLE_HEAD_ALIAS, TABLE_HEAD_DESCRIPTION]
+PER_INSTANCE_TABLE_HEAD = [TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_HEAD_IP,TABLE_HEAD_METRIC_NAME,TABLE_HEAD_AVAILABILITY,TABLE_HEAD_ALIAS, TABLE_HEAD_DESCRIPTION]
 
 AWS_FEE_TABEL_HEAD = [TABLE_HEAD_METRIC_NAME]
 
@@ -155,4 +160,37 @@ ASG_OPERATION_ATTR = [ASG_FROM_GROUP_LABEL,ASG_ACTION_TYPE_LABEL]
 ASG_SCALE_UP = 'Up'
 ASG_SCALE_DOWN = 'Down'
 
+MAX_INIT_POINTS = 3600
+CHART_INIT_DEFAULT_MESSAGE = 'chart load successfully'
+
+AREA_PROXY_SPLITER = '__'
+
+ZABBIX_TEMPLATE_PREFIX = 'Template'
+TEMPLATE_GROUP_SPLITER = '__monitor__'
+NORMAL_TEMPLATE_NAME = ZABBIX_TEMPLATE_PREFIX + '__normal'
+
+
+PROTOTYPE_COMMAND_PATH = basedir + COMMAND_FOLDER + '/add_net_metric_disable_trigger.py' + ' ' + '--instanceip={HOST.NAME1}' + ' ' + '--metricname={ITEM.KEY1}'
+AR_COMMAND_PATH = basedir + COMMAND_FOLDER +  '/rename_link_add_update_instance.py' + ' ' + '--instanceip={HOST.IP}'
+UNREACHABLE_ACTION_PATH = basedir + '/sendemail_normal' + ' ' + '--content="{HOST.NAME} is unreachable for 5 minutes"'
+UNREACHABLE_ACTION_PATH_2 = basedir + COMMAND_FOLDER + '/unreachable_instance_trigger.py' + ' ' + '--instanceip={HOST.NAME}'
+
+AUTO_REGISTRATION_NAME = 'AWS auto registration'
+ADD_NET_TRIGGER_NAME = 'add_net_key'
+UNREACHABLE_ACTION_NAME = 'agent is unreachable'
+TRIGGER_PROTOTYPE_EXPRESSION = '{Template OS Linux:net.if.in[{#IFNAME}].last()}>-1'
+OS_LINUX_TEMPLATEID = '10001'
+# unreachable_action_name
+
+ZBX_TEMPLATE_CONF_FILE = basedir + '/zbx_config' + '/zbx_export_templates.xml'
+
+
+DEPRECATE_TAG = '(Deprecate)'
+
+AWS_BILLING_COMMAND_FOLDER = basedir + '/aws_fee/'
+AWS_BILLING_GET_S3_FILE_C = AWS_BILLING_COMMAND_FOLDER + 'get_file_from_s3.py'
+AWS_BILLING_PARSE_FILE_C = AWS_BILLING_COMMAND_FOLDER + \
+    'read_from_csv_save_2_db.py'
+AWS_BILLING_CSV_FOLDER = AWS_BILLING_COMMAND_FOLDER + 'csv'
+BASEDIR = basedir
 

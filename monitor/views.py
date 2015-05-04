@@ -24,7 +24,7 @@ def load_user(id):
 @login_required
 def index():
     # print 'Session in dashboard ,' ,g.Session
-    return render_template('dashboard.html')
+    return render_template('chart/main.html')
 
 # @app.route('/testlogin/',methods=['POST','GET'])
 # def testlogin():

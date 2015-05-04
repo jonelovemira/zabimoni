@@ -18,10 +18,6 @@ function chart()
         return this.chart_config;
     }
 
-    // this.get_chart = function()
-    // {
-    //     return this.mychart;
-    // }
 
     this.get_chart = function()
     {
@@ -80,31 +76,29 @@ function chart()
 	// clear_chart();
 	// set_highchart();
 
+    this.init_ajax = null;
+    this.update_ajax = null;
+
 	this.create_chart = function()
     {
-        // console.log("before get json",this.chart_config);
-        // console.log(this);
-        // container_selector = 'div[container="' + container + '"][sortId=' + sortId + ']';
-        // add_window_init(container_selector,sortId);
+
         $(this.chart_config['container_selector']).append('<button class="btn btn-lg btn-info"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span> Loading...</button>');
-        // var series_for_current_window = [];
-        // console.log(chart_title);
-        // console.log("this.callback",this.callback);
-        create_highstock_chart = function(current_series_data,tmp_current_class,current_yAxis,current_tooltip){
+
+        create_highstock_chart = function(current_series_data,tmp_current_class,current_yAxis,current_tooltip,tmp_chart_config){
                  // $(tmp_current_class.get_chart_config()['container_selector']).highcharts({
-                 $(tmp_current_class.get_chart_config()['container_selector']).highcharts('StockChart',{
+                 $(tmp_chart_config['container_selector']).highcharts('StockChart',{
                     chart:{
                         ignoredHiddenSeries:false,
                         events : {
                             load : function(){
                                 // tmp_chart = this;
                                 tmp_current_class.set_chart(this);
-                                if (tmp_current_class.get_chart_config()['update_flag']) {
+                                if (tmp_chart_config['update_flag']) {
                                     // tmp_interval_num[0] = setInterval(tmp_current_class.update,tmp_chart_config['frequency']*1000);
                                     var tmp_interval_num = setInterval(function()
                                         {
                                             tmp_current_class.update();
-                                        },tmp_current_class.get_chart_config()['frequency']*1000);
+                                        },tmp_chart_config['frequency']*1000);
                                     tmp_current_class.set_interval_num(tmp_interval_num);
 
                                 };
@@ -112,6 +106,13 @@ function chart()
                                 // console.log(tmp_current_class.callback);
                                 if (tmp_current_class.callback != null) {
                                     tmp_current_class.callback.fire();
+                                }
+
+                                for (var i = 0; i < this.series.length; i++) {
+                                    // if () {};
+                                    if (tmp_chart_config['series-name___' + i] != undefined) {
+                                        this.legend.allItems[i].update({name:tmp_chart_config['series-name___' + i]});
+                                    };
                                 };
                             }
                         },
@@ -159,7 +160,89 @@ function chart()
                             stickyTracking: false
                         },
                         series:{
-                            stickyTracking: false
+                            stickyTracking: false,
+                            events: {
+                                click: function (event) {
+
+                                    if (event.altKey || event.ctrlKey || event.shiftKey) {
+                                        var series_name = this.name;
+                                        var metric_name = '';
+                                        var name_space = '';
+                                        if (series_name.split(' ').length > 1) {
+                                            for (var i = 1; i < series_name.split(' ').length; i++) {
+                                                metric_name += series_name.split(' ')[i];
+                                            };
+                                            // var metric_name = series_name.split(' ')[1];
+                                            name_space = series_name.split(' ')[0];
+                                        }
+                                        else
+                                        {
+                                            metric_name = series_name;
+                                        }
+
+
+
+                                        var current_series = this;
+
+                                        var mytext = '<input type="text" id="series-name-input" placeholder="new metric name" value="' + metric_name + '" />';
+                                        $('<div id="dialog" title="Change chart series name">'+mytext+'</div>').appendTo('body');        
+                                        $("#dialog").dialog({                   
+                                                width: 400,
+                                                modal: true,
+                                                create : function( event, ui)
+                                                {
+                                                    $('.ui-widget-overlay').css("z-index","2000");
+                                                    $('.ui-dialog').css("z-index","2001");
+                                                    $('#series-name-input').select();
+                                                    $('#series-name-input').focus();
+                                                },
+                                                buttons: {
+                                                    "Confirm": function() {
+                                                      // $( this ).dialog( "close" );
+                                                      // $("#dialog").remove();
+                                                        var new_metric_name = $('#series-name-input').val();
+                                                        if (new_metric_name.length > 0) {
+                                                            var new_series_name = name_space + ' ' + new_metric_name;
+                                                            current_series.name = new_series_name;
+                                                            var current_index = 0;
+                                                            for (var i = 0; i < current_series.chart.series.length; i++) {
+                                                                if (current_series.chart.series[i] == current_series) {
+                                                                    current_index = i;
+                                                                }; 
+                                                            }
+
+                                                            // if(tmp_current_class.chart_config['series_name'] == undefined)
+                                                            // {
+                                                            //     tmp_current_class.chart_config['series_name'] = {};
+                                                            // }
+
+                                                            // tmp_current_class.chart_config['series_name'][current_index] = new_series_name ;
+
+                                                            tmp_current_class.chart_config['series-name' + '___' + current_index] = new_series_name;
+                                                            // console.log(tmp_current_class.chart_config);
+                                                            // console.log(current_index);
+                                                            current_series.chart.legend.allItems[current_index].update({name:new_series_name});
+                                                            $("#dialog").remove();
+                                                        }
+                                                        else
+                                                        {
+                                                            alert('new series name cannot be empty');
+                                                        }
+
+                                                    },
+                                                    Cancel: function() {
+                                                      // $( this ).dialog( "close" );
+                                                      $("#dialog").remove();
+                                                    }
+                                                  },
+                                                close: function(event, ui) {
+                                                    $("#dialog").remove();
+                                                }
+                                        });
+                                    };
+                                    // alert(this.name + ' clicked\n' + 'Alt: ' + event.altKey + '\n' + 'Control: ' + event.ctrlKey + '\n' + 'Shift: ' + event.shiftKey + '\n');
+                                }
+                            }
                         }
                     },
                     
@@ -184,16 +267,17 @@ function chart()
                 // console.log(data);
         		if( ! data.init_result_bool )
         		{
-        			$(current_class.get_chart_config()['container_selector']).empty();
+        			$(data['chart_config']['container_selector']).empty();
                     result_str = '';
                     result_str += '<div class="alert alert-' + 'danger' + '">';
                     result_str += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
                     result_str += data.info;
                     result_str += '</div>';
-                    $(current_class.get_chart_config()['container_selector']).append(result_str);
+                    $(data['chart_config']['container_selector']).append(result_str);
         		}
         		else
         		{
+                    console.log(data.info);
         			var current_series_data = data.init_result;
 
                     var unitname_format_map = {};
@@ -213,14 +297,6 @@ function chart()
                     // var unit_dict = {};
                     var axis_index = 0;
 
-                    // for( var i = 0 ; i  < data.init_result.length ; i ++)
-                    // {
-                    //     // console.log(data.init_result[i].unit_name);
-                    //     if (!(data.init_result[i].unit_name in unit_dict)) {
-                    //         unit_dict[data.init_result[i].unit_name] = axis_index;
-                    //         axis_index += 1;
-                    //     }
-                    // }
 
                     var tmp_yAxis = [];
                     var opposite_flag = false;
@@ -231,11 +307,6 @@ function chart()
                         // current_axis[]
                         var tmp_min = 0;
 
-                        // console.log(data.init_result[i].unit_name);
-                        // if (!(data.init_result[i].unit_name in unit_dict)) {
-                        //     unit_dict[data.init_result[i].unit_name] = axis_index;
-                        //     axis_index += 1;
-                        // }
                         current_axis = {
                             min : tmp_min ,
                             labels : 
@@ -259,7 +330,7 @@ function chart()
                         opposite_flag = ! opposite_flag;
                     }
 
-                    if (current_class.chart_config['shared_yaxis'] == undefined || current_class.chart_config['shared_yaxis']) {
+                    if (data['chart_config']['shared_yaxis'] == undefined || data['chart_config']['shared_yaxis']) {
                         tmp_yAxis = {
                             min : 0
                         }
@@ -300,22 +371,42 @@ function chart()
                         snap: 1/1
                     }
 
-                    // console.log(tmp_yAxis);
-
-                    // console.log("after getjson",current_class.get_chart(),current_class.get_chart_config(),current_series_data,tmp_interval_num);
-                    // console.log(this);
-                    // console.log(this);
                     current_class.clear_chart();
-                    create_highstock_chart(current_series_data,current_class,tmp_yAxis,tmp_tooltip);
+                    create_highstock_chart(current_series_data,current_class,tmp_yAxis,tmp_tooltip,data['chart_config']);
 
-        			// create_highstock_chart(current_series_data);
-
-                    // $(window).trigger('resize');
-                    // console.log(current_series_data);
+                    if (data.info.indexOf('successfully') <= 0 ) {
+                        current_class.add_load_chart_message(data.info,'info');
+                    };
+                        // console.log('info');
         		}
         	}  
         };  
-        $.ajax(option);
+        if (this.init_ajax != null) {
+            this.init_ajax.abort();
+        };
+        this.init_ajax = $.ajax(option);
+    }
+
+    this.add_load_chart_message = function(message,type)
+    {
+
+        $("#info-dialog").remove();
+        $('<div id="info-dialog" title="load chart info"><p>' + message + '</p></div>').appendTo('body');
+        $("#info-dialog").dialog({ 
+            width: 400,
+            create : function( event, ui)
+            {
+                $('.ui-widget-overlay').css("z-index","2000");
+                $('.ui-dialog').css("z-index","2001");
+            },
+            close: function(event, ui) {
+                $("#info-dialog").remove();
+            }
+        });
+
+        setTimeout(function(){
+            $("#info-dialog").dialog('close');
+        },4000);
     }
 
     this.clear_interval = function()
@@ -353,27 +444,13 @@ function chart()
                 {
                     console.log(data.info);
                 }
-
-                    // for (var ci = 0; ci < data.length; ci ++) {
-                    //     for (var si = 0; si < data[ci].length; si++) {
-                    //         if (si >= navigator_series_index[ci] ) {
-                    //             series = mychart[ci].series[si + 1].addPoint(data[ci][si],false,true);
-                    //         }
-                    //         else
-                    //         {
-                    //             series = mychart[ci].series[si].addPoint(data[ci][si],false,true);
-                    //         }
-                    //     };
-                    // };
-                    // for (var i = 0; i < data.length; i++) {
-                    //     if (mychart[i] != undefined )
-                    //     {
-                    //         mychart[i].redraw();
-                    //     }
-                    // };
             }  
         };  
-        $.ajax(option);
+
+        if (this.update_ajax != null) {
+            this.update_ajax;
+        };
+        this.update_ajax = $.ajax(option);
     }
 
     this.get_time_range = function()

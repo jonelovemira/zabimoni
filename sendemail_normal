@@ -1,17 +1,45 @@
 #! /bin/bash
 
-receivers=$1
+ARGS=`getopt -a -o c:r: -l content:,receivers: -- "$@"`
+echo $ARGS
+
+if [ $? != 0 ] ; then echo "Terminating..." >&2 ; exit 1 ; fi
+
+eval set -- "${ARGS}"
+
+while [[ true ]]; do
+	#statements
+	case "$1" in
+	-c|--content)
+		CONTENT="$2"
+		shift
+		;;
+	-r|--receivers)
+		RECEIVERS="$2"
+		shift
+		;;
+	--)
+		shift
+		break
+		;;
+	esac
+shift		
+done
+
+echo $RECEIVERS,$CONTENT
+
+# receivers=$1
 # admin_email_address="670271826@qq.com"
 
-content=$2
+# content=$2
 
 # echo 'content' $content
 
 #var=`echo $content|awk -F ',' '{print $2}'`
-rvs=`echo $receivers | awk -F';' '{print $0}' | sed "s/;/ /g"`
+rvs=`echo $RECEIVERS | awk -F';' '{print $0}' | sed "s/;/ /g"`
 
 for r in $rvs
 do
-	echo $content | mail -s 'Monitor trigger notifications' $r
+	echo $CONTENT | mail -s 'Monitor trigger notifications' $r
 done
 # echo $content | mail -s 'Monitor trigger notifications' $admin_email_address

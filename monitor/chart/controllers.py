@@ -16,7 +16,7 @@ from monitor.chart.generate import *
 from flask.ext.principal import Permission, RoleNeed
 admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
 
-from config import WINDOW_CHART
+from config import WINDOW_CHART,CHART_INIT_DEFAULT_MESSAGE
 
 # from send_email import monitor_status_notification
 
@@ -318,10 +318,13 @@ def init():
 
 			init_result = Chart.init(selected_metrics,chart_config)
 			init_result_bool = True
-			info = 'success'
+			info = Chart.info
+			Chart.info = CHART_INIT_DEFAULT_MESSAGE
+			result['selected_metrics'] = selected_metrics
+			result['chart_config'] = chart_config
 		except Exception, e:
-			# import traceback,sys
-			# traceback.print_exc(file=sys.stdout)
+			import traceback,sys
+			traceback.print_exc(file=sys.stdout)
 
 			print str(e)
 			info = str(e)
@@ -424,6 +427,8 @@ def save_window():
 
 			info = 'success'
 		except Exception, e:
+			import sys, traceback
+			traceback.print_exc(file=sys.stdout)
 			db.session.rollback()
 			print str(e)
 			info = str(e)
@@ -735,7 +740,7 @@ def billing_search(search_value,option,table_head=None):
 		raise Exception('You are not authorized to access billing data')
 	if table_head is None:
 		return SearchWithBilling.search(search_value,option)
-	print table_head
+	# print table_head
 	return SearchWithBilling.search(search_value,option,table_head)
 
 
@@ -748,12 +753,16 @@ def searchitem():
 	search_result_bool = False
 	search_result = None
 	request_option = None
+	search_args = {}
 	if request.method == 'GET':
 		try:
 			option = request.args.get('option')
 			request_option = option
+			search_args['option'] = request_option
 			search_value = request.args.get('search_value')
+			search_args['search_value'] = search_value
 			table_head = request.args.get('table_head',None)
+			search_args['table_head'] = table_head
 			function_of_option = {'All':SearchWithAll.search,'Basic Metrics':SearchWithBasicMetrics.search,\
 									'Browse Metrics':SearchWithAll.search,'billing':billing_search}
 			if table_head == None:
@@ -763,14 +772,15 @@ def searchitem():
 			search_result_bool = True
 			info = 'success'
 		except Exception, e:
-			import traceback,sys
+			import sys, traceback 
 			traceback.print_exc(file=sys.stdout)
-			# info = str(e)
+			info = str(e)
 
 	result['search_result_bool'] = search_result_bool
 	result['search_result'] = search_result
 	result['info'] = info
 	result['request_option'] = request_option
+	result['args'] = search_args
 		# print result
 		# print option,search_value
 	return json.dumps(result)
@@ -840,6 +850,14 @@ def newpage():
 	aws_itemtypenames = json.dumps(aws_tmp_arr)
 	return render_template("chart/newpage.html",title='Page',services=services,pages=pages,windows=windows,itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
+@mod_chart.route('/test')
+def test():
+	return render_template('chart/test.html')
+
+@mod_chart.route('/overall')
+@login_required
+def overall():
+	return 'happy'
 
 # @mod_chart.route('/schedule/data/<esid>')
 # def specific_schedule_data(esid):

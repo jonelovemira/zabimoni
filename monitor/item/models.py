@@ -5,8 +5,8 @@ from monitor.models import Attr
 
 class Itemtype(db.Model):
 	itemtypeid = db.Column(db.Integer,primary_key=True)
-	itemtypename = db.Column(db.String(80),unique=True)
-	itemkey = db.Column(db.String(80),unique=True)
+	itemtypename = db.Column(db.String(80))
+	itemkey = db.Column(db.String(80))
 	itemunit = db.Column(db.String(80))
 	zabbixvaluetype = db.Column(db.Integer)
 	items = db.relationship('Item',backref='itemtype',lazy='dynamic')
@@ -16,9 +16,10 @@ class Itemtype(db.Model):
 	zbxitemtype_id = db.Column(db.Integer,db.ForeignKey('zbxitemtype.zbxitemtypeid'))
 	time_frequency = db.Column(db.Integer)
 	function_type = db.Column(db.Integer)
+	description = db.Column(db.String(256))
 	# detailitemtypes = db.relationship('Detailitemtype',backref='itemtype',lazy='dynamic')
 
-	def	__init__(self,itemtypename,itemkey,aws=None,itemdatatype=None,itemunit=None,zabbixvaluetype=None,time_frequency=60,function_type=0):
+	def	__init__(self,itemtypename,itemkey,aws=None,itemdatatype=None,itemunit=None,zabbixvaluetype=None,time_frequency=60,function_type=0,description=None):
 		self.itemtypename = itemtypename
 		self.itemkey = itemkey
 		self.aws = aws
@@ -30,6 +31,10 @@ class Itemtype(db.Model):
 		else:
 			self.time_frequency = 60
 		self.function_type = function_type
+		if description is None:
+			description = itemtypename
+
+		self.description = description
 
 	def __repr__(self):
 		return '<Itemtype %r>' % self.itemtypename
@@ -53,7 +58,8 @@ class Normalitemtype(db.Model):
 			return self
 
 	def has_itemtype(self,itemtype):
-		return self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count() > 0
+		return self.itemtypes.filter_by(itemkey = itemtype.itemkey).count() > 0
+		# return self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count() > 0
 
 class Itemdatatype(db.Model):
 	itemdatatypeid = db.Column(db.Integer,primary_key=True)
@@ -112,7 +118,9 @@ class Service(db.Model):
 			return self
 
 	def has_itemtype(self,itemtype):
-		return self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count() > 0
+		# print 'itemtypeid',itemtype.itemtypeid
+		# print self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count()
+		return self.itemtypes.filter_by(itemkey = itemtype.itemkey).count() > 0
 
 
 
@@ -179,7 +187,8 @@ class Area(db.Model):
 			return self
 
 	def has_itemtype(self,itemtype):
-		return self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count() > 0
+		return self.itemtypes.filter_by(itemkey = itemtype.itemkey).count() > 0
+		# return self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count() > 0
 
 class Aws(db.Model):
 	awsid = db.Column(db.Integer,primary_key=True)
@@ -237,7 +246,8 @@ class Host(db.Model):
 			return self
 
 	def has_itemtype(self,itemtype):
-		return self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count() > 0
+		return self.itemtypes.filter_by(itemkey = itemtype.itemkey).count() > 0
+		# return self.itemtypes.filter_by(itemtypeid = itemtype.itemtypeid).count() > 0
 
 
 	def __init__(self,hostid,hostname,area,service):

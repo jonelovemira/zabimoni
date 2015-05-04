@@ -24,12 +24,12 @@ def history_data_2_arr(s):
 				result[len(result) -1][5] += float(s[i][6])
 				last_count += 1
 			else:
-				result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+				result[len(result) - 1][1] = result[len(result) - 1][1]//last_count
 				result.append([int(s[i][1]),float(s[i][2]),float(s[i][3]),float(s[i][4]),long(s[i][5]),float(s[i][6])])
 				last_count = 1
 	
 	if last_count > 1:
-		result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+		result[len(result) - 1][1] = result[len(result) - 1][1]//last_count
 		
 
 	if len(result) != 0:
@@ -42,6 +42,21 @@ def query_data_2_arr(s):
 		return result
 	return None
 
+def query_data_no_ground_2_arr(s):
+	if s[0][0] == 0:
+		return None
+	result = [[int(x[0]),float(x[1]),float(x[2]),float(x[3]),float(x[4])] for x in s]
+	if len(result) > 0:
+		return result
+	return None
+
+def last_record_2_arr(s):
+	result = [[int(x[0]),int(x[1]),float(x[2])] for x in s]
+
+	if len(result) > 0:
+		return result
+
+	return None
 
 class Zabbixhistory(db.Model):
 	__bind_key__ = 'zabbix'
@@ -70,11 +85,11 @@ class Zabbixhistory(db.Model):
 					tmp_arr_after_query.append(float(query_result[i].value))
 					tmp_arr_after_query.append(float(query_result[i].value))
 					tmp_arr_after_query.append(float(query_result[i].value))
-					tmp_arr_after_query.append(int(query_result[i].clock)/ground)
+					tmp_arr_after_query.append(int(query_result[i].clock)//ground)
 					s1.append(tmp_arr_after_query)
 					same_count = 1
 				else:
-					if int(query_result[i].clock)/ground == s1[len(s1) -1][5]:
+					if int(query_result[i].clock)//ground == s1[len(s1) -1][5]:
 						s1[len(s1) - 1][1] += 1
 						s1[len(s1) - 1][2] += float(query_result[i].value)
 						if s1[len(s1) - 1][3] < float(query_result[i].value):
@@ -83,18 +98,18 @@ class Zabbixhistory(db.Model):
 							s1[len(s1) - 1][4] = float(query_result[i].value)
 						same_count += 1
 					else:
-						s1[len(s1) - 1][2] = s1[len(s1) - 1][2]/same_count
+						s1[len(s1) - 1][2] = s1[len(s1) - 1][2]//same_count
 						ttmp_arr_after_query = []
 						ttmp_arr_after_query.append(int(query_result[i].itemid))
 						ttmp_arr_after_query.append(1)
 						ttmp_arr_after_query.append(float(query_result[i].value))
 						ttmp_arr_after_query.append(float(query_result[i].value))
 						ttmp_arr_after_query.append(float(query_result[i].value))
-						ttmp_arr_after_query.append(int(query_result[i].clock)/ground)
+						ttmp_arr_after_query.append(int(query_result[i].clock)//ground)
 						s1.append(ttmp_arr_after_query)
 						same_count = 1
 			if same_count > 1:
-				s1[len(s1) - 1][2] = s1[len(s1) - 1][2]/same_count
+				s1[len(s1) - 1][2] = s1[len(s1) - 1][2]//same_count
 
 			# print s1
 			tmp_s += s1
@@ -117,11 +132,11 @@ class Zabbixhistory(db.Model):
 						result[len(result) - 1][3] = s[i][4]
 					last_count += 1
 				else:
-					result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+					result[len(result) - 1][1] = result[len(result) - 1][1]//last_count
 					result.append(list(s[i][1:6]))
 					last_count = 1
 		if last_count > 1:
-			result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+			result[len(result) - 1][1] = result[len(result) - 1][1]//last_count
 		
 		if len(result) != 0:
 			return result		
@@ -147,18 +162,52 @@ class Zabbixhistory(db.Model):
 
 		# s = sorted(tmp_s,key = lambda x:x[5])
 
+		offset = ground // 10
+
 		s = db.session.query(\
 			db.func.count(cls.itemid).label('count'),\
 			db.func.avg(cls.value).label('avg'),\
 			db.func.max(cls.value).label('max'),\
 			db.func.min(cls.value).label('min'),\
-			db.func.floor((cls.clock)/ground).label('minute'),\
+			db.func.floor((cls.clock + offset)/ground).label('minute'),\
 			db.func.sum(cls.value)).filter(cls.itemid.in_(query_itemids)).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
 
 		return query_data_2_arr(s)
 		# return history_data_2_arr(s)
+
+	@classmethod
+	def get_interval_last_few_records(cls,query_itemids,time_since,time_till):
+		s = db.session.query(cls.itemid,cls.clock,cls.value).\
+			filter(cls.itemid.in_(query_itemids)).\
+			filter('clock >=' + str(time_since)).\
+			filter('clock <=' + str(time_till)).\
+			order_by(cls.clock.desc()).\
+			limit(2*len(query_itemids)).all()
+
+		return last_record_2_arr(s)
+
+	@classmethod
+	def get_interval_condition_record(cls,query_itemids,time_since,time_till,condition):
+		s = db.session.query(cls.itemid,cls.clock,cls.value).\
+			filter(cls.itemid.in_(query_itemids)).\
+			filter('clock >=' + str(time_since)).\
+			filter('clock <=' + str(time_till)).\
+			filter('value ' + condition).all()
+
+		return s if len(s) > 0 else None
+
+	@classmethod
+	def get_interval_history_no_ground(cls,query_itemids,time_since,time_till):
+		s = db.session.query(\
+			db.func.count(cls.itemid).label('count'),\
+			db.func.avg(cls.value).label('avg'),\
+			db.func.max(cls.value).label('max'),\
+			db.func.min(cls.value).label('min'),\
+			db.func.sum(cls.value)).filter(cls.itemid.in_(query_itemids)).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).all()
+
+		return query_data_no_ground_2_arr(s)
 
 class Zabbixhistoryuint(db.Model):
 	__bind_key__ = 'zabbix'
@@ -186,11 +235,11 @@ class Zabbixhistoryuint(db.Model):
 					tmp_arr_after_query.append(float(query_result[i].value))
 					tmp_arr_after_query.append(float(query_result[i].value))
 					tmp_arr_after_query.append(float(query_result[i].value))
-					tmp_arr_after_query.append(int(query_result[i].clock)/ground)
+					tmp_arr_after_query.append(int(query_result[i].clock)//ground)
 					s1.append(tmp_arr_after_query)
 					same_count = 1
 				else:
-					if int(query_result[i].clock)/ground == s1[len(s1) -1][5]:
+					if int(query_result[i].clock)//ground == s1[len(s1) -1][5]:
 						s1[len(s1) - 1][1] += 1
 						s1[len(s1) - 1][2] += float(query_result[i].value)
 						if s1[len(s1) - 1][3] < float(query_result[i].value):
@@ -199,19 +248,19 @@ class Zabbixhistoryuint(db.Model):
 							s1[len(s1) - 1][4] = float(query_result[i].value)
 						same_count += 1
 					else:
-						s1[len(s1) - 1][2] = s1[len(s1) - 1][2]/same_count
+						s1[len(s1) - 1][2] = s1[len(s1) - 1][2]//same_count
 						ttmp_arr_after_query = []
 						ttmp_arr_after_query.append(int(query_result[i].itemid))
 						ttmp_arr_after_query.append(1)
 						ttmp_arr_after_query.append(float(query_result[i].value))
 						ttmp_arr_after_query.append(float(query_result[i].value))
 						ttmp_arr_after_query.append(float(query_result[i].value))
-						ttmp_arr_after_query.append(int(query_result[i].clock)/ground)
+						ttmp_arr_after_query.append(int(query_result[i].clock)//ground)
 						s1.append(ttmp_arr_after_query)
 						same_count = 1
 
 			if same_count > 1:
-				s1[len(s1) - 1][2] = s1[len(s1) - 1][2]/same_count
+				s1[len(s1) - 1][2] = s1[len(s1) - 1][2]//same_count
 
 			tmp_s += s1
 
@@ -233,11 +282,11 @@ class Zabbixhistoryuint(db.Model):
 						result[len(result) - 1][3] = s[i][4]
 					last_count += 1
 				else:
-					result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+					result[len(result) - 1][1] = result[len(result) - 1][1]//last_count
 					result.append(list(s[i][1:6]))
 					last_count = 1
 		if last_count > 1:
-			result[len(result) - 1][1] = result[len(result) - 1][1]/last_count
+			result[len(result) - 1][1] = result[len(result) - 1][1]//last_count
 			
 		if len(result) != 0:
 			return result		
@@ -265,12 +314,14 @@ class Zabbixhistoryuint(db.Model):
 
 		# return history_data_2_arr(s)
 
+		offset = ground // 10
+
 		s = db.session.query(\
 			db.func.count(cls.itemid).label('count'),\
 			db.func.avg(cls.value).label('avg'),\
 			db.func.max(cls.value).label('max'),\
 			db.func.min(cls.value).label('min'),\
-			db.func.floor((cls.clock)/ground).label('minute'),\
+			db.func.floor((cls.clock + offset)/ground).label('minute'),\
 			db.func.sum(cls.value)).filter(cls.itemid.in_(query_itemids)).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).\
 			group_by('minute').all()
 
@@ -278,8 +329,38 @@ class Zabbixhistoryuint(db.Model):
 		return query_data_2_arr(s)
 
 
+	@classmethod
+	def get_interval_last_few_records(cls,query_itemids,time_since,time_till):
+		s = db.session.query(cls.itemid,cls.clock,cls.value).\
+			filter(cls.itemid.in_(query_itemids)).\
+			filter('clock >=' + str(time_since)).\
+			filter('clock <=' + str(time_till)).\
+			order_by(cls.clock.desc()).\
+			limit(2*len(query_itemids)).all()
+
+		return last_record_2_arr(s)
+
+	@classmethod
+	def get_interval_history_no_ground(cls,query_itemids,time_since,time_till):
+		s = db.session.query(\
+			db.func.count(cls.itemid).label('count'),\
+			db.func.avg(cls.value).label('avg'),\
+			db.func.max(cls.value).label('max'),\
+			db.func.min(cls.value).label('min'),\
+			db.func.sum(cls.value)).filter(cls.itemid.in_(query_itemids)).filter('clock >=' + str(time_since)).filter('clock <=' + str(time_till)).all()
+
+		return query_data_no_ground_2_arr(s)
 
 
+	@classmethod
+	def get_interval_condition_record(cls,query_itemids,time_since,time_till,condition):
+		s = db.session.query(cls.itemid,cls.clock,cls.value).\
+			filter(cls.itemid.in_(query_itemids)).\
+			filter('clock >=' + str(time_since)).\
+			filter('clock <=' + str(time_till)).\
+			filter('value ' + condition).all()
+
+		return s if len(s) > 0 else None
 # def get_init_result(query_itemids,ground):
 
 # 	return Zabbixhistory.get_init_history(query_itemids,ground) + Zabbixhistoryuint.get_init_history(query_itemids,ground)

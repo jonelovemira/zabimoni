@@ -774,6 +774,8 @@
                 {
                     // console.log("add_chart_page_selector");
                     current_window_index = $(this).attr("sortId");
+                    f.set_smr_cc({},{});
+                    f.set_default_cc_caller();
 
                     $(display_chart_modal_selector).modal({
                         keyboard: false

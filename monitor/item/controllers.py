@@ -10,7 +10,8 @@ from monitor.zabbix.zabbix_api import zabbix_api
 from monitor.MonitorException import *
 import json
 import boto.ec2.autoscale
-from config import AUTOSCALE_COMMAND_PATH ,AUTOSCALE,EMAILNOTIFICATION,MAIL_USE_SNS,EMAIL_SNS_PATH,EMAIL_NORMAL_PATH,AREA
+from config import AUTOSCALE_COMMAND_PATH ,AUTOSCALE,EMAILNOTIFICATION,MAIL_USE_SNS,EMAIL_SNS_PATH,EMAIL_NORMAL_PATH,AREA,\
+					ZABBIX_TEMPLATE_PREFIX,TEMPLATE_GROUP_SPLITER,HOST_GROUP_NAME
 
 from flask.ext.principal import Permission, RoleNeed
 admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
@@ -156,6 +157,7 @@ def service():
 	area = Area.query.all()
 	if request.method == 'POST':
 		try:
+			zabbix = zabbix_api()
 			areaid = request.form.get('areaid')
 			usetype = request.form.get('usetype')
 			servicename = None
@@ -163,6 +165,8 @@ def service():
 				servicename = request.form.get('servicename')
 			elif usetype == '2':
 				servicename = request.form.get('elbname')
+
+			add_group_template(servicename,zabbix)
 			service = Service(servicename=servicename)
 			db.session.add(service)	
 			addhost = request.form.get('addhost')
@@ -175,6 +179,7 @@ def service():
 
 		except Exception, e:
 			db.session.rollback()
+			zabbix.rollback()
 			flash(str(e),'danger')
 			db.session.remove()
 			return redirect(url_for('item.service'))
@@ -251,7 +256,9 @@ def elbforarea():
 @admin_permission.require(http_exception=403)
 def servicedelete(serviceid):
 	try:
+		zabbix = zabbix_api()
 		service = Service.query.filter_by(serviceid=serviceid).first()
+		delete_group_template(service.servicename,zabbix)
 		db.session.delete(service)
 		db.session.commit()
 		app.logger.info(g.user.username + ' delete a service group : ' + serviceid)
@@ -342,6 +349,7 @@ def itemtype():
 			app.logger.info(g.user.username + ' add an item : ' + key)
 
 		except Exception, e:
+			traceback.print_exc(file=sys.stdout)
 			zabbix.rollback()
 			db.session.rollback()
 			flash(str(e),'danger')
@@ -362,6 +370,9 @@ def itemtypedelete(itemtypeid):
 	zabbix = zabbix_api()
 	try:
 		it = Itemtype.query.filter_by(itemtypeid = itemtypeid).first()
+
+		delete_template_item(it,zabbix)
+
 		if it != None:
 			items = it.items
 			itemids = []

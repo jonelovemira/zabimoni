@@ -1,0 +1,540 @@
+{% extends "layout.html" %}
+{% block body %}
+<script type="text/javascript">
+$(document).ready(function()
+{
+    $(document).on('click', '#detail-billing-tab a',function(e)
+    {
+        e.preventDefault();
+        $(this).tab('show');
+    }); 
+
+    var local_time;
+    var last_get_json_ajax;
+    var last_get_la_json_ajax;
+    var time_data_cache = {};
+    var la_time_data_cache = {};
+    var total_cost_selector = 'td.total-cost';
+    // get_render_billing_data(local_time);
+
+    var time_select_selector = 'select.time-select';
+    var summary_collapse_id = 'summary';
+    var summary_table_tbody_selector = 'table.summary-table > tbody';
+    var header_adaptor_selector = 'th.header-adaptor';
+
+    var collapseid_linkedaccountname_dict = {};
+
+    var consolidated_table_tbody_selector = 'table.consolidated-bill > tbody';
+    var linkedaccount_table_tbody_selector = 'table.linkedaccount-bill > tbody';
+    var availablezone_table_tbody_selector = 'table.availablezone-bill > tbody';
+
+    load_first();
+
+    function load_first () {
+        // body...
+        // console.log($(time_select_selector).val());
+        var first_load = $(time_select_selector).val();
+        local_time = first_load;
+        if (first_load != '') {
+            get_render_billing_data(first_load);
+        };
+    }
+
+    $(document).on('change',time_select_selector,function()
+    {
+        // console.log($(this).val());
+        local_time = $(this).val();
+        get_render_billing_data(local_time);
+    });
+
+    function before_get_check (time) {
+        // body...
+        if (time_data_cache[time] != undefined) {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    function get_render_billing_data (time) {
+
+        if (last_get_json_ajax != undefined) {
+            last_get_json_ajax.abort();
+        };
+
+        if (before_get_check(time)) {
+            render_billing_data(time_data_cache[time]);
+        }
+        else
+        {
+            // body...
+            last_get_json_ajax = $.getJSON('/billing/billsreport',{time:time},function(data)
+            {
+                if (data.load_result_bool) {
+                    time_data_cache[data.load_result['time']] = data.load_result;
+                    // console.log(data.load_result);
+                    render_billing_data(data.load_result);
+                }
+                else
+                {
+                    console.log(data.info);
+                }
+            });
+        }
+    }
+
+    function render_la_data (data) {
+        // body...
+        console.log("render_la_data",data);
+        var data_time = data['time'];
+        var data_laname = data['laname'];
+        if (data_time != local_time) {
+            return;
+        }
+        if (data.load_collapse_id == undefined) {
+            return;
+        }
+
+        // $('#' + data.load_collapse_id).empty();
+        // console.log(data.data.by_services);
+        var result_str = '';
+        result_str += '<tr>';
+        result_str += '<td colspan="2">'
+        result_str += '<div class="panel panel-default">';
+        result_str += '<div class="panel-heading">';
+        result_str += '<table class="table" style="margin-bottom:0px;">';
+        result_str += '<thead>';
+        result_str += '<tr>';
+        result_str += '<td class="col-xs-6">' + 'Details' + '</td>';
+        result_str += '<td class="col-xs-1">' + 'Total' + '</td>';
+        result_str += '</tr>';
+        result_str += '</thead>';
+        result_str += '</table>';
+        result_str += '</div>';
+        result_str += '<table class="table">';
+        result_str += '<tbody>';
+
+
+        var la_service_str = build_consolidated_collapse(data.data.by_services, data.load_collapse_id + '-', '&emsp;', 'data-parent="#' + data.load_collapse_id + '"');
+        // console.log(la_service_str);
+
+        result_str += la_service_str;
+        result_str += '</tbody>';
+        result_str += '</table>';
+        result_str += '</div>';
+        result_str += '</td>';
+        result_str += '</tr>';
+
+        refresh_tbody_with_value('#' + data.load_collapse_id, result_str);  
+    }
+
+    function before_get_la_check (time, linkedaccountname) {
+        // body...
+        if (la_time_data_cache[time] != undefined) {
+            if (la_time_data_cache[time][linkedaccountname] != undefined) {
+                return true;
+            };
+        };
+        return false;
+    }
+
+    function get_render_linked_data (time, linkedaccountname, load_collapse_id)
+    {
+
+        if (before_get_la_check(time, linkedaccountname)) {
+            render_la_data(la_time_data_cache[time][linkedaccountname]);
+        }
+        else
+        {
+            last_get_la_json_ajax = $.getJSON('/billing/billsreport/la',{time: time, laname: linkedaccountname, render_selector_id: load_collapse_id},function(data)
+            {
+                if (data.load_result_bool) {
+                    if (la_time_data_cache[data.load_result['time']] == undefined) {
+                        la_time_data_cache[data.load_result['time']] = {};
+                    };
+                    la_time_data_cache[data.load_result['time']][data.load_result['laname']] = data.load_result;
+                    render_la_data(data.load_result);
+                }
+                else
+                {
+                    console.log(data.info);
+                }
+            });
+        }
+    }
+
+    function parse_2_fixed_float(value)
+    {
+        return '$' + parseFloat(value).toFixed(2);
+    }
+
+    function refresh_tbody_with_value (body_selector, render_str) {
+        // body...
+        $(body_selector).empty();
+        $(body_selector).append(render_str);
+    }
+
+    function render_billing_data (data) {
+        // body...
+        console.log(data);
+        // console.log(total_cost);
+        var summary_data_str = build_summary_collapse(data.summary_data);
+        var consolidated_str = build_consolidated_collapse(data.consolidated_bill_data, 'consolidated-bill-service-', '', '');
+        var linkedaccount_str = build_linkedaccount_collapse(data.linkedaccount_data);
+        var availablezone_str = build_availablezone_collapse(data.region_data);
+
+        refresh_tbody_with_value( summary_table_tbody_selector , summary_data_str);
+        refresh_tbody_with_value( consolidated_table_tbody_selector, consolidated_str);
+        refresh_tbody_with_value( linkedaccount_table_tbody_selector, linkedaccount_str);
+        refresh_tbody_with_value( availablezone_table_tbody_selector, availablezone_str);
+    }
+
+    $(document).on('shown.bs.collapse', '.collapse', function (e) {
+        e.stopPropagation();
+        console.log("open");
+        $(this).closest('table').find('thead > tr > th > i').first().removeClass("glyphicon-folder-close").addClass("glyphicon-folder-open");
+    });
+
+    $(document).on('hide.bs.collapse','.collapse', function (e) {
+        e.stopPropagation();
+        console.log("close");
+        $(this).closest('table').find('thead > tr > th > i').first().removeClass("glyphicon-folder-open").addClass("glyphicon-folder-close");
+    });
+
+    $(document).on('shown.bs.collapse', 'tbody.la', function(e){
+        // e.stopPropagation();
+        var load_collapse_id = $(this).attr("id");
+        console.log($(this).attr("id"));
+        var linkedaccountname = collapseid_linkedaccountname_dict[load_collapse_id];
+            // console.log(linkedaccountname);
+        get_render_linked_data(local_time, linkedaccountname, load_collapse_id);
+    });
+
+
+
+    function parse_clock_2_str(UNIX_timestamp){
+        var a = new Date(UNIX_timestamp*1000);
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var year = a.getFullYear();
+        var month = months[a.getMonth()];
+        var date = a.getDate();
+        var hour = a.getHours();
+        var min = a.getMinutes();
+        var sec = a.getSeconds();
+        var time = date + ',' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+        return time;
+    }
+
+    function build_summary_collapse(summary_data)
+    {
+        var total_cost = parse_2_fixed_float(summary_data.Total);
+        var result_str = '';
+        result_str += '<tr data-toggle="collapse" data-target="#' + summary_collapse_id + '" class="accordion-toggle" aria-expanded="false" aria-controls="' + summary_collapse_id + '">';
+        result_str += '<td>AWS Service Charges</td>';
+        result_str += '<td></td>';
+        result_str += '<td>' + total_cost + '</td>';
+        result_str +='</tr>';
+        result_str +='<tr  style="padding: 0 !important;"><td colspan="3"style="padding:0px;">';
+        result_str += '<div id="' + summary_collapse_id + '" class="collapse" aria-expanded="false">';
+        result_str += '<table class="table">';
+        result_str += '<tbody>';
+        for (var payer in summary_data.payers) {
+            result_str += '<tr>';
+            result_str += '<td class="col-xs-6">' + payer + '</td>';
+            result_str += '<td class="col-xs-3">' + parse_clock_2_str( summary_data.payers[payer]['InvoiceDate'] ) + '</td>';
+            result_str += '<td class="col-xs-3">' +  parse_2_fixed_float(summary_data.payers[payer]['Total']) + '</td>';
+            result_str += '</tr>';
+        };
+
+
+        result_str += '</tbody>';
+        result_str += '</table>';
+        result_str += '</div>';
+        result_str += '</td>';
+
+        result_str += '</tr>';
+        // console.log(result_str);
+        return result_str;
+    }
+
+
+    function build_service_table_str (servicename, cost, data, index, tmp_id_prefix, tmp_layout_prefix, tmp_added_sttr)
+    {
+        var result_str = '';
+        var service_collapse_id = tmp_id_prefix + index;
+        result_str += '<table class="table" style="margin-bottom:0px;">';
+        result_str += '<thead>';
+        result_str += '<tr data-toggle="collapse" data-target="#' + service_collapse_id + '" class="accordion-toggle" aria-expanded="false" aria-controls="' + service_collapse_id + '" ' + tmp_added_sttr + '>';
+        result_str += '<th class="col-xs-6">' + tmp_layout_prefix +  '<i class="glyphicon glyphicon-large glyphicon-folder-close icon-udf"></i>&nbsp;' + servicename + '</th>';
+        result_str += '<th class="col-xs-1">' + cost + '</th>';
+        result_str += '</tr>';
+        result_str += '</thead>';
+        result_str += '<tbody id="' + service_collapse_id + '" class="collapse" aria-expanded="false">';
+
+        for (r in data.region_info) {
+            result_str += '<tr>';
+            result_str += '<td colspan="2">';
+            result_str += '<table class="table table-bordered">';
+            result_str += '<thead>';
+            result_str += '<tr>';
+            result_str += '<th class="col-xs-4">' + r +'</th>';
+            result_str += '<th class="col-xs-2">' + 'Usage' + '</th>';
+            result_str += '<th class="col-xs-1">&nbsp;</th>';
+            result_str += '</tr>';
+            result_str += '</thead>';
+            result_str += '<tbody>';
+            for (ds in data.region_info[r].services) {
+                result_str += '<tr>';
+                result_str += '<td colspan="3"><I>' + ds + '</I></td>';
+                result_str += '</tr>';
+                for (var i = 0; i < data.region_info[r].services[ds]['array'].length; i++) {
+                    result_str += '<tr>';
+                    for (var j = 0; j < data.region_info[r].services[ds]['array'][i].length; j++) {
+                        if (j == 0) {
+                            result_str += '<td>&emsp;' + data.region_info[r].services[ds]['array'][i][j] + '</td>';  
+                        }
+                        else
+                        {
+                            result_str += '<td>' + data.region_info[r].services[ds]['array'][i][j] + '</td>';
+                        }
+                    };
+                    result_str += '</tr>'
+                };
+                var total_str = '';
+                total_str += '<tr>';
+                total_str += '<td colspan="2">&emsp;Total:</td>';
+                total_str += '<td>' + parse_2_fixed_float( data.region_info[r].services[ds]['Total'] ) + '</td>';
+                total_str += '</tr>';
+                result_str += total_str;    
+            };
+
+            result_str += '<tr>';
+            result_str += '<td colspan="2"><strong>Region Total:</strong></td>';
+            result_str += '<td>' + parse_2_fixed_float( data.region_info[r]['Total'] ) + '</td>';
+            result_str += '</tr>';
+            result_str += '</tbody>';
+            result_str += '</table>';
+            result_str += '</td>';
+            result_str += '</tr>';
+        };
+
+        result_str += '</tbody>';
+        result_str += '</table>';
+        return result_str;
+    }
+
+
+    function build_consolidated_collapse (consolidated_data, id_prefix, layout_prefix, added_sttr) {
+        // body...
+        var result_str = '';
+        result_str += '<tr>';
+        result_str += '<td colspan="2" style="padding:0px;">';
+        var index = 0;
+        for (s in consolidated_data) {
+            var servicename = s;
+            var total_cost = parse_2_fixed_float(consolidated_data[s]['Total']);
+            var service_table_str = build_service_table_str(s, total_cost, consolidated_data[s], index, id_prefix, layout_prefix, added_sttr);
+            result_str += service_table_str;
+            index += 1;
+        }
+        result_str += '</td>';
+        result_str += '</tr>';
+        return result_str;
+    }
+
+    function build_linkedaccount_str(linkedaccountname, cost, index)
+    {
+        var result_str = '';
+        var lc_collapse_id = 'linkedaccount-bill-service-' + index;
+        result_str += '<table class="table linkedaccount" style="margin-bottom:0px;">';
+        result_str += '<thead>';
+        result_str += '<tr data-toggle="collapse" data-target="#' + lc_collapse_id + '" class="accordion-toggle" aria-expanded="false" aria-controls="' + lc_collapse_id + '">';
+        result_str += '<th class="col-xs-6"><i class="glyphicon glyphicon-large glyphicon-folder-close icon-udf"></i>&nbsp;' + linkedaccountname + '</th>';
+        result_str += '<th class="col-xs-1">' + cost + '</th>';
+        result_str += '</tr>';
+        result_str += '</thead>';
+        result_str += '<tbody id="' + lc_collapse_id + '" class="collapse la" aria-expanded="false">';
+        result_str += '<tr>';
+
+        collapseid_linkedaccountname_dict[lc_collapse_id] = linkedaccountname;
+
+
+        result_str += '<td colspan="2"><span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>Loading Bill Data</td>';
+
+        result_str += '</tr>';
+        result_str += '</tbody>';
+        result_str += '</table>';
+
+        return result_str;
+    }
+
+    function build_linkedaccount_collapse(linkedaccount_data)
+    {
+        collapseid_linkedaccountname_dict = {};
+        var result_str = '';
+        result_str += '<tr>';
+        result_str += '<td colspan="2" style="padding:0px;">';
+        var index = 0;
+        for(l in linkedaccount_data)
+        {
+            var linkedaccountname = l;
+            var total_cost = parse_2_fixed_float(linkedaccount_data[l]);
+            var linkedaccount_table_str = build_linkedaccount_str(l, total_cost, index);
+            result_str += linkedaccount_table_str;
+            index += 1;
+        }
+
+
+        result_str += '</td>';
+        result_str += '</tr>';
+        return result_str;
+    }
+
+    function build_availablezone_str(regionname, cost, index, lc_data)
+    {
+        var result_str = '';
+        var az_collapse_id = 'availablezone-bill-service-' + index;
+        result_str += '<table class="table availablezone" style="margin-bottom:0px;">';
+        result_str += '<thead>';
+        result_str += '<tr data-toggle="collapse" data-target="#' + az_collapse_id + '" class="accordion-toggle" aria-expanded="false" aria-controls="' + az_collapse_id + '">';
+        result_str += '<th class="col-xs-6"><i class="glyphicon glyphicon-large glyphicon-folder-close icon-udf"></i>&nbsp;' + regionname + '</th>';
+        result_str += '<th class="col-xs-1">' + cost + '</th>';
+        result_str += '</tr>';
+        result_str += '</thead>';
+        result_str += '<tbody id="' + az_collapse_id + '" class="collapse" aria-expanded="false">';
+
+        for (l in lc_data)
+        {
+            result_str += '<tr>';
+            result_str += '<td>' + l + '</td>';
+            result_str += '<td>' + parse_2_fixed_float(lc_data[l]) + '</td>';
+            result_str += '</tr>';
+        }
+
+
+        result_str += '</tbody>';
+        result_str += '</table>';
+
+        return result_str;
+        
+    }
+
+    function build_availablezone_collapse(region_data)
+    {
+        var result_str = '';
+        result_str += '<tr>';
+        result_str += '<td colspan="2" style="padding:0px;">';
+        var index = 0;
+        for( r in region_data.regions )
+        {
+            var regionname = r;
+            var total_cost = parse_2_fixed_float(region_data.regions[r]['Total']);
+            var availablezone_table_str = build_availablezone_str(r, total_cost, index, region_data.regions[r]['lc']);
+            result_str += availablezone_table_str;
+            index += 1;
+        }
+
+        result_str += '</td>';
+        result_str += '</tr>';
+
+        result_str += '<tr>';
+        result_str += '<td><strong>Region Total:</strong></td>';
+        result_str += '<td>' + parse_2_fixed_float(region_data['Total']) + '</td>';
+        result_str += '</tr>';
+
+        return result_str;
+    }
+
+});
+</script>
+
+<div class="row" style="margin-bottom:20px;">
+    <div class="form-horizontal">
+        <label class="control-label" style="float:left;">Date:</label>
+        <div class="col-sm-5">
+            <select class="form-control time-select">
+            {% for t in time_arr %}
+                <option>{{t}}</option>
+            {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="panel panel-default">
+        <table class="table summary-table">
+            <thead>
+                <tr>
+                    <th class="col-xs-6">Summary</th>
+                    <th class="col-xs-3"></th>
+                    <th class="col-xs-3">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <ul class="nav nav-tabs" id="detail-billing-tab">
+        <li role="presentation" class="active"><a href="#nav-consolidated">Consolidated Bill Details</a></li>
+        <li role="presentation"><a href="#nav-linkedaccount">Bill Details By Account</a></li>
+        <li role="presentation"><a href="#nav-availablezone">Bill Details By Region</a></li>
+    </ul>
+</div>
+<div class="tab-content">
+    <div id="nav-consolidated" class="tab-pane fade in active">
+        <div class="row">
+            <div class="panel panel-default">
+                <table class="table consolidated-bill">
+                    <thead>
+                        <tr>
+                            <th class="col-xs-6">Details</th>
+                            <th class="col-xs-1">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="nav-linkedaccount" class="tab-pane fade">
+        <div class="row">
+            <div class="panel panel-default">
+                <table class="table linkedaccount-bill" style="border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th class="col-xs-6">Details By Account</th>
+                            <th class="col-xs-1">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="nav-availablezone" class="tab-pane fade">
+        <div class="row">
+            <div class="panel panel-default">
+                <table class="table availablezone-bill" style="border-collapse:collapse;">
+                    <thead>
+                        <tr>
+                            <th class="col-xs-6">Details By Region</th>
+                            <th class="col-xs-1">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -53,7 +53,7 @@ if not app.debug:
     #tmp_file = '/home/monitor/project/monitor-0.3.7/tmp/monitor.log'
     tmp_file = TMP_FILE
     file_handler = RotatingFileHandler(tmp_file, 'a', 1 * 1024 * 1024, 10)
-    file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    file_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s]: %(message)s [in %(pathname)s:%(lineno)d]'))
     app.logger.setLevel(logging.INFO)
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
@@ -63,10 +63,12 @@ from monitor.auth.controllers import mod_auth as auth_module
 from monitor.chart.controllers import mod_chart as chart_module
 from monitor.item.controllers import mod_item as item_module
 from monitor.zabbix.controllers import mod_zabbix as zabbix_module
+from monitor.billing.controllers import mod_billing as billing_module
 app.register_blueprint(auth_module)
 app.register_blueprint(chart_module)
 app.register_blueprint(item_module)
 app.register_blueprint(zabbix_module)
+app.register_blueprint(billing_module)
 
 from monitor import views,models
 # db.create_all()

@@ -7,8 +7,9 @@ from monitor.item.models import Area,Service,Host,Item,Itemtype,Normalitemtype,Z
 # from monitor.chart.models import Series
 import boto.ec2
 import boto.ec2.elb
-from config import HOST_GROUP_NAME,TEMPLATE_NAME,BY_ALL,BY_AREA,BY_SERVICE,BY_HOST,AREA
-from monitor.zabbix.models import Zabbixitems,Zabbixinterface,Zabbixhosts,loadSession
+from config import HOST_GROUP_NAME,TEMPLATE_NAME,BY_ALL,BY_AREA,BY_SERVICE,BY_HOST,AREA,ZABBIX_TEMPLATE_PREFIX,TEMPLATE_GROUP_SPLITER,\
+					NORMAL_TEMPLATE_NAME
+from monitor.zabbix.models import Zabbixitems,Zabbixinterface,Zabbixhosts,loadSession,Zabbixhostgroup
 from monitor.functions import construct_random_str
 from monitor.MonitorException import *
 from datetime import datetime
@@ -191,7 +192,7 @@ def add_update_host(hostname, servicename,host_ip,areaname):
 			else:
 				itemid = addbytem.itemid
 				print "update",itemid
-				if it.zabbixvaluetype != None:
+				if it.zabbixvaluetype != None and it.zit == None:
 					try:
 						zabbix.item_update(itemid,it.itemkey,2,it.zabbixvaluetype)
 					except Exception as e:
@@ -236,9 +237,18 @@ def add_host(hostname, servicename,host_ip,areaname):
 	if service == None:
 		raise ServiceNotExist('input service do not exists')
 
+	session = loadSession()
+	group_template = session.query(Zabbixhosts).filter_by(host = ZABBIX_TEMPLATE_PREFIX + TEMPLATE_GROUP_SPLITER + servicename).first()
+	normal_template = session.query(Zabbixhosts).filter_by(host = NORMAL_TEMPLATE_NAME).first()
+	if group_template == None or normal_template == None:
+		raise Exception('metric template do not exists')
+
+	session.close()
+
+
 
 	host_group_name = [HOST_GROUP_NAME]
-	template_name = [TEMPLATE_NAME] 
+	template_name = [TEMPLATE_NAME,group_template.host,normal_template.host] 
 	hostid = None
 
 	zabbix = zabbix_api()
@@ -395,25 +405,29 @@ def add_itkey_to_host(hostid,it,zabbix):
 	if it == None:
 		raise MonitorException('it to be add do not exists')
 
-	item = host.items.filter_by(itemname=it.itemtypename).first()
-	if item != None:
-		raise MonitorException(' item to be add in current host is already exist')
+
 
 	session = loadSession()
 	zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
 	session.close()
+
+	itemid = None
 	
 	if zitem != None:
 		itemid = zitem.itemid
 	else:
 		itemid = zabbix.item_create(it.itemkey,hostid,None,None,2,it.zabbixvaluetype)
 
-	newitem = Item(itemid,it.itemtypename,host,it)
+	item = host.items.filter_by(itemid=itemid).first()
+	if item != None:
+		item.itemname = it.itemtypename
+	else:
+		item = Item(itemid,it.itemtypename,host,it)
 
-	db.session.add(newitem)
+	db.session.add(item)
 
 
-def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype):
+def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix=None):
 	idt = Itemdatatype.query.filter_by(itemdatatypeid=itemdatatypeid).first()
 	if idt == None:
 		raise MonitorException('data type do not exists')
@@ -422,6 +436,25 @@ def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype):
 	if it == None:
 		it = Itemtype(key,key,None,idt,unitname,zabbixvaluetype)
 		db.session.add(it)
+
+	if isinstance(o, Service ):
+		session = loadSession()
+		group_template = session.query(Zabbixhosts).filter_by(host = ZABBIX_TEMPLATE_PREFIX + TEMPLATE_GROUP_SPLITER + o.servicename).first()
+		if group_template is None:
+			raise Exception(' group monitor metric template do not exists')
+		if zabbix == None:
+			raise Exception('zabbix_api instance is None')
+		zabbix.item_create(key,group_template.hostid,host_ip=None,interface_id=None,item_type=2,value_type=zabbixvaluetype,unitname=unitname)
+		session.close()
+	elif isinstance(o, Area ) or isinstance(o, Normalitemtype):
+		session = loadSession()
+		normal_template = session.query(Zabbixhosts).filter_by(host = NORMAL_TEMPLATE_NAME).first()
+		if normal_template is None:
+			raise Exception(' group monitor metric template do not exists')
+		if zabbix == None:
+			raise Exception('zabbix_api instance is None')
+		zabbix.item_create(key,normal_template.hostid,host_ip=None,interface_id=None,item_type=2,value_type=zabbixvaluetype,unitname=unitname)
+		session.close()
 
 	htmp = o.add_itemtype(it)
 	if htmp != None:
@@ -457,13 +490,56 @@ def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix):
 		indexid = 1
 	o = find_object_2_action(kinds,indexid)
 	# print o
-	it = add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype)
+	it = add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix)
 
 	find_hosts_and_add_key(kinds,o,it,zabbix)
+
+def delete_template_item(it,zabbix):
+
+	session = loadSession()
+	delete_itemids = []
+	for s in it.service.all():
+		group_template = session.query(Zabbixhosts).filter_by(host=ZABBIX_TEMPLATE_PREFIX + TEMPLATE_GROUP_SPLITER + s.servicename).first()
+		if group_template == None:
+			raise Exception('it group do not exists')
+		item = session.query(Zabbixitems).filter_by(name=it.itemkey,hostid=group_template.hostid).first()
+		if item != None:
+			delete_itemids.append(item.itemid)
+
+	if it.nit != None:
+		normal_template = session.query(Zabbixhosts).filter_by(host = NORMAL_TEMPLATE_NAME).first()
+		if normal_template == None:
+			raise Exception('it normal group do not exists')
+		item = session.query(Zabbixitems).filter_by(name=it.itemkey,hostid=normal_template.hostid).first()
+		if item != None:
+			delete_itemids.append(item.itemid)
+		
+	session.close()
+	zabbix.item_delete(delete_itemids)
 
 ## add key ##
 #################################################################
 #################################################################
+
+
+def add_group_template(servicename,zabbix):
+
+	session = loadSession()
+	group = session.query(Zabbixhostgroup).filter_by(name=HOST_GROUP_NAME).first()
+	if group == None:
+		raise Exception('default group do not exists')
+	group_dict = {"groupid" : group.groupid}
+	zabbix.template_create(ZABBIX_TEMPLATE_PREFIX + TEMPLATE_GROUP_SPLITER + servicename, group_dict)
+	session.close()
+
+def delete_group_template(servicename,zabbix):
+
+	session = loadSession()
+	group_template = session.query(Zabbixhosts).filter_by(host=ZABBIX_TEMPLATE_PREFIX + TEMPLATE_GROUP_SPLITER + servicename).first()
+	if group_template != None:
+		zabbix.template_delete([group_template.hostid])
+	session.close()
+		
 
 
 

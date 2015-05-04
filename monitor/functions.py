@@ -1,5 +1,6 @@
 
-import os,StringIO,ConfigParser,string,random
+import os,StringIO,ConfigParser,string,random,time
+from config import REMOTE_COMMAND_LOG
 
 def get_zabbix_server_ip():
 	config = StringIO.StringIO()
@@ -14,3 +15,42 @@ def get_zabbix_server_ip():
 
 def construct_random_str(size=6, chars=string.ascii_uppercase + string.digits):
 	return ''.join(random.choice(chars) for _ in range(size))
+
+
+def log_for_callback_command(args):
+	# WRITE LOG 
+	time_format = '%Y-%m-%d %H:%M:%S %Z'
+	current_time = time.strftime(time_format,time.gmtime(time.time()))
+	output = open(REMOTE_COMMAND_LOG,'a')
+	output.write( '\n' + current_time + ' ')
+
+	for a in args:
+		output.write(a + ' ')
+
+	output.close()
+
+def str_2_clock(time_str, format):
+	if time_str is None or format is None:
+		return None
+	
+	time_clock = time.mktime(time.strptime(time_str, format))
+	return time_clock
+
+def opentime_from_month_csv(month, year):
+
+	if month is None or year is None:
+		return None
+
+	result_str = str(year) + '/' + str(month) + '/' + '1' + ' 0:00:00'
+
+	return result_str
+
+def clock_2_str(clock, format):
+	if clock is None or format is None:
+		return None
+
+	time_str = time.strftime(format, time.gmtime(clock))
+
+	return time_str
+
+

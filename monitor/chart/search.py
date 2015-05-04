@@ -3,14 +3,14 @@ from monitor.zabbix.models import Zabbixhosts,Zabbixinterface
 from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,\
 					TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_HEAD_IP,\
 					TABLE_HEAD_METRIC_NAME,PER_INSTANCE_TABLE_HEAD,AWS_FEE_TABEL_HEAD,\
-					NO_FEE_RESULT_SET
+					NO_FEE_RESULT_SET,TABLE_HEAD_ALIAS, TABLE_HEAD_DESCRIPTION
 
 
 def by_group_name(row):
-	return row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_GROUP_NAME)] + ' ' + row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+	return row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_GROUP_NAME)] + ' ' + row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)]
 
 def per_instance_name(row):
-	return row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)] + ' ' + row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+	return row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)] + ' ' + row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)]
 
 def aws_fee_name(row):
 	return row[AWS_FEE_TABEL_HEAD.index(TABLE_HEAD_METRIC_NAME)]
@@ -33,21 +33,32 @@ class ItemSearch(BaseSearch):
 		return result
 
 	@classmethod
+	def it_search(cls, filter_boolean):
+		result = BaseSearch.search(Itemtype.query, filter_boolean)
+		return result
+
+	@classmethod
 	def generate_by_group_result_no_fee(cls,item_search_result,asg_name=None):
 		result = {}
 		table_head = BY_GROUP_TABLE_HEAD
 		metric_count = 0
 		metric_result = []
 		for s in item_search_result:
-			if s.itemtype.aws != None or s.itemtype.itemunit == None:
+			if s.itemtype.aws != None or s.itemtype.itemunit == None :
+				continue
+
+			if s.itemtype.zabbixvaluetype is not None and int(s.itemtype.zabbixvaluetype) not in [0, 3]:
 				continue
 
 			if asg_name != None and s.host.service.servicename != asg_name:
 				continue
 
-			if [s.host.service.servicename,s.itemname] not in metric_result:
+			if s.host.service is None:
+				continue
+
+			if [s.host.service.servicename,s.itemtype.itemkey,s.itemtype.itemtypename,s.itemtype.description] not in metric_result:
 				metric_count += 1
-				row = [s.host.service.servicename,s.itemname]
+				row = [s.host.service.servicename,s.itemtype.itemkey,s.itemtype.itemtypename,s.itemtype.description]
 				assert len(row) == len(table_head)
 				metric_result.append(row)
 
@@ -61,11 +72,12 @@ class ItemSearch(BaseSearch):
 		result = []
 		metric_name = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
 		service_name = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_GROUP_NAME)]
-		filter_boolean = ItemSearchValue2Filter.parse(metric_name)
-		search_result = cls.search(filter_boolean)
-		for item in search_result:
-			if item.host.service.servicename == service_name:
-				result.append(item.itemid)
+		filter_boolean = ItemtypeSearchValue2Filter.parse(metric_name)
+		search_result = cls.it_search(filter_boolean)
+		for it in search_result:
+			for item in it.items.all():
+				if item.host.service.servicename == service_name:
+					result.append(item.itemid)
 
 		return result
 
@@ -74,16 +86,16 @@ class ItemSearch(BaseSearch):
 		result = []
 		metric_name = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
 		ip = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)]
-		filter_boolean = ItemSearchValue2Filter.parse(metric_name)
-		search_result = cls.search(filter_boolean)
-		for item in search_result:
-			hostid = item.host.hostid
-			zi = Zabbixinterface.query.filter_by(hostid=hostid).first()
-			if zi == None:
-				continue
-			if zi.ip == ip:
-				result.append(item.itemid)
-
+		filter_boolean = ItemtypeSearchValue2Filter.parse(metric_name)
+		search_result = cls.it_search(filter_boolean)
+		for it in search_result:
+			for item in it.items.all():
+				hostid = item.host.hostid
+				zi = Zabbixinterface.query.filter_by(hostid=hostid).first()
+				if zi == None:
+					continue
+				if zi.ip == ip:
+					result.append(item.itemid)
 		return result
 
 	@classmethod
@@ -134,6 +146,7 @@ class ItemSearch(BaseSearch):
 		for aws in Aws.query.all():
 			type_name_map[aws.awsname] = aws_fee_name
 
+
 		return type_name_map.get(row_type,None)(row)
 
 	@classmethod
@@ -154,7 +167,10 @@ class ItemSearch(BaseSearch):
 		metric_result = []
 
 		for s in item_search_result:
-			if s.itemtype.aws != None or s.itemtype.itemunit == None:
+			if s.itemtype.aws != None or s.itemtype.itemunit == None :
+				continue
+
+			if s.itemtype.zabbixvaluetype is not None and int(s.itemtype.zabbixvaluetype) not in [0, 3]:
 				continue
 
 			if asg_name != None and s.host.service.servicename != asg_name:
@@ -162,7 +178,10 @@ class ItemSearch(BaseSearch):
 
 			
 
-			group_name = s.host.service.servicename
+			group_name = None
+
+			if s.host.service != None:
+				group_name = s.host.service.servicename
 
 			instance_name = s.host.hostname
 
@@ -171,11 +190,11 @@ class ItemSearch(BaseSearch):
 			if zi != None:
 				ip = zi.ip
 
-			metric_name = s.itemname
+			metric_name = s.itemtype.itemkey
 
 			available_status = cls.hostid_2_availability(s.host.hostid)
 
-			row = [group_name,instance_name,ip,metric_name,available_status]
+			row = [group_name,instance_name,ip,metric_name,available_status, s.itemtype.itemtypename, s.itemtype.description]
 			assert len(row) == len(table_head)
 
 			metric_result.append(row)
@@ -236,7 +255,7 @@ class ItemtypeSearchValue2Filter():
 		if search_value == '' or search_value == None:
 			filter_result = True
 		else:
-			filter_result = Itemtype.itemtypename.ilike('%' + search_value + '%')
+			filter_result = Itemtype.itemkey.ilike('%' + search_value + '%')
 
 		return filter_result
 
@@ -258,6 +277,9 @@ class SearchWithBasicMetrics(BaseSearch):
 	
 	@classmethod
 	def search(cls,search_value=None,asg_name=None,desire_result_set=NO_FEE_RESULT_SET):
+
+		search_value = None
+		desire_result_set=NO_FEE_RESULT_SET
 
 		result = {}
 
@@ -320,6 +342,9 @@ class SearchInASGGroup():
 	def search(cls,search_value=None,asg_name=None,desire_result_set=NO_FEE_RESULT_SET):
 		result = {}
 
+		search_value = None
+		desire_result_set=NO_FEE_RESULT_SET
+
 		filter_boolean = ItemSearchValue2Filter.parse(search_value)
 
 		asg_group = Service.query.filter_by(servicename=asg_name).first()
@@ -360,6 +385,9 @@ class SearchWithAll():
 	def search(cls,search_value=None,asg_name=None,desire_result_set=NO_FEE_RESULT_SET):
 		result = {}
 
+		search_value = None
+		desire_result_set=NO_FEE_RESULT_SET
+
 		filter_boolean = ItemSearchValue2Filter.parse(search_value)
 
 		item_search_result = ItemSearch.search(filter_boolean)
@@ -387,6 +415,9 @@ class SearchWithBilling():
 	@classmethod
 	def search(cls,search_value=None,option='',desire_result_set=None):
 		result = {}
+
+		search_value = None
+		desire_result_set = None
 
 		filter_boolean = ItemSearchValue2Filter.parse(search_value)
 

@@ -21,18 +21,19 @@ from monitor.functions import get_zabbix_server_ip
 # 	return Hostname
 
 class zabbix_api:
-	
-	created_hosts = []
-	created_items = []
-	created_triggers = []
-	created_actions = []
-
-	created_hostgroups = []
-	created_discovery_rules = []
-	created_trigger_prototypes = []
 
 	#### server_ip shuould be valid for zabbix_api ###
 	def __init__(self): 
+		self.created_hosts = []
+		self.created_items = []
+		self.created_triggers = []
+		self.created_actions = []
+
+		self.created_hostgroups = []
+		self.created_discovery_rules = []
+		self.created_trigger_prototypes = []
+		self.created_templates = []
+
 		server_ip = get_zabbix_server_ip()
 		port = '5000'
 		self.url = 'http://' + server_ip + ':' + port +  '/zabbix/api_jsonrpc.php' 
@@ -115,7 +116,7 @@ class zabbix_api:
 		return api_result
 			
 
-	def host_update(self,hostid,hostname=None,host_ip=None):
+	def host_update(self,hostid,hostname=None,host_ip=None,added_template_name=None):
 		template_list=[]
 		session = loadSession()
 		i = session.query(Zabbixinterface).filter_by(hostid=hostid).first()
@@ -123,6 +124,9 @@ class zabbix_api:
 		tmp_hostname = h.name
 		tmp_host_ip = i.ip
 		template_name = ['Template OS Linux']
+		if added_template_name is not None:
+			# template_name.append(added_template_name)
+			template_name = list( set(template_name) | set(added_template_name) )
 		for template in template_name:
 			if session.query(Zabbixhosts).filter_by(name = template).count() > 0:
 				var = {}
@@ -165,28 +169,49 @@ class zabbix_api:
 			else:
 				raise MonitorException('cannot update host due to ' + str(response))
 
-	def gen_normal_item_json(self,item_name,host_id,host_ip=None,interface_id=None,item_type=2,value_type=0):
+	def gen_normal_item_json(self,item_name,host_id,host_ip=None,interface_id=None,item_type=2,value_type=0,unitname=None):
 		session = loadSession()
 		i = session.query(Zabbixinterface).filter_by(hostid=host_id).first()
-		interface_id = i.interfaceid
+		if i != None:
+			interface_id = i.interfaceid
 		h = session.query(Zabbixhosts).filter_by(hostid=host_id).first()
+		# print 'generate normal ' , h
 		hostname = h.name
 		session.close()
-		data = json.dumps({
-			"jsonrpc":"2.0",
-			"method":"item.create",
-			"params":{
-				"name":item_name,
-				"key_":item_name,
-				"hostid": str(host_id),
-				"type":item_type,
-				"value_type":value_type,
-				"interfaceid":interface_id,
-				"trapper_hosts":hostname
-			},
-			"auth":self.user_login(),
-			"id":1
-		})
+		data = None
+		if unitname == None:
+			data = json.dumps({
+				"jsonrpc":"2.0",
+				"method":"item.create",
+				"params":{
+					"name":item_name,
+					"key_":item_name,
+					"hostid": str(host_id),
+					"type":item_type,
+					"value_type":value_type
+				},
+				"auth":self.user_login(),
+				"id":1
+			})
+		else:
+			data = json.dumps({
+				"jsonrpc":"2.0",
+				"method":"item.create",
+				"params":{
+					"name":item_name,
+					"key_":item_name,
+					"hostid": str(host_id),
+					"type":item_type,
+					"value_type":value_type,
+					"units": unitname
+				},
+				"auth":self.user_login(),
+				"id":1
+			})
+
+		# if interfaceid != None:
+			
+
 
 		return data
 
@@ -238,8 +263,8 @@ class zabbix_api:
 				raise MonitorException('request api fail,' + str(response))
 
 
-	def item_create(self,item_name,host_id,host_ip=None,interface_id=None,item_type=2,value_type=0):
-		data = self.gen_normal_item_json(item_name,host_id,host_ip,interface_id,item_type,value_type)
+	def item_create(self,item_name,host_id,host_ip=None,interface_id=None,item_type=2,value_type=0,unitname=None):
+		data = self.gen_normal_item_json(item_name,host_id,host_ip,interface_id,item_type,value_type,unitname)
 		api_result = self.request_api(data)['itemids'][0]
 		self.created_items.append(api_result)
 		return api_result
@@ -407,6 +432,25 @@ class zabbix_api:
 
 		return api_result
 
+	def action_update_condition_operation(self,actionid,name,eventsource,conditions,operations):
+		data = json.dumps({
+				"jsonrpc":"2.0",
+				"method":"action.update",
+				"params": {
+					"actionid" : actionid,
+					"name": name,
+					# "eventsource": eventsource,
+					"conditions":conditions,
+					"operations":operations
+				},
+				"auth":self.user_login(),
+				"id":1
+		})
+
+		api_result = self.request_api(data)['actionids'][0]
+
+		return api_result
+
 	def action_delete(self,actionids):
 		delete_actionids = []
 		session = loadSession()
@@ -446,6 +490,22 @@ class zabbix_api:
 		self.created_hostgroups.append(api_result)
 
 		return api_result
+
+	def hostgroup_update(self,groupid,groupname):
+		data = json.dumps({
+			"jsonrpc":"2.0",
+			"method": "hostgroup.update",
+		    "params": {
+		        "groupid": groupid,
+		        "name": groupname
+		    },
+			"auth":self.user_login(),
+			"id":1
+		})
+
+		api_result = self.request_api(data)['groupids'][0]
+		return api_result
+
 
 	def hostgroup_delete(self,groupids):
 		delete_hgs = []
@@ -530,6 +590,23 @@ class zabbix_api:
 		
 		return api_result
 
+	def triggerprototype_update(self,triggerid,trigger_name):
+		data = json.dumps(
+		{
+			"jsonrpc": "2.0",
+    		"method": "triggerprototype.update",
+    		"params": {
+        		"triggerid": triggerid,
+        		"description": trigger_name
+    		},
+    		"auth": self.user_login(),
+    		"id": 1
+		})
+
+		api_result = self.request_api(data)['triggerids'][0]
+		
+		return api_result
+
 	def triggerprototype_delete(self,tpids):
 
 		delete_tpids = []
@@ -569,7 +646,86 @@ class zabbix_api:
 
 		return api_result
 
+	def template_create(self,template_name,group):
+
+		data = json.dumps(
+		{
+			"jsonrpc": "2.0",
+    		"method": "template.create",
+    		"params": {
+        		"host": template_name,
+        		"groups" : group
+    		},
+    		"auth": self.user_login(),
+    		"id": 1
+		})
+
+		api_result = self.request_api(data)['templateids'][0]
+
+		self.created_templates.append(api_result)
+		
+		return api_result
+
+	def template_delete(self,templateids):
+
+		delete_tids = []
+
+		session = loadSession()
+		for t in templateids:
+			if session.query(Zabbixhosts).filter_by(hostid=t).count():
+				delete_tids.append(t)
+
+		session.close()
+
+		if len(delete_tids) == 0:
+			return None
+
+		data = json.dumps({
+			"jsonrpc": "2.0",
+    		"method": "template.delete",
+    		"params": delete_tids,
+    		"auth": self.user_login(),
+    		"id": 1
+		})
+
+		api_result = self.request_api(data)
+		return api_result
+
+	def import_template_file(self,filepath):
+		file_str = None
+		with open(filepath,'r') as template_config_file:
+			file_str = template_config_file.read()
+
+		data = json.dumps(
+		{
+			"jsonrpc": "2.0",
+    		"method": "configuration.import",
+    		"params": {
+    			"format": "xml",
+    			"rules":
+    			{
+    				"templates":
+    				{
+    					"createMissing": True,
+                		"updateExisting": True
+    				},
+		            "items": {
+		                "createMissing": True,
+		                "updateExisting": True
+		            }
+    			},
+    			"source": file_str
+    		},
+    		"auth": self.user_login(),
+    		"id": 1
+		})
+
+		api_result = self.request_api(data)
+		return api_result
+
+
 	def rollback(self):
+
 
 		try:
 			self.item_delete(self.created_items)
@@ -605,6 +761,11 @@ class zabbix_api:
 			self.triggerprototype_delete(self.created_trigger_prototypes)
 		except Exception, e:
 			print str(e)
+
+		try:
+			self.template_delete(self.created_templates)
+		except Exception, e:
+			raise e
 
 
 

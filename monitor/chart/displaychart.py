@@ -2,7 +2,8 @@
 from monitor.chart.search import ItemSearch
 from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,PER_INSTANCE_TABLE_HEAD,\
 					FUNC_TYPE_COUNT,FUNC_TYPE_AVG,FUNC_TYPE_MAX,FUNC_TYPE_MIN,FUNC_TYPE_SUM,WINDOW_CHART,\
-					AWS_FEE_TABEL_HEAD,PAGE_CHART,DESIRED_DISPLAY_POINTS,TABLE_HEAD_AVAILABILITY
+					AWS_FEE_TABEL_HEAD,PAGE_CHART,DESIRED_DISPLAY_POINTS,TABLE_HEAD_AVAILABILITY,MAX_INIT_POINTS,\
+					CHART_INIT_DEFAULT_MESSAGE
 from monitor.zabbix.models import Zabbixhistory,Zabbixhistoryuint
 import time
 
@@ -24,6 +25,8 @@ function_type_map = {
 }
 
 class Chart():
+
+	info = CHART_INIT_DEFAULT_MESSAGE
 
 	@classmethod 
 	def metric_content_2_item_list(cls,metric_content):
@@ -62,8 +65,8 @@ class Chart():
 
 		init_data = []
 
-		from_t = time_since/ground*ground
-		to_t = time_till/ground*ground
+		from_t = time_since//ground*ground
+		to_t = time_till//ground*ground
 
 		data_index = 0;
 
@@ -115,14 +118,23 @@ class Chart():
 
 	@classmethod
 	def interval_init_result(cls,time_since,time_till,ground,function_type,row_result,shared_yaxis=False):
+
+		current_point_counts = len(row_result) * ((time_till - time_since) // ground )
+		# print current_point_counts
+
+		if current_point_counts > MAX_INIT_POINTS:
+			steps = (time_till - time_since) // ( ground * (MAX_INIT_POINTS // len(row_result)) )
+			# steps = (time_till - time_since) / ( ground * DESIRED_DISPLAY_POINTS )
+
+			if steps <= 1:
+				steps = 1
+			else:
+				ground = ground * steps
+				cls.info = 'Queryed points count=<I>' + str(current_point_counts) + '</I> is over than <b>' + \
+				str(MAX_INIT_POINTS) + '</b>. And we will get data based on frequency of <b>' + str(ground) + '</b>s.' + \
+				'please refine your time interval to get result based on ' + str(ground // steps) + 's.'
+
 		result = []
-
-		steps = (time_till - time_since) / ( ground * DESIRED_DISPLAY_POINTS )
-
-		if steps < 1:
-			steps = 1
-
-		ground = ground * steps
 
 		series_index = 0
 
@@ -161,7 +173,7 @@ class Chart():
 		ground = int(chart_config['frequency'])
 		# console.log("ground",ground)
 		# print "ground",ground
-		time_since = time_since / ground * ground
+		time_since = time_since // ground * ground
 		# ground = int(chart_config['frequency'])
 		function_type = function_type_map.get(chart_config['function_type'],FUNC_TYPE_AVG)
 		shared_yaxis = chart_config.get('shared_yaxis',True)
@@ -222,7 +234,7 @@ class Chart():
 		time_till = int(time.time())
 		time_since = time_till - int(chart_config['frequency'])
 		ground = int(chart_config['frequency'])
-		time_since = time_since / ground * ground 
+		time_since = time_since // ground * ground 
 		function_type = function_type_map.get(chart_config['function_type'],FUNC_TYPE_AVG)
 		no_history_count = 0
 		for row in row_result:
@@ -242,7 +254,6 @@ class Chart():
 		for aws in Aws.query.all():
 			head_grouptype_map[aws.awsname] = AWS_FEE_TABEL_HEAD
 
-		print windowname
 
 		if window_type == WINDOW_CHART:
 			tmp_window = user.windows.filter_by(windowname=windowname).filter_by(type=window_type).first()
@@ -433,7 +444,7 @@ class Chart():
 						for attr in dtr.attrs.all():
 							tmp_arr[table_head.index(attr.attrname)] = attr.attrvalue
 
-						if table_head.index(TABLE_HEAD_AVAILABILITY) > 0:
+						if TABLE_HEAD_AVAILABILITY in table_head and table_head.index(TABLE_HEAD_AVAILABILITY) > 0:
 							tmp_hostid = ItemSearch.find_hostid_for_table_row_instance(tmp_arr)
 							if tmp_hostid != None:
 								tmp_arr[table_head.index(TABLE_HEAD_AVAILABILITY)] = ItemSearch.hostid_2_availability(tmp_hostid)

@@ -9,7 +9,7 @@ from datetime import datetime
 from config import AREA,EMAIL_SNS_PATH,SNS_TOPIC_NAME_LABEL,SNS_SEND_SNS_2_LABLE,\
 			ASG_FROM_GROUP_LABEL,ASG_ACTION_TYPE_LABEL,ASG_ACTION_NUMBER,\
 			SNS_OPERATION_NAME,SNS_OPERATION_ATTR,ASG_OPERATION_NAME,ASG_OPERATION_ATTR,\
-			AUTOSCALE_COMMAND_PATH
+			AUTOSCALE_COMMAND_PATH,EMAIL_SNS_NEW_PATH
 import boto.sns
 from monitor.decorators import async
 
@@ -265,7 +265,7 @@ class Alarm():
 			return operations
 
 		for index in range(len(asggroup)):
-			tmp_command = AUTOSCALE_COMMAND_PATH + ' ' + asggroup[index] + ' ' + asgscaletypes[index] + ' ' + triggerid
+			tmp_command = AUTOSCALE_COMMAND_PATH + ' --asgroupname=' + asggroup[index] + ' --asgscaletype=' + asgscaletypes[index]
 			operation = {
 					"operationtype":1,
 					"opcommand_hst":
@@ -299,7 +299,7 @@ class Alarm():
 
 		operations = []
 
-		more_info = "'" + trigger_info['hostinfo'] + "' '" + trigger_info['itemname'] + "' '" + str(alarmvalue_value) + "' '" + '{ITEM.LASTVALUE}' + "' " + str(triggerid)
+		more_info = "--hostinfo='" + trigger_info['hostinfo'] + "' --metricname='" + trigger_info['itemname'] + "' --alarmvalue='" + str(alarmvalue_value) + "' --currentvalue='" + '{ITEM.LASTVALUE}' + "'"
 
 		if topicname_values is not None:
 			for index in range(len(topicname_values)):
@@ -319,7 +319,9 @@ class Alarm():
 				if topic_arn is not '' and len(receivers_values) == len(topicname_values):
 					cls.send_subscriber(con,topic_arn,receivers_values[index])
 
-				tmp_command = EMAIL_SNS_PATH + ' ' + topic_arn + ' ' + more_info
+				topic_arn = '--topicarn=' + topic_arn
+
+				tmp_command = EMAIL_SNS_NEW_PATH + ' ' + topic_arn + ' ' + more_info
 
 				operation = {
 						"operationtype":1,
