@@ -3,13 +3,13 @@ from monitor.chart.search import ItemSearch
 from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,PER_INSTANCE_TABLE_HEAD,\
 					FUNC_TYPE_COUNT,FUNC_TYPE_AVG,FUNC_TYPE_MAX,FUNC_TYPE_MIN,FUNC_TYPE_SUM,WINDOW_CHART,\
 					AWS_FEE_TABEL_HEAD,PAGE_CHART,DESIRED_DISPLAY_POINTS,TABLE_HEAD_AVAILABILITY,MAX_INIT_POINTS,\
-					CHART_INIT_DEFAULT_MESSAGE
+					CHART_INIT_DEFAULT_MESSAGE, TABLE_HEAD_ALIAS, TABLE_HEAD_DESCRIPTION
 from monitor.zabbix.models import Zabbixhistory,Zabbixhistoryuint
 import time
 
 from monitor import db
 from monitor.chart.models import Window,Selectedmetrics,Option,Displaytable,Displaytablerow,Attr,Chartconfig,Page
-from monitor.item.models import Aws
+from monitor.item.models import Aws, Item
 
 head_grouptype_map = {
 	BY_GROUP_RESULT:BY_GROUP_TABLE_HEAD,
@@ -454,6 +454,14 @@ class Chart():
 							tmp_hostid = ItemSearch.find_hostid_for_table_row_instance(tmp_arr)
 							if tmp_hostid != None:
 								tmp_arr[table_head.index(TABLE_HEAD_AVAILABILITY)] = ItemSearch.hostid_2_availability(tmp_hostid)
+
+						if TABLE_HEAD_ALIAS in table_head and table_head.index(TABLE_HEAD_ALIAS) > 0:
+							item_list = ItemSearch.row_2_item_list(dt.displaytablename, tmp_arr)
+							if len(item_list) > 0:
+								i = Item.query.get(item_list[0])
+								if i != None and i.itemtype != None:
+									tmp_arr[table_head.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
+									tmp_arr[table_head.index(TABLE_HEAD_DESCRIPTION)] = i.itemtype.description
 
 						selected_metrics[option.optionname][dt.displaytablename]['metric_result'].append(tmp_arr)
 

@@ -138,21 +138,25 @@ class ItemSearch(BaseSearch):
 	@classmethod
 	def name_for_group(cls, row_type, row):
 		item_list = cls.row_2_item_list(row_type, row)
-		if len(item_list) > 0 :
-			i = Item.query.get(item_list[0])
-			row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
-		else:
-			row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+		if row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] == TABLE_HEAD_ALIAS:
+			if len(item_list) > 0:
+				i = Item.query.get(item_list[0])
+				row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
+			else:
+				row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+		
 		return by_group_name(row)
 
 	@classmethod
 	def name_for_instance(cls, row_type, row):
 		item_list = cls.row_2_item_list(row_type, row)
-		if len(item_list) > 0 :
-			i = Item.query.get(item_list[0])
-			row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
-		else:
-			row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+		if row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] == TABLE_HEAD_ALIAS:
+			if len(item_list) > 0 :
+				i = Item.query.get(item_list[0])
+				row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
+			else:
+				row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+		
 		return per_instance_name(row)
 
 	@classmethod
