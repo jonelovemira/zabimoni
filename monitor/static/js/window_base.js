@@ -2294,8 +2294,14 @@ function window_base(content_height,content_width)
 
         result_str += '<select class="form-control ' + frequency_setting_class + '" style="margin-left:10px">';
         result_str += '<option value=10>10 Seconds</option>';
-        result_str += '<option value=60>1 Minutes</option>';
+        result_str += '<option value=60>1 Minute</option>';
+        result_str += '<option value=180>3 Minutes</option>';
+        result_str += '<option value=300>5 Minutes</option>';
+        result_str += '<option value=900>15 Minutes</option>';
+        result_str += '<option value=1800>30 Minutes</option>';
+        result_str += '<option value=3600>1 Hours</option>';
         result_str += '<option value=14400>4 Hours</option>';
+        result_str += '<option value=86400>1 Day</option>';
         result_str += '</select>';
 
         result_str += '<select class="form-control ' + shared_yaxis_class + '" style="margin-left:10px">';

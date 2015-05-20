@@ -26,7 +26,7 @@ $(document).ready(function()
 
     var consolidated_table_tbody_selector = 'table.consolidated-bill > tbody';
     var linkedaccount_table_tbody_selector = 'table.linkedaccount-bill > tbody';
-    var availablezone_table_tbody_selector = 'table.availablezone-bill > tbody';
+    var availablezone_table_selector = 'table.availablezone-bill';
 
     load_first();
 
@@ -183,12 +183,12 @@ $(document).ready(function()
         var summary_data_str = build_summary_collapse(data.summary_data);
         var consolidated_str = build_consolidated_collapse(data.consolidated_bill_data, 'consolidated-bill-service-', '', '');
         var linkedaccount_str = build_linkedaccount_collapse(data.linkedaccount_data);
-        var availablezone_str = build_availablezone_collapse(data.region_data);
+        var availablezone_str = build_availablezone_collapse(data.region_data, data.linkedaccount_data);
 
         refresh_tbody_with_value( summary_table_tbody_selector , summary_data_str);
         refresh_tbody_with_value( consolidated_table_tbody_selector, consolidated_str);
         refresh_tbody_with_value( linkedaccount_table_tbody_selector, linkedaccount_str);
-        refresh_tbody_with_value( availablezone_table_tbody_selector, availablezone_str);
+        refresh_tbody_with_value( availablezone_table_selector, availablezone_str);
     }
 
     $(document).on('shown.bs.collapse', '.collapse', function (e) {
@@ -392,6 +392,61 @@ $(document).ready(function()
         return result_str;
     }
 
+    // function build_availablezone_str(regionname, cost, index, lc_data)
+    // {
+    //     var result_str = '';
+    //     var az_collapse_id = 'availablezone-bill-service-' + index;
+    //     result_str += '<table class="table availablezone" style="margin-bottom:0px;">';
+    //     result_str += '<thead>';
+    //     result_str += '<tr data-toggle="collapse" data-target="#' + az_collapse_id + '" class="accordion-toggle" aria-expanded="false" aria-controls="' + az_collapse_id + '">';
+    //     result_str += '<th class="col-xs-6"><i class="glyphicon glyphicon-large glyphicon-folder-close icon-udf"></i>&nbsp;' + regionname + '</th>';
+    //     result_str += '<th class="col-xs-1">' + cost + '</th>';
+    //     result_str += '</tr>';
+    //     result_str += '</thead>';
+    //     result_str += '<tbody id="' + az_collapse_id + '" class="collapse" aria-expanded="false">';
+
+    //     for (l in lc_data)
+    //     {
+    //         result_str += '<tr>';
+    //         result_str += '<td>' + l + '</td>';
+    //         result_str += '<td>' + parse_2_fixed_float(lc_data[l]) + '</td>';
+    //         result_str += '</tr>';
+    //     }
+
+
+    //     result_str += '</tbody>';
+    //     result_str += '</table>';
+
+    //     return result_str;
+        
+    // }
+
+    // function build_availablezone_collapse(region_data)
+    // {
+    //     var result_str = '';
+    //     result_str += '<tr>';
+    //     result_str += '<td colspan="2" style="padding:0px;">';
+    //     var index = 0;
+    //     for( r in region_data.regions )
+    //     {
+    //         var regionname = r;
+    //         var total_cost = parse_2_fixed_float(region_data.regions[r]['Total']);
+    //         var availablezone_table_str = build_availablezone_str(r, total_cost, index, region_data.regions[r]['lc']);
+    //         result_str += availablezone_table_str;
+    //         index += 1;
+    //     }
+
+    //     result_str += '</td>';
+    //     result_str += '</tr>';
+
+    //     result_str += '<tr>';
+    //     result_str += '<td><strong>Region Total:</strong></td>';
+    //     result_str += '<td>' + parse_2_fixed_float(region_data['Total']) + '</td>';
+    //     result_str += '</tr>';
+
+    //     return result_str;
+    // }
+
     function build_availablezone_str(regionname, cost, index, lc_data)
     {
         var result_str = '';
@@ -421,31 +476,88 @@ $(document).ready(function()
         
     }
 
-    function build_availablezone_collapse(region_data)
+    function build_availablezone_collapse(region_data, lc_data)
     {
-        var result_str = '';
-        result_str += '<tr>';
-        result_str += '<td colspan="2" style="padding:0px;">';
+        var lc_data_dict = {};
         var index = 0;
-        for( r in region_data.regions )
+        var lc_str = '';
+        for (lc in lc_data) {
+            lc_data_dict[lc] = index;
+            index += 1;
+            lc_str += '<td>' + parse_2_fixed_float(lc_data[lc]) + '</td>';
+        };
+
+        // var result_str = '';
+        // result_str += '<tr>';
+        // result_str += '<td colspan="2" style="padding:0px;">';
+        // var index = 0;
+        // for( r in region_data.regions )
+        // {
+        //     var regionname = r;
+        //     var total_cost = parse_2_fixed_float(region_data.regions[r]['Total']);
+        //     var availablezone_table_str = build_availablezone_str(r, total_cost, index, region_data.regions[r]['lc']);
+        //     result_str += availablezone_table_str;
+        //     index += 1;
+        // }
+
+        // result_str += '</td>';
+        // result_str += '</tr>';
+
+        // result_str += '<tr>';
+        // result_str += '<td><strong>Region Total:</strong></td>';
+        // result_str += '<td>' + parse_2_fixed_float(region_data['Total']) + '</td>';
+        // result_str += '</tr>';
+
+        // return result_str;
+
+
+        var result_str = '';
+        result_str += '<thead>';
+        result_str += '<tr>';
+        result_str += '<th>Region Name</th>';
+        for (lc in lc_data) {
+            result_str += '<th>' + lc + '</th>';
+        }
+        result_str += '<th>Total</th>';
+        result_str += '</tr>';
+        result_str += '</thead>';
+        result_str += '<tbody>';
+
+        for( r in region_data.regions)
         {
             var regionname = r;
             var total_cost = parse_2_fixed_float(region_data.regions[r]['Total']);
-            var availablezone_table_str = build_availablezone_str(r, total_cost, index, region_data.regions[r]['lc']);
-            result_str += availablezone_table_str;
-            index += 1;
+
+            var lc_str_arr = ['<td></td>', '<td></td>', '<td></td>'];
+
+            for (lc in region_data.regions[r]['lc'] ) {
+                var lc_cost = parse_2_fixed_float(region_data.regions[r]['lc'][lc])
+                lc_str_arr[lc_data_dict[lc]] = '<td>' + lc_cost + '</td>';
+            };
+
+            result_str += '<tr>';
+            result_str += '<td>' + regionname + '</td>' ;
+
+            for (var i = 0; i < lc_str_arr.length; i++) {
+                result_str += lc_str_arr[i];
+            };
+
+            result_str += '<td>' + total_cost + '</td>';
+
+            result_str += '</tr>';
         }
 
-        result_str += '</td>';
-        result_str += '</tr>';
-
         result_str += '<tr>';
-        result_str += '<td><strong>Region Total:</strong></td>';
+        result_str += '<td>Total</td>';
+        result_str += lc_str;
         result_str += '<td>' + parse_2_fixed_float(region_data['Total']) + '</td>';
         result_str += '</tr>';
+        result_str += '</tbody>';
 
         return result_str;
     }
+
+
 
 });
 </script>
@@ -523,14 +635,6 @@ $(document).ready(function()
         <div class="row">
             <div class="panel panel-default">
                 <table class="table availablezone-bill" style="border-collapse:collapse;">
-                    <thead>
-                        <tr>
-                            <th class="col-xs-6">Details By Region</th>
-                            <th class="col-xs-1">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    </tbody>
                 </table>
             </div>
         </div>

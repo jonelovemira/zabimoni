@@ -1,0 +1,543 @@
+{% extends "layout.html" %}
+{% block body %}
+<link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/jquery-ui.min.css')}}">
+<link href="{{url_for('static',filename='css/font-awesome.min.css')}}" rel="stylesheet" media="screen"></link>
+<link href="{{url_for('static',filename='css/jquery.jspanel.min.css')}}" rel="stylesheet" media="screen"></link>
+
+<script type="text/javascript" src="{{url_for('static',filename='js/vis.min.js')}}"></script>
+<style type="text/css" src="{{url_for('static',filename='css/vis.min.css')}}"></style>
+<script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
+<!-- loading Bootstrap javascript (required only when you intend to use option.bootstrap) -->
+<script type="text/javascript" src="{{url_for('static',filename='js/jquery.jspanel.min.js')}}"></script>
+<script type="text/javascript">
+$(document).ready(function()
+{
+    var nodes = [
+            {id: 'web', label: 'web'
+            , x: 300, y: 100
+        ,color: '#c9ffc7',title:'web'},
+            {id: 'control', label: 'control'
+            , x: 100, y: 100
+        ,color: '#c9ffc7'},
+            {id: 'relay', label: 'relay'
+            , x: 700, y: 100
+        ,color: '#c9ffc7'},
+            {id: 'stun', label: 'stun'
+            , x: 1100, y: 100
+        ,color: '#c9ffc7'},
+            {id: 'cas', label: 'cas'
+            , x: 100, y: 400
+        ,color: '#c9ffc7'},
+            {id: 'dbs', label: 'dbs'
+            , x: 1100, y: 400
+        ,color: '#c9ffc7'},
+        {id: 'webpage', label: 'webpage'
+            , x: 100, y: 0
+        },
+        {id: 'android', label: 'android'
+            , x: 200, y: 0
+        },
+        {id: 'ios', label: 'ios'
+            , x: 275, y: 0
+        },
+        {id: 'mac', label: 'mac'
+            , x: 325, y: 0
+        },
+        {id: 'winie', label: 'winie'
+            , x: 400, y: 0
+        },
+        {id: 'winnonie', label: 'winnonie'
+            , x: 500, y: 0
+        },
+        {id: 'dut200', label: 'dut200'
+            , x: 600, y: 0
+        },
+        {id: 'dut220', label: 'dut220'
+            , x: 700, y: 0
+        },
+        {id: 'dut250', label: 'dut250'
+            , x: 800, y: 0
+        },
+        {id: 'dut350', label: 'dut350'
+            , x: 900, y: 0
+        },
+        {id: 'dut450', label: 'dut450'
+            , x: 1000, y: 0
+        },
+        // {id: 'client', label: 'client'
+        //     , x: 1100, y: 0
+        // },
+    ];
+
+    // create an array with edges
+    var request_edges = [
+        // {from: 'web', to: 'control'},
+        // {from: 'web', to: 'cas'},
+        // {from: 'web', to: 'dbs'},
+        // {from: 'control', to: 'cas'},
+        // {from: 'control', to: 'dbs'},
+        // {from: 'relay', to: 'cas'},
+        // {from: 'cas', to: 'dbs'},
+        // {from: 'webpage', to: 'web'},
+        // {from: 'android', to: 'web'},
+        // {from: 'android', to: 'relay'},
+        // {from: 'ios', to: 'relay'},
+        // {from: 'ios', to: 'web'},
+        // {from: 'mac', to: 'relay'},
+        // {from: 'winie', to: 'relay'},
+        // {from: 'winnonie', to: 'relay'},
+        // {from: 'dut200', to: 'relay'},
+        // {from: 'dut220', to: 'relay'},
+        // {from: 'dut250', to: 'relay'},
+        // {from: 'dut350', to: 'relay'},
+        // {from: 'dut450', to: 'relay'},
+        // {from: 'client', to: 'stun'},
+    ];
+
+    var default_edges = [
+        {from: 'web', to: 'control', color: '#bbb', style:'dash'},
+        {from: 'web', to: 'cas', color: '#bbb', style:'dash'},
+        {from: 'web', to: 'dbs', color: '#bbb', style:'dash'},
+        {from: 'control', to: 'cas', color: '#bbb', style:'dash'},
+        {from: 'control', to: 'dbs', color: '#bbb', style:'dash'},
+        {from: 'relay', to: 'cas', color: '#bbb', style:'dash'},
+        {from: 'cas', to: 'dbs', color: '#bbb', style:'dash'},
+    ]
+
+    var error_response_edges = [
+        // {to: 'web', from: 'control',color: 'red',width: 1},
+        // {to: 'web', from: 'cas',color: 'red',width: 1},
+        // {to: 'web', from: 'dbs',color: 'red',width: 1},
+        // {to: 'control', from: 'cas',color: 'red',width: 1},
+        // {to: 'control', from: 'dbs',color: 'red',width: 1},
+        // {to: 'relay', from: 'cas',color: 'red',width: 1},
+        // {to: 'cas', from: 'dbs',color: 'red',width: 1},
+    ];
+
+    // var request_response_edges = request_edges.concat(error_response_edges);
+    var request_response_edges = [];
+
+
+    var container = document.getElementById('mynetwork');
+    var request_data = {
+        nodes: nodes,
+        edges: request_edges,
+    };
+    var error_response_data = {
+        nodes: nodes,
+        edges: error_response_edges
+    }
+    var request_response_data = {
+        nodes: nodes,
+        edges: request_response_edges
+    }
+    var options = {
+        width: '1020px',
+        height: '600px',
+        edges: {style:"arrow-center", widthSelectionMultiplier: 4, arrowScaleFactor: 1.2, title:function()
+        {
+            return 'nihao';
+        }},
+        nodes: {shape:'box',radius: 5},
+        hover: true
+    };
+    var network = new vis.Network(container, request_response_data, options);
+
+    // console.log(network.nodes);
+    // console.log(network.nodes['cas'].edges[0].options.color.color);
+
+    var last_s2s_type = 'Request&Response';
+    var current_s2s_type = 'Request&Response';
+
+    load_s2s_data();
+    var current_s2s_data;
+
+    function load_s2s_data () {
+        // body...
+        $.getJSON('/chart/overall/s2s',function(data)
+        {
+            // console.log(data);
+            if (data.get_result_bool) {
+                current_s2s_data = data.get_result;
+                draw_s2s_data(data.get_result, false);
+            } else{
+                add_message_2_page(data.info,'danger');
+            };
+        })
+    }
+
+
+    load_mhd_data();
+    load_bhd_data();
+    load_cd_data();
+
+
+    function load_mhd_data()
+    {
+        $.getJSON('/chart/overall/mhd', function(data)
+        {
+            // console.log(data);
+            if (data.get_result_bool) {
+                draw_mhd_data(data.get_result);
+            } else{
+                add_message_2_page(data.info,'danger');
+            };
+        });
+    }
+
+    var node_table_dict = {};
+
+    function get_node_table_from_data (s_data) {
+        // body...
+        var result_str = '';
+        result_str += '<table class="table">';
+        result_str += '<thead>';
+        result_str += '<tr>';
+        result_str += '<td>IP</td>';
+        result_str += '<td>Max Cpu Used</td>';
+        result_str += '<td>Min Available Used</td>';
+        result_str += '<td>Net in</td>';
+        result_str += '<td>Net out</td>';
+        result_str += '<td>Available</td>';
+        result_str += '</tr>';
+        result_str += '</thead>';
+        result_str += '<tbody>';
+
+        var tmp_dict = {
+            'system.cpu.util[,idle]' : 0,
+            'vm.memory.size[available]' : 1,
+            'net.if.in[eth0]': 2,
+            'net.if.out[eth0]': 3,
+            'available' : 4
+        }
+
+        for (h in s_data) {
+            result_str += '<tr>';
+            result_str += '<td>' + h + '</td>';
+
+            // var tmp_td_str_arr = [];
+            // for (var i = 0; i < tmp_dict.length; i++) {
+            //     tmp_td_str_arr.push('<td></td>');
+            // };
+            var tmp_td_str_arr = ['<td></td>', '<td></td>', '<td></td>', '<td></td>', '<td></td>'];
+
+            for(m in s_data[h])
+            {
+                // console.log(s_data[h][m].length);
+                var tmp_str = '';
+                if (s_data[h][m].length != undefined) {
+
+                    tmp_str = '<td>' +  s_data[h][m][0][1] + '</td>';
+                }
+                else
+                {
+                    tmp_str = '<td>' +  s_data[h][m] + '</td>';
+                }
+
+                // console.log(tmp_str, tmp_dict[m]);
+
+                tmp_td_str_arr[tmp_dict[m]] = tmp_str;
+            }
+
+            // console.log(tmp_td_str_arr);
+
+            var total_str = '';
+            for (var i = 0; i < tmp_td_str_arr.length; i++) {
+                total_str += tmp_td_str_arr[i];
+            };
+
+            result_str += total_str;
+            result_str += '</tr>';
+        };
+
+
+        result_str += '</tbody>';
+        result_str += '</table>';
+        return result_str;
+    }
+
+    function draw_mhd_data(mhd_data)
+    {
+        node_table_dict = {};
+        for(s in mhd_data)
+        {
+            node_table_dict[s] = get_node_table_from_data(mhd_data[s]);
+        }
+
+    }
+
+
+    function load_bhd_data()
+    {
+        $.getJSON('/chart/overall/bhd', function(data)
+        {
+            // console.log(data);
+            if (data.get_result_bool) {
+                // current_s2s_data = data.get_result;
+                // draw_s2s_data(data.get_result, false);
+                console.log(data.get_result);
+            } else{
+                add_message_2_page(data.info,'danger');
+            };
+        });
+    }
+
+
+    function load_cd_data()
+    {
+        $.getJSON('/chart/overall/cd', function(data)
+        {
+            // console.log(data);
+            if (data.get_result_bool) {
+                // current_s2s_data = data.get_result;
+                // draw_s2s_data(data.get_result, false);
+                console.log(data.get_result);
+            } else{
+                add_message_2_page(data.info,'danger');
+            };
+        });
+    }
+
+    var name_dict = {
+        'ctl':'control',
+        'control':'control',
+        'web':'web',
+        'dbs':'dbs',
+        'cas':'cas',
+        'stun':'stun',
+        'relay':'relay',
+        'webpage': 'webpage',
+        'android': 'android',
+        'ios': 'ios',
+        'mac': 'mac',
+        'winie': 'winie',
+        'winnonie': 'winnonie',
+        'dut200': 'dut200',
+        'dut220': 'dut220',
+        'dut250': 'dut250',
+        'dut350': 'dut350',
+       'dut450': 'dut450',
+        'client': 'client',
+    };
+
+
+
+
+    request_flow = function (from_node, to_node, edge_label, node_name, value,tmp_edges) {
+
+        // console.log(from_node, to_node, edge_label, node_name, value);
+        if (network.nodes[from_node] != undefined && network.nodes[to_node] != undefined && from_node != to_node) {
+            if (edge_label.indexOf('err') < 0 && edge_label.indexOf('invalid') < 0 && edge_label.indexOf('timeout') < 0) {
+
+                if (value != null && value != undefined) {
+                    var label_str  = '(' + value + ')';
+                    console.log(value);
+                    tmp_edges.push({from: from_node, to: to_node, label: label_str, width: 2, title: edge_label});
+                }
+            }
+        }
+
+    }
+
+    error_response_flow = function (from_node, to_node, edge_label, node_name, value,tmp_edges) {
+
+
+        if (network.nodes[from_node] != undefined && network.nodes[to_node] != undefined && from_node == node_name && from_node != to_node) {
+            if (edge_label.indexOf('err') > 0 ) {
+
+                if (value != null && value != undefined ) {
+                    var label_str  = '(' + value + ')';
+                    tmp_edges.push({from: to_node, to: from_node, color:'red', label: label_str, width: 2, title: edge_label});
+                }
+            }
+        }
+
+    }
+
+    req_rep_flow = function(from_node, to_node, edge_label, node_name, value,tmp_edges)
+    {
+        if (network.nodes[from_node] != undefined && network.nodes[to_node] != undefined && from_node != to_node) {
+            if (edge_label.indexOf('err') > 0 ) {
+
+                if (value != null && value != undefined && value != 0) {
+                    var label_str  = '(' + value + ')';
+                    tmp_edges.push({from: to_node, to: from_node, color:'red', label: label_str, width: 2,title: edge_label});
+                }
+
+            }
+            else if(edge_label.indexOf('err') < 0 && edge_label.indexOf('invalid') < 0 && edge_label.indexOf('timeout') < 0)
+            {
+
+                if (value != null && value != undefined  ) {
+                    var label_str  = '(' + value + ')';
+                    tmp_edges.push({from: from_node, to: to_node, label: label_str, width: 2, title: edge_label});
+                }
+            }
+        }
+    }
+
+    var s2stype_text_data_dict = {
+        'Request&Response' : request_response_data,
+        'Request Flow': request_data,
+        'Response Flow': error_response_data
+    }
+
+    var s2stype_text_func_dict = {
+        'Request&Response' : req_rep_flow,
+        'Request Flow': request_flow,
+        'Response Flow': error_response_flow
+    }
+
+    function draw_corr_network_and_get_func (redraw_flag) {
+
+        var tmp_func = s2stype_text_func_dict[current_s2s_type];
+        if (tmp_func != undefined) {
+            return tmp_func;
+        } 
+        else{
+            return req_rep_flow;
+        };
+    }
+
+    // function get_corr_func (argument) {
+    //      // body...
+    //      return request_flow;
+    // } 
+
+    function draw_s2s_data (s2s_data, redraw_flag) {
+
+        proc_func = draw_corr_network_and_get_func(redraw_flag);
+        // proc_func = get_corr_func();
+
+        // network.setData(error_response_data, false);
+        // var tmp_edges = [];
+
+        var time_from_clock = s2s_data.time_from;
+        var time_to_clock = s2s_data.time_to;
+        var tmp_edges = [];
+        for (var i = 0; i < s2s_data.data.length; i++) {
+            var from_node = name_dict[s2s_data.data[i]['FROM'].toLowerCase()];
+            var to_node = name_dict[s2s_data.data[i]['TO'].toLowerCase()];
+            var edge_label = s2s_data.data[i]['metricname'].toLowerCase();
+            var node_name = name_dict[s2s_data.data[i]['servicename']];
+            var value = s2s_data.data[i]['value'];
+
+            // error_response_flow (from_node, to_node, edge_label, node_name, value);
+            proc_func (from_node, to_node, edge_label, node_name, value, tmp_edges);
+        };
+
+        // console.log(tmp_edges);
+        var new_edges = default_edges.concat(tmp_edges);
+        var new_data = {
+            nodes: nodes,
+            edges: tmp_edges
+        }
+
+        network.setData(new_data, false);
+        network.redraw();
+
+
+    }
+
+
+    function add_message_2_page(message,type)
+    {
+        var content_str;
+        var autoclose_value = 2000;
+        switch(type)
+        {
+            case 'success':
+                content_str = '<div style="font-size:26px;"><div style="float:left;width:auto;height:100%"><span class="glyphicon glyphicon-ok-sign" style="font-size:30px;padding:20px;"></span></div><p style="padding:26px 0;">' + message + '</p></div>';
+                break;
+
+            case 'danger':
+                content_str = '<div style="font-size:26px;"><div style="float:left;width:auto;height:100%"><span class="glyphicon glyphicon-warning-sign" style="font-size:30px;padding:20px;"></span></div><p style="padding:26px 0;">' + message + '</p></div>';
+                autoclose_value = -1;
+                break;
+
+            case 'info':
+                content_str = '<div style="font-size:26px;"><div style="float:left;width:auto;height:100%"><span class="glyphicon glyphicon-info-sign" style="font-size:30px;padding:20px;"></span></div><p style="padding:26px 0;">' + message + '</p></div>';
+                break;
+
+            default:
+                content_str = 'unknown message';
+                break;
+        }
+
+        var message_panel = $.jsPanel({
+            paneltype: 'hint',
+            theme:     type,
+            autoclose: autoclose_value,
+            position:  {top : 50, left: 'center'},
+            size:      { width: 400, height: 'auto' },
+            content:   content_str
+        });
+    }
+
+    $('button').click(function(){
+        $(this).addClass("current").siblings().removeClass("active");
+        current_s2s_type = $(this).text();
+        // console.log(last_s2s_type, current_s2s_type);
+        draw_s2s_data(current_s2s_data, last_s2s_type != current_s2s_type);
+        last_s2s_type = current_s2s_type;
+    })
+
+    var seconds = 0;
+    setInterval(function()
+        {
+            seconds += 1;
+                document.getElementById('span').innerHTML = 60-seconds;
+                if(seconds == 60){
+                    seconds = 0;
+                  load_s2s_data();
+                }
+            
+        },1000);
+
+
+    network.on('doubleClick', function (properties) {
+        console.log(properties.nodes, properties.edges);
+        if (properties.nodes != undefined && properties.nodes != '' && properties.nodes.length > 0) {
+            alert(properties.nodes);
+        }
+        if (properties.edges != undefined && properties.edges != '' && properties.edges.length > 0) {
+            alert(properties.edges);
+        }
+    });
+
+    var hover_node_panel;
+
+    network.on('hoverNode', function(properties)
+    {
+        var pos = network.canvasToDOM({x:network.nodes[properties.node].left, y:network.nodes[properties.node].top});
+        hover_node_panel = $.jsPanel({
+            selector: '#mynetwork',
+            title:    "detail data in : " + properties.node,
+            position: {top: pos.y, left: pos.x},
+            theme:    "primary",
+            size : {width: 400,height: 400},
+            content : node_table_dict[properties.node],
+        });
+    });
+
+    network.on('blurNode', function(properties)
+    {
+        if (hover_node_panel != undefined) {
+            hover_node_panel.close();
+        };
+    });
+})
+</script>
+<div class="row">
+    <div class="btn-group s2stype" role="group" data-toggle="buttons-radio">
+        <button type="button" class="btn btn-default current active">Request&Response</button>
+        <button type="button" class="btn btn-default current">Request Flow</button>
+        <button type="button" class="btn btn-default current">Response Flow</button>
+    </div>
+    <button class="btn btn-default" disabled="true" style="float:right">next update time:<span id="span">60</span>s</button>
+</div>
+
+
+<div id="mynetwork" style="position:relative"></div>
+
+{% endblock %}

@@ -571,6 +571,23 @@ class zabbix_api:
 
 		return api_result
 
+	def discoveryrule_update(self, itemid, delay):
+		data = json.dumps(
+		{
+			"jsonrpc": "2.0",
+    		"method": "discoveryrule.update",
+    		"params": {
+    			"itemid": itemid,
+    			"delay": delay 
+    			# "status": 0
+    		},
+    		"auth": self.user_login(),
+    		"id": 1
+		})
+
+		api_result = self.request_api(data)
+		return api_result
+
 	def triggerprototype_create(self,name,expression):
 		data = json.dumps(
 		{
@@ -684,6 +701,36 @@ class zabbix_api:
 			"jsonrpc": "2.0",
     		"method": "template.delete",
     		"params": delete_tids,
+    		"auth": self.user_login(),
+    		"id": 1
+		})
+
+		api_result = self.request_api(data)
+		return api_result
+
+	def template_delete_without_clear(self,templateids):
+
+		delete_tids = []
+
+		session = loadSession()
+		for t in templateids:
+			if session.query(Zabbixhosts).filter_by(hostid=t).count():
+				tmp = {'templateid' : t}
+				delete_tids.append(tmp)
+
+		session.close()
+
+		if len(delete_tids) == 0:
+			return None
+
+		data = json.dumps({
+			"jsonrpc": "2.0",
+    		"method": "template.massupdate",
+    		"params": 
+    		{
+    			'templates': delete_tids,
+    			'hosts': []
+    		},
     		"auth": self.user_login(),
     		"id": 1
 		})

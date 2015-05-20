@@ -12,11 +12,12 @@ from monitor.MonitorException import *
 from monitor.chart.search import *
 from monitor.chart.displaychart import *
 from monitor.chart.generate import *
+from monitor.chart.overall import *
 
 from flask.ext.principal import Permission, RoleNeed
 admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
 
-from config import WINDOW_CHART,CHART_INIT_DEFAULT_MESSAGE
+from config import WINDOW_CHART,CHART_INIT_DEFAULT_MESSAGE, IN_LOCAL
 
 # from send_email import monitor_status_notification
 
@@ -857,13 +858,123 @@ def test():
 @mod_chart.route('/overall')
 @login_required
 def overall():
-	return 'happy'
+	return render_template('chart/overall.html', title='Overall')
 
-# @mod_chart.route('/schedule/data/<esid>')
-# def specific_schedule_data(esid):
-# 	try:
-# 		pass
-# 	except Exception, e:
-# 		raise e
-# 	return send_specific_schedule(esid)
+
+@mod_chart.route('/overall/mhd', methods=['POST', 'GET'])
+@login_required
+def getmhd():
+	if not IN_LOCAL:
+		result = {}
+		get_result = None
+		get_result_bool = False
+		info = ''
+		try:
+			o = Overall(1)
+			mhd = o.gen_mhd_dict()
+			get_result = o.mechine_health(mhd)
+			get_result_bool = True
+			info = 'success'
+		except Exception, e:
+			info = str(e)
+			get_result_bool = False
+			get_result = None
+
+		result['get_result'] = get_result
+		result['get_result_bool'] = get_result_bool
+		result['info'] = info
+
+		return json.dumps(result)
+	else:
+		o = Overall(1)
+		return o.mechine_health_test()
+
+
+@mod_chart.route('/overall/s2s', methods=['POST', 'GET'])
+@login_required
+def gets2s():
+	if not IN_LOCAL:
+		result = {}
+		get_result = None
+		get_result_bool = False
+		info = ''
+		try:
+			o = Overall(1)
+			s2s = o.gen_s2s_dict()
+			get_result = o.server_2_server_data(s2s)
+			get_result_bool = True
+			info = 'success'
+		except Exception, e:
+			info = str(e)
+			get_result_bool = False
+			get_result = None
+
+		result['get_result'] = get_result
+		result['get_result_bool'] = get_result_bool
+		result['info'] = info
+
+		return json.dumps(result)
+	else:
+		o = Overall(1)
+		return o.server_2_server_data_test()
+
+@mod_chart.route('/overall/bhd', methods=['POST', 'GET'])
+@login_required
+def getbhd():
+	if not IN_LOCAL:
+		result = {}
+		get_result = None
+		get_result_bool = False
+		info = ''
+		try:
+			o = Overall(1)
+			bhd = o.gen_bhd_dict()
+			get_result = o.business_health(bhd)
+			get_result_bool = True
+			info = 'success'
+		except Exception, e:
+			info = str(e)
+			get_result_bool = False
+			get_result = None
+
+		result['get_result'] = get_result
+		result['get_result_bool'] = get_result_bool
+		result['info'] = info
+
+		return json.dumps(result)
+	else:
+		o = Overall(1)
+		return o.business_health_test()
+
+@mod_chart.route('/overall/cd', methods=['POST', 'GET'])
+@login_required
+def getcd():
+	if not IN_LOCAL:
+		result = {}
+		get_result = None
+		get_result_bool = False
+		info = ''
+		try:
+			o = Overall(1)
+			cd = o.gen_cd_dict()
+			get_result = o.core_data(cd)
+			get_result_bool = True
+			info = 'success'
+		except Exception, e:
+			info = str(e)
+			get_result_bool = False
+			get_result = None
+
+		result['get_result'] = get_result
+		result['get_result_bool'] = get_result_bool
+		result['info'] = info
+
+		return json.dumps(result)
+	else:
+		o = Overall(1)
+		return o.core_data_test()
+
+@mod_chart.route('/test')
+def test_test(esid):
+	return render_template('chart/test.html')
 

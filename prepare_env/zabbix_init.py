@@ -8,12 +8,13 @@ import monitor,config
 
 
 from monitor.zabbix.zabbix_api import zabbix_api
-from monitor.zabbix.models import Zabbixhostgroup,Zabbixtriggers,Zabbixactions,Zabbixfunctions
+from monitor.zabbix.models import Zabbixhostgroup, Zabbixtriggers, \
+    Zabbixactions, Zabbixfunctions, Zabbixhosts, loadSession
 import sys,traceback
 from config import HOST_GROUP_NAME,PROTOTYPE_COMMAND_PATH,AR_COMMAND_PATH,UNREACHABLE_ACTION_PATH,\
 					UNREACHABLE_ACTION_PATH_2,AUTO_REGISTRATION_NAME,ADD_NET_TRIGGER_NAME,\
 					UNREACHABLE_ACTION_NAME,TRIGGER_PROTOTYPE_EXPRESSION,OS_LINUX_TEMPLATEID,\
-					ZBX_TEMPLATE_CONF_FILE
+					ZBX_TEMPLATE_CONF_FILE, TEMPLATE_GROUP_SPLITER, NORMAL_TEMPLATE_NAME, CLEAR_UNREACHABLE_HOST
 
 
 def create_aws_group(zbx_groupname,zabbix):
@@ -262,12 +263,44 @@ def create_unreachable_action(zabbix,command,command_2,action_name='agent is unr
 				"command":command_2,
 				"execute_on":1
 			}
+		},
+		{
+			"operationtype":1,
+			"esc_step_from":144,
+			"esc_step_to":144,
+			"opcommand_hst":
+			[
+				{
+					"hostid":0
+				}
+			],
+			"opcommand" :
+			{
+				"type": 0,
+				"command": CLEAR_UNREACHABLE_HOST,
+				"execute_on":1
+			}
 		}
 	]
 
 	zabbix.action_create(name,eventsource,conditions,operations)
 	
+def clear_old_template(zabbix):
 
+	session = loadSession()
+	services_template = session.query(Zabbixhosts).filter(Zabbixhosts.name.ilike('%' + TEMPLATE_GROUP_SPLITER + '%')).all()
+	tids = []
+	for st in services_template:
+	    tids.append(st.hostid)
+
+	n = session.query(Zabbixhosts).filter_by(host=NORMAL_TEMPLATE_NAME).first()
+	if n != None:
+		ntid = n.hostid
+		tids.append(ntid)
+
+	session.close()
+	zabbix.template_delete_without_clear(tids)
+	zabbix.template_delete(tids)
 
 def update_itemprototype(zabbix):
 
@@ -275,6 +308,8 @@ def update_itemprototype(zabbix):
 	zabbix.itemprototype_update(params)
 	params = {"itemid":22448,"history": 30}
 	zabbix.itemprototype_update(params)
+
+	zabbix.discoveryrule_update(22444, 60)
 
 
 if __name__ == '__main__':
@@ -353,9 +388,12 @@ if __name__ == '__main__':
 
 		print 'unreachable host action done'
 
+		clear_old_template(zabbix)
+		print 'clear old template'
+
 		zabbix.import_template_file(zbx_template_conf)
 
-		print 'import template file done'
+		print 'import new template file done'
 
 		# print 1/0
 	except Exception, e:

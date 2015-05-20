@@ -80,6 +80,7 @@ class Alarm():
 		# alarm = Trigger(triggerid,triggername,triggervalue,timeshift,calcitem,triggerfunction)
 
 		item = Chart.smr_2_itemlist(json.loads(selected_metric_values[0]))
+		print item
 
 		trigger_info = cls.get_trigger_info_from_items(item)
 
@@ -175,6 +176,7 @@ class Alarm():
 
 	@classmethod
 	def get_trigger_info_from_items(cls,item):
+		print item
 		trigger_info = None
 		if len(item) == 0:
 			raise Exception('Metric do not exist')

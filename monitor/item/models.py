@@ -17,9 +17,13 @@ class Itemtype(db.Model):
 	time_frequency = db.Column(db.Integer)
 	function_type = db.Column(db.Integer)
 	description = db.Column(db.String(256))
+	bcd_type = db.Column(db.Integer)
+	condition = db.Column(db.String(64))
 	# detailitemtypes = db.relationship('Detailitemtype',backref='itemtype',lazy='dynamic')
 
-	def	__init__(self,itemtypename,itemkey,aws=None,itemdatatype=None,itemunit=None,zabbixvaluetype=None,time_frequency=60,function_type=0,description=None):
+	def	__init__(self, itemtypename, itemkey, aws=None, itemdatatype=None, \
+		itemunit=None, zabbixvaluetype=None, time_frequency=60, \
+		function_type=0, description=None, bcd_type=0, condition=None):
 		self.itemtypename = itemtypename
 		self.itemkey = itemkey
 		self.aws = aws
@@ -35,6 +39,8 @@ class Itemtype(db.Model):
 			description = itemtypename
 
 		self.description = description
+		self.bcd_type = bcd_type
+		self.condition = condition
 
 	def __repr__(self):
 		return '<Itemtype %r>' % self.itemtypename

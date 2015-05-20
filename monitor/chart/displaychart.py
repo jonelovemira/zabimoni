@@ -129,10 +129,16 @@ class Chart():
 			if steps <= 1:
 				steps = 1
 			else:
-				ground = ground * steps
-				cls.info = 'Queryed points count=<I>' + str(current_point_counts) + '</I> is over than <b>' + \
-				str(MAX_INIT_POINTS) + '</b>. And we will get data based on frequency of <b>' + str(ground) + '</b>s.' + \
-				'please refine your time interval to get result based on ' + str(ground // steps) + 's.'
+				if function_type == FUNC_TYPE_SUM:
+					tmp_sec = 2 * (ground * (MAX_INIT_POINTS // len(row_result)))
+					time_since = time_till - tmp_sec
+					cls.info = 'Queryed points count=<I>' + str(current_point_counts) + '</I> is over than <b>' + \
+					str(2 * MAX_INIT_POINTS) + '</b>. And we will diplay <b>' + str(MAX_INIT_POINTS // len(row_result)) + '</b> points.' 
+				else:
+					ground = ground * steps
+					cls.info = 'Queryed points count=<I>' + str(current_point_counts) + '</I> is over than <b>' + \
+					str(2 * MAX_INIT_POINTS) + '</b>. And we will get data based on frequency of <b>' + str(ground) + '</b>s.' + \
+					'please refine your time interval to get result based on ' + str(ground // steps) + 's.'
 
 		result = []
 
@@ -471,6 +477,7 @@ class Chart():
 		row_result = cls.selected_metrics_2_metric_content(selected_metrics)
 		convert_result = []
 		for row in row_result:
+			# print row['row_type'],row['row']
 			item_list = ItemSearch.row_2_item_list(row['row_type'],row['row'])
 			convert_result = list( set(convert_result) | set(item_list) )
 

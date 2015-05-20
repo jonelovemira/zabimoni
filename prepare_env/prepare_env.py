@@ -29,9 +29,7 @@ from crontab import CronTab
 
 from boto.s3.connection import S3Connection
 from tempfile import NamedTemporaryFile
-from config import S3_BUCKET_NAME,XML_EXPORT_PATH,NUMERIC_FLOAT ,CHARACTER ,LOG,NUMERIC_UNSIGNED ,TEXT,LOCAL_XML_EXPORT_PATH,HOST_GROUP_NAME,\
-					ZABBIX_TEMPLATE_PREFIX, TEMPLATE_GROUP_SPLITER,NORMAL_TEMPLATE_NAME,TEMPLATE_NAME,BY_SERVICE,BY_ALL,DEPRECATE_TAG,\
-					BASEDIR, AWS_BILLING_COMMAND_FOLDER, AWS_BILLING_GET_S3_FILE_C, AWS_BILLING_PARSE_FILE_C, AWS_BILLING_CSV_FOLDER
+from config import *
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -316,6 +314,57 @@ def get_merge_itemname(itemname,itemkey):
 
 	return ' '.join(itemname_arr)
 
+def add_zit_functions(i, target = None):
+	itemtypename = i.name
+	itemkey_ = i.key_
+	if '$' in itemtypename:
+		itemtypename = get_merge_itemname(itemtypename,itemkey_)
+	if '#' in itemtypename:
+		return None
+	itemunit = i.units
+	zabbixvaluetype = i.value_type
+	itemdatatype = None
+	function_type = 0
+	if target is None:
+		target = Itemtype.query
+	ittmp = target.filter_by(itemtypename=itemtypename).first()
+	update_frequency = i.delay
+
+	spliter = GET_BCD_SPLITER
+	tmp_d_arr = i.description.split(spliter)
+	description = None
+	bcd_type = NORMAL_BCD_TYPE
+	condition = None
+	if len(tmp_d_arr) == 1:
+		description = i.description
+	elif len(tmp_d_arr) == 2:
+		bcd_type = CORE_BCD_TYPE
+		description = tmp_d_arr[0]
+	else:
+		description = tmp_d_arr[0]
+		bcd_type = ERROR_BCD_TYPE
+		condition = tmp_d_arr[2]
+
+	if ittmp == None:
+		ittmp = Itemtype(itemtypename, itemtypename, None, itemdatatype, itemunit, \
+			zabbixvaluetype, update_frequency, function_type, description, \
+			bcd_type, condition)
+	else:
+		ittmp.itemtypename = itemtypename
+		ittmp.itemkey = itemtypename
+		ittmp.itemdatatype = itemdatatype
+		ittmp.itemunit = itemunit
+		ittmp.zabbixvaluetype =zabbixvaluetype
+		ittmp.time_frequency = update_frequency
+		ittmp.function_type = function_type
+		ittmp.description = description
+		ittmp.bcd_type = bcd_type
+		ittmp.condition = condition
+
+	print 'processed itemtype :' + itemtypename
+
+	return ittmp
+
 def add_itemtype_functions(i, target = None):
 	itemtypename = i.name
 	itemkey_ = i.key_
@@ -331,9 +380,26 @@ def add_itemtype_functions(i, target = None):
 		target = Itemtype.query
 	ittmp = target.filter_by(itemkey=itemkey_).first()
 	update_frequency = i.delay
-	description = i.description
+
+	spliter = GET_BCD_SPLITER
+	tmp_d_arr = i.description.split(spliter)
+	description = None
+	bcd_type = NORMAL_BCD_TYPE
+	condition = None
+	if len(tmp_d_arr) == 1:
+		description = i.description
+	elif len(tmp_d_arr) == 2:
+		bcd_type = CORE_BCD_TYPE
+		description = tmp_d_arr[0]
+	else:
+		description = tmp_d_arr[0]
+		bcd_type = ERROR_BCD_TYPE
+		condition = tmp_d_arr[2]
+
 	if ittmp == None:
-		ittmp = Itemtype(itemtypename,itemkey_,None,itemdatatype,itemunit,zabbixvaluetype,update_frequency,function_type,description)
+		ittmp = Itemtype(itemtypename, itemkey_, None, itemdatatype, itemunit, \
+			zabbixvaluetype, update_frequency, function_type, description, \
+			bcd_type, condition)
 	else:
 		ittmp.itemtypename = itemtypename
 		ittmp.itemkey = itemkey_
@@ -343,6 +409,8 @@ def add_itemtype_functions(i, target = None):
 		ittmp.time_frequency = update_frequency
 		ittmp.function_type = function_type
 		ittmp.description = description
+		ittmp.bcd_type = bcd_type
+		ittmp.condition = condition
 
 	print 'processed itemtype :' + itemtypename
 
@@ -473,9 +541,13 @@ def init_itemtype(it_keys=[]):
 			titems = session.query(Zabbixitems).filter_by(hostid=tid).all()
 
 			for i in titems:
-				zittmp = add_itemtype_functions(i)
+				zittmp = add_zit_functions(i)
 				if zittmp != None:
 					zittmp.zit = zit
+					try:
+						find_hosts_and_add_key(BY_ALL,zit,zittmp,zabbix)
+					except Exception, e:
+						pass
 					db.session.add(zittmp)
 
 
@@ -512,9 +584,12 @@ def init_itemtype(it_keys=[]):
 
 				for x in service.itemtypes.all():
 					if not x.itemkey in tmp_arr :
-						if not DEPRECATE_TAG in x.itemtypename: 
-							x.itemtypename = x.itemtypename + DEPRECATE_TAG
-							db.session.add(x)
+						for i in x.items.all():
+							db.session.delete(i)
+						db.session.delete(x)
+						# if not DEPRECATE_TAG in x.itemtypename: 
+						# 	x.itemtypename = x.itemtypename + DEPRECATE_TAG
+						# 	db.session.add(x)
 				#db.session.commit()
 
 			db.session.commit()

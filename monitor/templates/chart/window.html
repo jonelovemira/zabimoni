@@ -95,9 +95,12 @@ $(document).ready(function()
             </div>
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
-                    <li><a href="{{url_for('auth.config')}}">Auth </a></li>
                     <li><a href="{{url_for('chart.mainboard')}}">Chart </a></li>
+                    {% if g.user.is_admin() %}
+                    <li><a href="{{url_for('billing.billing_main')}}">Billing </a></li>
+                    <li><a href="{{url_for('auth.config')}}">Auth </a></li>
                     <li><a href="{{url_for('item.mainboard')}}">Item </a></li>
+                    {% endif %}
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if g.user.is_authenticated() %}

@@ -47,7 +47,7 @@ class ItemSearch(BaseSearch):
 			if s.itemtype.aws != None or s.itemtype.itemunit == None :
 				continue
 
-			if s.itemtype.zabbixvaluetype is not None and int(s.itemtype.zabbixvaluetype) not in [0, 3]:
+			if s.itemtype.zabbixvaluetype is not None and int(s.itemtype.zabbixvaluetype) not in [0, 3, 15]:
 				continue
 
 			if asg_name != None and s.host.service.servicename != asg_name:
@@ -135,19 +135,43 @@ class ItemSearch(BaseSearch):
 		result = type_func_map.get(row_type)(row)
 		return result
 
+	@classmethod
+	def name_for_group(cls, row_type, row):
+		item_list = cls.row_2_item_list(row_type, row)
+		if len(item_list) > 0 :
+			i = Item.query.get(item_list[0])
+			row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
+		else:
+			row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+		return by_group_name(row)
+
+	@classmethod
+	def name_for_instance(cls, row_type, row):
+		item_list = cls.row_2_item_list(row_type, row)
+		if len(item_list) > 0 :
+			i = Item.query.get(item_list[0])
+			row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
+		else:
+			row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+		return per_instance_name(row)
+
+	@classmethod
+	def name_for_aws(cls, row_type, row):
+		return aws_fee_name(row)
 
 	@classmethod
 	def row_type_2_name(cls,row_type,row):
 		type_name_map = {
-			BY_GROUP_RESULT : by_group_name,
-			PER_INSTANCE_RESULT : per_instance_name
+			BY_GROUP_RESULT : cls.name_for_group,
+			PER_INSTANCE_RESULT : cls.name_for_instance
 		}
 
+
 		for aws in Aws.query.all():
-			type_name_map[aws.awsname] = aws_fee_name
+			type_name_map[aws.awsname] = cls.name_for_aws
 
 
-		return type_name_map.get(row_type,None)(row)
+		return type_name_map.get(row_type,None)( row_type, row)
 
 	@classmethod
 	def hostid_2_availability(cls,hostid):
@@ -170,7 +194,7 @@ class ItemSearch(BaseSearch):
 			if s.itemtype.aws != None or s.itemtype.itemunit == None :
 				continue
 
-			if s.itemtype.zabbixvaluetype is not None and int(s.itemtype.zabbixvaluetype) not in [0, 3]:
+			if s.itemtype.zabbixvaluetype is not None and int(s.itemtype.zabbixvaluetype) not in [0, 3, 15]:
 				continue
 
 			if asg_name != None and s.host.service.servicename != asg_name:
@@ -255,7 +279,7 @@ class ItemtypeSearchValue2Filter():
 		if search_value == '' or search_value == None:
 			filter_result = True
 		else:
-			filter_result = Itemtype.itemkey.ilike('%' + search_value + '%')
+			filter_result = Itemtype.itemkey.ilike(search_value)
 
 		return filter_result
 
@@ -267,7 +291,7 @@ class ItemSearchValue2Filter():
 		if search_value == '' or search_value == None:
 			filter_result = True
 		else:
-			filter_result = Item.itemname.ilike('%' + search_value + '%')
+			filter_result = Item.itemname.ilike(search_value)
 
 		return filter_result
 
