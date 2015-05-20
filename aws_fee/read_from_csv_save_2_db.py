@@ -68,6 +68,22 @@ class CsvToDbRecord():
                     if row[headers.index(INVOICEDATE)] != '' and \
                         row[headers.index(PRODUCTCODE)] != '':
                         try:
+
+                            if count == 1:
+                                tmp_billingstarttime = \
+                                    row[headers.index(BILLINGPERIODSTARTDATE)]
+                                start_clock = str_2_clock\
+                                    (tmp_billingstarttime, TIME_FORMAT)
+                                tmp_billtingtime = \
+                                    billingtime.query.filter_by(\
+                                    billingperiodstartdate=start_clock).first()
+                                if tmp_billtingtime != None:
+                                    for br in \
+                                        tmp_billtingtime.billingrows.all():
+                                        db.session.delete(br)
+                                    db.session.commit()
+                                count += 1
+
                             self.build_db_record_from_row(row, headers)
 
                         except Exception, e:
