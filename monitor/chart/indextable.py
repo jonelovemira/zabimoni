@@ -113,21 +113,24 @@ class ByGroupRowContentGenerator(RowContentGenerator):
 
         return item_list
 
-    # @function_input_checker(None)
-    # def get_series_name(self, content):
-    #     assert len(content) == len(self.get_head()), 'unmatch length'
+    @function_input_checker(None)
+    def get_series_name(self, content):
+        assert len(content) == len(self.get_head()), 'unmatch length'
 
-    #     item_list = self.content_2_id(content)
+        item_list = self.content_2_id(content)
 
-    #     result = content[self.get_head().index(TABLE_HEAD_METRIC_NAME)]
+        metric_result = content[self.get_head().index(TABLE_HEAD_METRIC_NAME)]
 
-    #     if len(item_list) > 0:
-    #         item = Item.query.get(item_list[0])
-    #         if item is not None and item.itemtype is not None and \
-    #             item.itemtype.itemtypename is not None:
-    #             result = item.itemtype.itemtypename
+        if len(item_list) > 0:
+            item = Item.query.get(item_list[0])
+            if item is not None and item.itemtype is not None and \
+                item.itemtype.itemtypename is not None:
+                metric_result = item.itemtype.itemtypename
 
-    #     return result
+        result = content[self.get_head().index(TABLE_HEAD_GROUP_NAME)] + ' ' +\
+            metric_result
+
+        return result
 
 
 class PerInstanceRowContentGenerator(RowContentGenerator):
@@ -185,6 +188,25 @@ class PerInstanceRowContentGenerator(RowContentGenerator):
                 hostids.append(item.host.hostid)
 
         return hostids
+
+    @function_input_checker(None)
+    def get_series_name(self, content):
+        assert len(content) == len(self.get_head()), 'unmatch length'
+
+        item_list = self.content_2_id(content)
+
+        metric_result = content[self.get_head().index(TABLE_HEAD_METRIC_NAME)]
+
+        if len(item_list) > 0:
+            item = Item.query.get(item_list[0])
+            if item is not None and item.itemtype is not None and \
+                item.itemtype.itemtypename is not None:
+                metric_result = item.itemtype.itemtypename
+
+        result = content[self.get_head().index(TABLE_HEAD_IP)] + ' ' +\
+            metric_result
+
+        return result
 
         
 
