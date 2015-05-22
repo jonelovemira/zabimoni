@@ -1,5 +1,6 @@
 from monitor import db
 from monitor.models import Attr
+from monitor.zabbix.models import loadSession, Zabbixinterface, Zabbixhosts
 # from flask.ext.sqlalchemy import SQLAlchemy
 # db = SQLAlchemy()
 
@@ -307,6 +308,41 @@ class Item(db.Model):
 
 	def __repr__(self):
 		return '<Item %r>' % self.itemname
+
+	def get_host_ip(self):
+
+		assert self.host is not None, 'current item: %s does not ' + \
+			'belong to any host' % (self)
+
+		assert self.host.hostid is not None
+
+		ip = 'unkown'
+		session = loadSession()
+		zi = session.query(Zabbixinterface).\
+			filter_by(hostid=self.host.hostid).first()
+		session.close()
+		if zi != None:
+			ip = zi.ip
+
+		return ip
+
+	def get_available_status(self):
+
+		assert self.host is not None, 'current item: %s does not ' + \
+			'belong to any host' % (self)
+
+		assert self.host.hostid is not None
+
+		available_status = None
+
+		session = loadSession()
+		zh = session.query(Zabbixhosts).get(self.host.hostid)
+		session.close()
+		
+		if zh != None:
+			available_status = zh.available
+
+		return available_status
 
 class Calculateditem(db.Model):
 	calculateditemid = db.Column(db.Integer,primary_key=True,autoincrement=False)

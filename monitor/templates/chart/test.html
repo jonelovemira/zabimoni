@@ -12,6 +12,11 @@
 <script type="text/javascript">
 $(document).ready(function()
 {
+	var test = {
+		"command": "UPGRADE",
+		"content":"test"
+	}
+	var str = JSON.stringify(test);
 	$.ajax({
 		url: '/chart/overall/cd',
 		dataType: 'json',
@@ -19,11 +24,8 @@ $(document).ready(function()
 		data: {
 			"REQUEST": "FIRMWAREUPGRADE",
 			"DATA": {
-			    "account": "email",
-			    "command": "UPGRADE\n" + 'device["newest_url"]' + "\n",
-			    "dev_address": 'a2:23:3d:4f:5f:1d' + "@" + 'device["az_ip"]' + "@" + 'device["az_dns"]',
-			    "token" : 'token',
-			    "idforcheckupdate": "a2:23:3d:4f:5f:1d".replace(/\:+/g, "").replace(/\-+/g,"")
+			    "command": test,
+			    "deviceId": 'AB:CD:EF:HI:JK'
 			}
 		},
 		success: function (response) {

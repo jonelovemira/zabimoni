@@ -1,20 +1,16 @@
 
 from monitor.chart.search import ItemSearch
-from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,PER_INSTANCE_TABLE_HEAD,\
+from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,\
 					FUNC_TYPE_COUNT,FUNC_TYPE_AVG,FUNC_TYPE_MAX,FUNC_TYPE_MIN,FUNC_TYPE_SUM,WINDOW_CHART,\
-					AWS_FEE_TABEL_HEAD,PAGE_CHART,DESIRED_DISPLAY_POINTS,TABLE_HEAD_AVAILABILITY,MAX_INIT_POINTS,\
-					CHART_INIT_DEFAULT_MESSAGE, TABLE_HEAD_ALIAS, TABLE_HEAD_DESCRIPTION
+					PAGE_CHART,DESIRED_DISPLAY_POINTS,MAX_INIT_POINTS,\
+					CHART_INIT_DEFAULT_MESSAGE
 from monitor.zabbix.models import Zabbixhistory,Zabbixhistoryuint
 import time
 
 from monitor import db
 from monitor.chart.models import Window,Selectedmetrics,Option,Displaytable,Displaytablerow,Attr,Chartconfig,Page
 from monitor.item.models import Aws, Item
-
-head_grouptype_map = {
-	BY_GROUP_RESULT:BY_GROUP_TABLE_HEAD,
-	PER_INSTANCE_RESULT:PER_INSTANCE_TABLE_HEAD
-}
+from monitor.chart.indextable import RowContentGeneratorFactory
 
 function_type_map = {
 	'Sum' : FUNC_TYPE_SUM,
@@ -257,10 +253,6 @@ class Chart():
 	@classmethod
 	def save_chart(cls,selected_metrics,chart_config,windowname,user,index,window_type,page):
 
-		for aws in Aws.query.all():
-			head_grouptype_map[aws.awsname] = AWS_FEE_TABEL_HEAD
-
-
 		if window_type == WINDOW_CHART:
 			tmp_window = user.windows.filter_by(windowname=windowname).filter_by(type=window_type).first()
 			if tmp_window != None:
@@ -286,9 +278,12 @@ class Chart():
 				dt = Displaytable(table_title_iter,option)
 				db.session.add(dt)
 
-				table_head = head_grouptype_map.get(table_title_iter,None)
-				if table_head == None:
-					raise Exception('unknown table head')
+				row_content_generator = RowContentGeneratorFactory().\
+					produce_generator(table_title_iter)
+
+				assert row_content_generator != None, 'undefined' + \
+					' row_content_generator'
+				table_head = row_content_generator.get_head()
 
 				for td_content in selected_metrics[option_iter][table_title_iter]['metric_result']:
 
@@ -414,9 +409,6 @@ class Chart():
 	@classmethod
 	def load_window_chart(cls,windowid):
 
-		for aws in Aws.query.all():
-			head_grouptype_map[aws.awsname] = AWS_FEE_TABEL_HEAD
-
 
 		result = {}
 
@@ -436,7 +428,15 @@ class Chart():
 				for dt in option.displaytables.all():
 					selected_metrics[option.optionname][dt.displaytablename] = {}
 
-					table_head = head_grouptype_map.get(dt.displaytablename,None)
+
+					row_content_generator = RowContentGeneratorFactory()\
+						.produce_generator(dt.displaytablename)
+
+					assert row_content_generator != None, 'not defined ' + \
+						'row_content_generator'
+
+					table_head = row_content_generator.get_head()
+
 					if table_head == None:
 						raise Exception('unknown table head')
 
@@ -450,18 +450,10 @@ class Chart():
 						for attr in dtr.attrs.all():
 							tmp_arr[table_head.index(attr.attrname)] = attr.attrvalue
 
-						if TABLE_HEAD_AVAILABILITY in table_head and table_head.index(TABLE_HEAD_AVAILABILITY) > 0:
-							tmp_hostid = ItemSearch.find_hostid_for_table_row_instance(tmp_arr)
-							if tmp_hostid != None:
-								tmp_arr[table_head.index(TABLE_HEAD_AVAILABILITY)] = ItemSearch.hostid_2_availability(tmp_hostid)
-
-						if TABLE_HEAD_ALIAS in table_head and table_head.index(TABLE_HEAD_ALIAS) > 0:
-							item_list = ItemSearch.row_2_item_list(dt.displaytablename, tmp_arr)
-							if len(item_list) > 0:
-								i = Item.query.get(item_list[0])
-								if i != None and i.itemtype != None:
-									tmp_arr[table_head.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
-									tmp_arr[table_head.index(TABLE_HEAD_DESCRIPTION)] = i.itemtype.description
+						item_list = row_content_generator.content_2_id(tmp_arr)
+						if len(item_list) > 0:
+							item = Item.query.get(item_list[0])
+							tmp_arr = row_content_generator.id_2_content(item)
 
 						selected_metrics[option.optionname][dt.displaytablename]['metric_result'].append(tmp_arr)
 

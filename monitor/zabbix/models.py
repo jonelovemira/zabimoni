@@ -1,6 +1,6 @@
 # from monitor import db,app
 from monitor import app,db
-from monitor.item.models import Item
+# from monitor.item.models import Item
 
 engine = db.get_engine(app,bind='zabbix')
 
@@ -43,6 +43,9 @@ class Zabbixhistory(db.Model):
 	def get_interval_history(cls,query_itemids,ground,time_since,time_till):
 
 		if len(query_itemids) <= 0 :
+			return query_data_2_arr([])
+
+		if len(query_itemids) <= 0:
 			return query_data_2_arr([])
 
 		offset = ground // 10
@@ -117,6 +120,9 @@ class Zabbixhistoryuint(db.Model):
 
 	@classmethod
 	def get_interval_history(cls,query_itemids,ground,time_since,time_till):
+
+		if len(query_itemids) <= 0:
+			return query_data_2_arr([])
 
 		if len(query_itemids) <= 0:
 			return query_data_2_arr([])
