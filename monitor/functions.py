@@ -53,4 +53,16 @@ def clock_2_str(clock, format):
 
 	return time_str
 
+def function_input_checker(*invalid_values):
+	def check_accepts(f):
+		def new_f(*args, **kwds):
+			for a in args:
+				for iv in invalid_values:
+					assert a is not iv, 'some args in %s are not valid' \
+						% (f.func_name)
+			return f(*args, **kwds)
+		new_f.func_name = f.func_name
+		return new_f
+	return check_accepts
+
 

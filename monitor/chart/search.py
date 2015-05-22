@@ -1,19 +1,7 @@
-from monitor.item.models import Item,Host,Service,Itemtype,Zbxitemtype,Normalitemtype,Aws
-from monitor.zabbix.models import Zabbixhosts,Zabbixinterface
-from config import BY_GROUP_RESULT,PER_INSTANCE_RESULT,BY_GROUP_TABLE_HEAD,\
-					TABLE_HEAD_GROUP_NAME,TABLE_HEAD_INSTANCE_NAME,TABLE_HEAD_IP,\
-					TABLE_HEAD_METRIC_NAME,PER_INSTANCE_TABLE_HEAD,AWS_FEE_TABEL_HEAD,\
-					NO_FEE_RESULT_SET,TABLE_HEAD_ALIAS, TABLE_HEAD_DESCRIPTION
-
-
-def by_group_name(row):
-	return row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_GROUP_NAME)] + ' ' + row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)]
-
-def per_instance_name(row):
-	return row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)] + ' ' + row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)]
-
-def aws_fee_name(row):
-	return row[AWS_FEE_TABEL_HEAD.index(TABLE_HEAD_METRIC_NAME)]
+from monitor.chart.indextable import RowContentGeneratorFactory
+from monitor.item.models import Item, Itemtype, Service, Aws
+from config import BY_GROUP_RESULT, PER_INSTANCE_RESULT, NO_FEE_RESULT_SET
+from monitor.functions import function_input_checker
 
 
 class BaseSearch():
@@ -40,7 +28,13 @@ class ItemSearch(BaseSearch):
 	@classmethod
 	def generate_by_group_result_no_fee(cls,item_search_result,asg_name=None):
 		result = {}
-		table_head = BY_GROUP_TABLE_HEAD
+		
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(BY_GROUP_RESULT)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
+		table_head = row_content_generator.get_head()
 		metric_count = 0
 		metric_result = []
 		for s in item_search_result:
@@ -56,11 +50,15 @@ class ItemSearch(BaseSearch):
 			if s.host.service is None:
 				continue
 
-			if [s.host.service.servicename,s.itemtype.itemkey,s.itemtype.itemtypename,s.itemtype.description] not in metric_result:
+			try:
+				tmp_row = row_content_generator.id_2_content(s)
+			except Exception, e:
+				continue
+
+
+			if tmp_row not in metric_result:
+				metric_result.append(tmp_row)
 				metric_count += 1
-				row = [s.host.service.servicename,s.itemtype.itemkey,s.itemtype.itemtypename,s.itemtype.description]
-				assert len(row) == len(table_head)
-				metric_result.append(row)
 
 		result['table_head'] = table_head
 		result['metric_count'] = metric_count
@@ -69,113 +67,86 @@ class ItemSearch(BaseSearch):
 
 	@classmethod
 	def find_item_list_for_table_row_group(cls,row):
-		result = []
-		metric_name = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
-		service_name = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_GROUP_NAME)]
-		filter_boolean = ItemtypeSearchValue2Filter.parse(metric_name)
-		search_result = cls.it_search(filter_boolean)
-		for it in search_result:
-			for item in it.items.all():
-				if item.host.service.servicename == service_name:
-					result.append(item.itemid)
+
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(BY_GROUP_RESULT)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
+		result = row_content_generator.content_2_id(row)
 
 		return result
 
 	@classmethod
 	def find_item_list_for_table_row_instance(cls,row):
-		result = []
-		metric_name = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
-		ip = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)]
-		filter_boolean = ItemtypeSearchValue2Filter.parse(metric_name)
-		search_result = cls.it_search(filter_boolean)
-		for it in search_result:
-			for item in it.items.all():
-				hostid = item.host.hostid
-				zi = Zabbixinterface.query.filter_by(hostid=hostid).first()
-				if zi == None:
-					continue
-				if zi.ip == ip:
-					result.append(item.itemid)
+
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(PER_INSTANCE_RESULT)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
+		result = row_content_generator.content_2_id(row)
+
 		return result
+
 
 	@classmethod
 	def find_hostid_for_table_row_instance(cls,row):
-		ip = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_IP)]
-		z_hostname = ip
-		h = Zabbixhosts.query.filter_by(name=z_hostname).first()
-		hostid = None
-		if h != None:
-			hostid = h.hostid
-		return hostid
+
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(PER_INSTANCE_RESULT)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
+		hostids = row_content_generator.get_hostids(row)
+
+		return hostids[0] if len(hostids) > 0 else None
+
 
 	@classmethod
 	def find_item_list_for_table_row_aws_fee(cls,row):
-		result = []
-		metric_name = row[AWS_FEE_TABEL_HEAD.index(TABLE_HEAD_METRIC_NAME)]
-		filter_boolean = ItemSearchValue2Filter.parse(metric_name)
-		search_result = cls.search(filter_boolean)
-		for item in search_result:
-			if item.itemtype.aws != None:
-				result.append(item.itemid)
+
+		tmp_aws = Aws.query.first()
+
+		assert tmp_aws != None, 'no aws in database currently'
+		assert tmp_aws.awsname != None, 'fee name can not be empty'
+
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(tmp_aws.awsname)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
+		result = row_content_generator.content_2_id(row)
 
 		return result
 
 
 	@classmethod
 	def row_2_item_list(cls,row_type,row):
-		type_func_map = {
-			BY_GROUP_RESULT:cls.find_item_list_for_table_row_group,
-			PER_INSTANCE_RESULT:cls.find_item_list_for_table_row_instance
-		}
 
-		for aws in Aws.query.all():
-			type_func_map[aws.awsname] = cls.find_item_list_for_table_row_aws_fee
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(row_type)
 
-		result = []
-		result = type_func_map.get(row_type)(row)
+		assert row_content_generator != None, 'Row type do not exists'
+
+		result = row_content_generator.content_2_id(row)
+
 		return result
 
 	@classmethod
-	def name_for_group(cls, row_type, row):
-		item_list = cls.row_2_item_list(row_type, row)
-		if row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] == TABLE_HEAD_ALIAS:
-			if len(item_list) > 0:
-				i = Item.query.get(item_list[0])
-				row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
-			else:
-				row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[BY_GROUP_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
-		
-		return by_group_name(row)
-
-	@classmethod
-	def name_for_instance(cls, row_type, row):
-		item_list = cls.row_2_item_list(row_type, row)
-		if row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] == TABLE_HEAD_ALIAS:
-			if len(item_list) > 0 :
-				i = Item.query.get(item_list[0])
-				row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = i.itemtype.itemtypename
-			else:
-				row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_ALIAS)] = row[PER_INSTANCE_TABLE_HEAD.index(TABLE_HEAD_METRIC_NAME)]
-		
-		return per_instance_name(row)
-
-	@classmethod
-	def name_for_aws(cls, row_type, row):
-		return aws_fee_name(row)
-
-	@classmethod
 	def row_type_2_name(cls,row_type,row):
-		type_name_map = {
-			BY_GROUP_RESULT : cls.name_for_group,
-			PER_INSTANCE_RESULT : cls.name_for_instance
-		}
+
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(row_type)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
+		result = row_content_generator.get_series_name(row)
+
+		return result
 
 
-		for aws in Aws.query.all():
-			type_name_map[aws.awsname] = cls.name_for_aws
 
-
-		return type_name_map.get(row_type,None)( row_type, row)
 
 	@classmethod
 	def hostid_2_availability(cls,hostid):
@@ -190,9 +161,15 @@ class ItemSearch(BaseSearch):
 	@classmethod
 	def generate_per_instance_result_no_fee(cls,item_search_result,asg_name=None):
 		result = {}
-		table_head = PER_INSTANCE_TABLE_HEAD
+
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(PER_INSTANCE_RESULT)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
 		metric_count = 0
 		metric_result = []
+		table_head = row_content_generator.get_head()
 
 		for s in item_search_result:
 			if s.itemtype.aws != None or s.itemtype.itemunit == None :
@@ -204,26 +181,10 @@ class ItemSearch(BaseSearch):
 			if asg_name != None and s.host.service.servicename != asg_name:
 				continue
 
-			
-
-			group_name = None
-
-			if s.host.service != None:
-				group_name = s.host.service.servicename
-
-			instance_name = s.host.hostname
-
-			ip = 'unkown'
-			zi = Zabbixinterface.query.filter_by(hostid=s.host.hostid).first()
-			if zi != None:
-				ip = zi.ip
-
-			metric_name = s.itemtype.itemkey
-
-			available_status = cls.hostid_2_availability(s.host.hostid)
-
-			row = [group_name,instance_name,ip,metric_name,available_status, s.itemtype.itemtypename, s.itemtype.description]
-			assert len(row) == len(table_head)
+			try:
+				row = row_content_generator.id_2_content(s)
+			except Exception, e:
+				continue
 
 			metric_result.append(row)
 
@@ -239,16 +200,26 @@ class ItemSearch(BaseSearch):
 	def generate_fee_data(cls,item_search_result,awsname):
 
 		result = {}
-		table_head = AWS_FEE_TABEL_HEAD
+		# table_head = AWS_FEE_TABEL_HEAD
+
+		row_content_generator = RowContentGeneratorFactory()\
+			.produce_generator(awsname)
+
+		assert row_content_generator != None, 'Row type do not exists'
+
+		table_head = row_content_generator.get_head()
+
 		metric_count = 0
 		metric_result =[]
 
 		for s in item_search_result:
 			if s.itemtype.aws != None and s.itemtype.aws.awsname == awsname:
-				metric_name = s.itemname
-				row = [metric_name]
+				
+				try:
+					row = row_content_generator.id_2_content(s)
+				except Exception, e:
+					continue
 
-				assert len(row) == len(table_head)
 				metric_result.append(row)
 				metric_count += 1
 

@@ -1,6 +1,6 @@
 # from monitor import db,app
 from monitor import app,db
-from monitor.item.models import Item
+# from monitor.item.models import Item
 
 engine = db.get_engine(app,bind='zabbix')
 
@@ -162,6 +162,9 @@ class Zabbixhistory(db.Model):
 
 		# s = sorted(tmp_s,key = lambda x:x[5])
 
+		if len(query_itemids) <= 0:
+			return query_data_2_arr([])
+
 		offset = ground // 10
 
 		s = db.session.query(\
@@ -313,6 +316,9 @@ class Zabbixhistoryuint(db.Model):
 		# s = sorted(tmp_s,key = lambda x:x[5])
 
 		# return history_data_2_arr(s)
+
+		if len(query_itemids) <= 0:
+			return query_data_2_arr([])
 
 		offset = ground // 10
 

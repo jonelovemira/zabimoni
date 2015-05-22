@@ -459,6 +459,8 @@ def load_window():
 			info = 'success'
 			load_result_bool = True
 		except Exception, e:
+			import sys, traceback
+			traceback.print_exc(file=sys.stdout)
 			info = str(e)
 			print info
 
