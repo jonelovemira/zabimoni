@@ -36,8 +36,6 @@
                         {% endif %}
                     </ul>
                     <ul class="nav navbar-nav navbar-right">
-                        <li><a href="{{ url_for('chart.page') }}">Old Version</a></li>
-
                         {% if g.user.is_authenticated() %}
                         <li><a href="{{ url_for('auth.logout') }}">Logout</a></li>
                         {% else %}

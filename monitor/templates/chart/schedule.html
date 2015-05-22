@@ -46,54 +46,6 @@ $(document).ready(function() {
             }
         })
 
-        // // Add button click handler
-        // .on('click', '.addButton', function() {
-        //     var $template = $('#optionTemplate'),
-        //         $clone    = $template
-        //                         .clone()
-        //                         .removeClass('hide')
-        //                         .removeAttr('id')
-        //                         .insertBefore($template),
-        //         $email   = $clone.find('[name="email[]"]');
-
-        //     // Add new field
-        //     $('#fieldIconsForm').bootstrapValidator('addField', $email);
-        // })
-
-        // // Remove button click handler
-        // .on('click', '.removeButton', function() {
-        //     var $row    = $(this).parents('.form-group'),
-        //         $email = $row.find('[name="email[]"]');
-
-        //     // Remove element containing the option
-        //     $row.remove();
-
-        //     // Remove field
-        //     $('#fieldIconsForm').bootstrapValidator('removeField', $email);
-        // })
-
-        // // Called after adding new field
-        // .on('added.field.bv', function(e, data) {
-        //     // data.field   --> The field name
-        //     // data.element --> The new field element
-        //     // data.options --> The new field options
-
-        //     if (data.field === 'email[]') {
-        //         if ($('#fieldIconsForm').find(':visible[name="email[]"]').length >= MAX_OPTIONS) {
-        //             $('#fieldIconsForm').find('.addButton').attr('disabled', 'disabled');
-        //         }
-        //     }
-        // })
-
-        // // Called after removing the field
-        // .on('removed.field.bv', function(e, data) {
-        //    if (data.field === 'option[]') {
-        //         if ($('#fieldIconsForm').find(':visible[name="option[]"]').length < MAX_OPTIONS) {
-        //             $('#fieldIconsForm').find('.addButton').removeAttr('disabled');
-        //         }
-        //     }
-        // });
-
     $('#choosereport').click(function()
     {
       			        $('#myModal').modal({
@@ -208,25 +160,6 @@ $(document).ready(function() {
 
     {% include 'email.html' %}
 
-    <!-- <div class="form-group"> -->
-        <!-- <label class="col-sm-3 control-label">Email Address</label> -->
-        <!-- <div class="col-sm-5"> -->
-            <!-- <input type="text" class="form-control" name="email[]" placeholder="Receiver email address"/> -->
-        <!-- </div> -->
-        <!-- <div class="col-sm-4"> -->
-            <!-- <button type="button" class="btn btn-default addButton"><i class="fa fa-plus"></i></button> -->
-        <!-- </div> -->
-    <!-- </div> -->
-
-    <!-- The option field template containing an option field and a Remove button -->
-    <!-- <div class="form-group hide" id="optionTemplate"> -->
-        <!-- <div class="col-sm-offset-3 col-sm-5"> -->
-            <!-- <input class="form-control" type="text" name="email[]" placeholder="Receiver email address"/> -->
-        <!-- </div> -->
-        <!-- <div class="col-sm-4"> -->
-            <!-- <button type="button" class="btn btn-default removeButton"><i class="fa fa-minus"></i></button> -->
-        <!-- </div> -->
-    <!-- </div> -->
 
     <div class="form-group">
         <div class="col-sm-5 col-sm-offset-3">

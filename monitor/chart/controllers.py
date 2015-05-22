@@ -7,7 +7,6 @@ from monitor import db,app
 from monitor.item.models import Area,Service,Host,Aws,Itemtype,Item,Itemdatatype
 from monitor.zabbix.models import Zabbixhosts
 from monitor.chart.models import *
-from monitor.chart.functions import *
 from monitor.MonitorException import *
 from monitor.chart.search import *
 from monitor.chart.displaychart import *
@@ -19,13 +18,11 @@ admin_permission = Permission(RoleNeed('1')).union(Permission(RoleNeed('0')))
 
 from config import WINDOW_CHART,CHART_INIT_DEFAULT_MESSAGE, IN_LOCAL
 
-# from send_email import monitor_status_notification
 
 import json,time
 
 mod_chart = Blueprint('chart', __name__, url_prefix='/chart')
 
-# Set the route and accepted methods
 @mod_chart.route('/')
 @login_required
 def mainboard():
@@ -118,21 +115,6 @@ def addreport():
 			return redirect(url_for('chart.report'))
 		finally:
 			db.session.remove()
-		
-
-		# print selectedmetrics
-		# try:
-		# 	save_report(reportname,seriesinfo,scaletype,functiontype,owner,title,discription)
-		# 	db.session.commit()
-		# except Exception, e:
-		# 	db.session.rollback()
-		# 	flash(str(e),'danger')
-		# 	return redirect(url_for('chart.addreport'))
-		# else:
-		# 	flash('you add a report','success')
-		# 	return redirect(url_for('chart.report'))
-		# finally:
-		# 	db.session.remove()
 
 	return render_template('chart/report.html',title='report',services=services,itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
@@ -227,77 +209,6 @@ def scheduledelete(emailscheduleid):
 	return redirect(url_for('chart.report'))
 
 
-
-@mod_chart.route('/itemtype/', methods=['GET', 'POST'])
-@login_required
-def itemtype():
-	area = request.args.get('area')
-	service = request.args.get('service')
-	host = request.args.get('host')
-	aws = request.args.get('aws')
-	result = index_arg_2_array(area,service,host,aws)
-	itemtype_result = get_all_itemtypes(result['area'],result['service'],result['host'],result['aws'])
-	return json.dumps(itemtype_result)
-
-@mod_chart.route('/history/',methods=['GET','POST'])
-@login_required
-def history():
-	if request.method == 'POST':
-		request_data = json.loads(request.data)
-		current_series_info = request_data['current_series_info']
-		time_frequency = request_data['time_frequency']
-		for series in current_series_info:
-			if current_series_info[0].has_key('series_item_list'):
-				data_result = history_result(current_series_info,time_frequency)
-				y_title = get_init_y_title(current_series_info)
-				result = {'data':data_result,'y_title':y_title}
-				return json.dumps(result)
-	return json.dumps(0)
-
-@mod_chart.route('/interval/',methods=['GET','POST'])
-@login_required
-def interval():
-	if request.method == 'POST':
-		request_data = json.loads(request.data)
-		current_series_info = request_data['current_series_info']
-		time_since = request_data['time_since']
-		time_till = request_data['time_till']
-		time_frequency = request_data['time_frequency']
-
-		for series in current_series_info:
-			if current_series_info[0].has_key('series_item_list'):
-				data_result = interval_result(current_series_info,int(time_till),int(time_since),time_frequency)
-				y_title = get_init_y_title(current_series_info)
-				result = {'data':data_result,'y_title':y_title}
-				return json.dumps(result)
-	return json.dumps(0)
-
-@mod_chart.route('/init2/', methods=['GET', 'POST'])
-@login_required
-def init2():
-	sortId = 0
-	if request.method == 'POST':
-		request_data = json.loads(request.data)
-		current_series_info = request_data['current_series_info']
-		time_frequency = request_data['time_frequency']
-		sortId = request_data['sortId']
-
-		for series in current_series_info:
-			if series.has_key('series_item_list'):
-				data_result = init_result(current_series_info,time_frequency)
-				y_title = get_init_y_title(current_series_info)
-				result = {'data':data_result,'y_title':y_title,'sortId':sortId}
-				return json.dumps(result)
-
-		# if not current_series_info[0].has_key('series_item_list'):
-		# 	return json.dumps(0)
-
-		# data_result = init_result(current_series_info,time_frequency)
-		# y_title = get_init_y_title(current_series_info)
-		# result = {'data':data_result,'y_title':y_title}
-		# return json.dumps(result)
-	return json.dumps({'data':0,'sortId':sortId})
-
 @mod_chart.route('/init/', methods=['GET', 'POST'])
 @login_required
 def init():
@@ -337,18 +248,6 @@ def init():
 
 	return json.dumps(result)
 
-@mod_chart.route('/update2/', methods=['GET', 'POST'])
-@login_required
-def update2():
-	result = []
-	if request.method == 'POST':
-		request_data = json.loads(request.data)
-		series_info = request_data['series_info']
-		time_frequency = request_data['time_frequency']
-		time_till = request_data['time_till']
-		result = update_result(series_info,time_frequency,time_till)
-	return json.dumps(result)
-
 @mod_chart.route('/update/', methods=['GET', 'POST'])
 @login_required
 def update():
@@ -364,9 +263,6 @@ def update():
 		update_result = Chart.update(selected_metrics,chart_config)
 		update_result_bool = True
 		info = 'success'
-		# except Exception, e:
-		# 	print str(e)
-		# 	info = str(e)
 	
 	result['update_result_bool'] = update_result_bool
 	result['update_result'] = update_result
@@ -374,34 +270,6 @@ def update():
 	return json.dumps(result)
 
 
-
-# @mod_chart.route('/save/window', methods=['GET', 'POST'])
-# @login_required
-# def save_window():
-# 	if request.method == 'POST':
-# 		request_data = json.loads(request.data)
-# 		wc_name = request_data['wc_name']
-# 		current_series = request_data['series']
-# 		user = g.user
-# 		try:
-# 			result = None
-# 			w = user.windows.filter_by(type=0,windowname=wc_name).first()
-# 			if w != None:
-# 				update_window_chart(wc_name,current_series,user)
-# 			else:
-# 				w = save_window_chart(wc_name,current_series,user)
-# 				result = w
-
-# 			db.session.commit()
-# 		except Exception, e:
-# 			db.session.rollback()
-# 			raise MonitorException('save window failed ' + str(e))
-# 		else:
-# 			if result != None:
-# 				return json.dumps({'id':result.windowid,'name':result.windowname})
-# 		finally:
-# 			db.session.remove()
-# 	return json.dumps({})
 
 @mod_chart.route('/save/window', methods=['GET', 'POST'])
 @login_required
@@ -499,36 +367,6 @@ def delete_window():
 	return json.dumps(result)
 
 
-# @mod_chart.route('/save/page', methods=['GET', 'POST'])
-# @login_required
-# def save_page():
-
-# 	if request.method == 'POST':
-# 		request_data = json.loads(request.data)
-# 		pagename = request_data['pagename']
-# 		series_info = request_data['series_info']
-# 		user = g.user
-# 		try:
-# 			result = None
-# 			p = user.pages.filter_by(pagename=pagename).first()
-# 			if p != None:
-# 				update_page_chart(pagename,series_info,user)
-# 			else:
-# 				p = save_page_chart(pagename,series_info,user)
-# 				result = p
-
-# 			db.session.commit()
-# 		except Exception, e:
-# 			db.session.rollback()
-# 			raise MonitorException('save page failed ' + str(e))
-# 		else:
-# 			if result != None:
-# 				return json.dumps({'id':result.pageid,'name':result.pagename})
-# 		finally:
-# 			db.session.remove()
-
-# 	return json.dumps({})
-
 @mod_chart.route('/save/page', methods=['GET', 'POST'])
 @login_required
 def save_page():
@@ -619,110 +457,6 @@ def load_page():
 	return json.dumps(result)
 
 
-
-
-# @mod_chart.route('/load/window', methods=['GET', 'POST'])
-# @login_required
-# def load_window():
-# 	user = g.user
-# 	windows = user.windows.filter_by(type=0).all()
-# 	result = []
-# 	for w in windows:
-# 		tmp = {}
-# 		tmp['id'] = w.windowid
-# 		tmp['name'] = w.windowname
-# 		result.append(tmp)
-
-# 	return json.dumps(result)
-
-
-
-@mod_chart.route('/load/pageinfo', methods=['GET', 'POST'])
-@login_required
-def load_pageinfo():
-	user = g.user
-	pageid = request.args.get('pageid')
-
-	page = user.pages.filter_by(pageid = pageid).first()
-
-	# print page
-
-	result = {}
-	series_info = []
-	sortids = []
-	for x in xrange(0,9):
-		tmp = []
-		series_info.append(tmp)
-
-	if page != None:
-		windows = page.windows.all()
-		# print "windows",windows
-		for w in windows:
-			index = w.index
-			sortids.append(index)
-			seriescount = w.window_series.count()
-			for x in xrange(0,seriescount):
-				tmp = {}
-				series_info[index].append(tmp)
-			series = w.window_series.all()
-			s_r = get_series_info(series)
-			for s in s_r:
-				series_info[index][s] = s_r[s]
-
-		result['window_data'] = series_info
-		result['sortids'] = sortids
-
-	return json.dumps(result)
-
-
-# @mod_chart.route('/load/page', methods=['GET', 'POST'])
-# @login_required
-# def load_page():
-# 	user = g.user
-# 	pages = user.pages.all()
-# 	result = []
-# 	for p in pages:
-# 		tmp = {}
-# 		tmp['id'] = p.pageid
-# 		tmp['name'] = p.pagename
-# 		result.append(tmp)
-
-# 	return json.dumps(result)
-
-@mod_chart.route('/load/series', methods=['GET', 'POST'])
-@login_required
-def load_series():
-	windowid = request.args.get('windowid')
-
-	w = Window.query.filter_by(windowid = windowid).first()
-
-	series = w.window_series.all()
-
-	result = {}
-
-	result = get_series_info(series)
-
-	# print result[0]['series_item_list']
-
-	return json.dumps(result)
-
-@mod_chart.route('/report/init2/', methods=['POST'])
-@login_required
-def reportinit2():
-	if request.method == 'POST':
-		request_data = json.loads(request.data)
-		current_series_info = request_data['current_series_info']
-		time_frequency = request_data['time_frequency']
-		time_since = int(time.time()) - 7200
-		time_till = int(time.time())
-		functiontype = request_data['functiontype']
-		data_result = report_series_result(current_series_info,time_frequency,time_since,time_till,functiontype)
-		result = {'time_since':time_since,'time_till':time_till,'data':data_result}
-		return json.dumps(result)
-	return json.dumps(0)
-
-
-	
 @mod_chart.route('/report/<path:reportimg>')
 def getreportimg(reportimg):
 	return app.send_static_file('report/' + reportimg)

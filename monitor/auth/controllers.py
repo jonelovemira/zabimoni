@@ -121,33 +121,7 @@ def config():
     users = User.query.all()
     return render_template('auth/config.html',users=users)
 
-# @mod_auth.route('/add/', methods=['GET', 'POST'])
-# @admin_permission.require(http_exception=403)
-# @login_required
-# def add():
 
-#     if request.method == 'POST':
-#         username = request.form.get('username')
-#         password = request.form.get('password')
-#         confirmpassword = request.form.get('confirmpassword')
-#         usertype = request.form.get('usertype')
-#         loginpermission = request.form.get('loginpermission')
-#         email = request.form.get('emailaddress')
-
-#         try:
-#             user = User(username,password,usertype,loginpermission,email)
-#             db.session.add(user)
-#             db.session.commit()
-#         except Exception, e:
-#             db.session.rollback()
-#             flash(str(e),'danger')
-#         else:
-#             flash('you add an user','success')
-#             return redirect(url_for('auth.config'))
-#         finally:
-#             db.session.remove()
-#         # print username,password,confirmpassword,usertype,loginpermission,email
-#     return render_template("auth/add.html")
 
 
 @mod_auth.route('/user/delete/<userid>', methods=['GET'])
