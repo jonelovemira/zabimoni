@@ -1325,8 +1325,10 @@ function window_base(content_height,content_width)
 
         var find_cache_result = before_search_check(args);
         if (find_cache_result == null) {
+            search_result_panel_waiting();
             last_search = $.getJSON(route,args,function(data)
             {
+                search_result_panel_waiting_cancel();
                 // console.log(current_class);
                 if (data.search_result_bool) {
                     current_class.search_result_cache[data.args.option] = data;
@@ -1576,6 +1578,27 @@ function window_base(content_height,content_width)
                 current_table_id_arr.push($(this).attr("id")); 
             });
         };
+    }
+
+    var waiting_class_span = 'waiting-span';
+    var waiting_class_selector = 'span.' + waiting_class_span;
+
+    function search_result_panel_waiting () {
+        
+        var result_str = '';
+
+        result_str += '<span class="glyphicon glyphicon-refresh glyphicon-refresh-animate ' + waiting_class_span + '"></span>';
+
+        if ($(search_result_panel_selector).length > 0){
+            $(search_result_panel_selector).append(result_str);
+        }  
+    }
+
+    function search_result_panel_waiting_cancel () {
+        // body...
+        if ($(search_result_panel_selector).length > 0){
+            $(search_result_panel_selector + '>' + waiting_class_selector).remove();
+        } 
     }
 
     function show_specific_child(parent,visiable_child)

@@ -1,5 +1,6 @@
 from monitor.chart.indextable import RowContentGeneratorFactory
-from monitor.item.models import Item, Itemtype, Service, Aws
+from monitor.item.models import Item, Itemtype, Service, Aws, Zbxitemtype, \
+						Normalitemtype
 from config import BY_GROUP_RESULT, PER_INSTANCE_RESULT, NO_FEE_RESULT_SET
 from monitor.functions import function_input_checker
 
