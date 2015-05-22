@@ -59,7 +59,10 @@ class RowContentGenerator():
 
         item_list = self.content_2_id(content)
 
-        result = content[self.get_head().index(TABLE_HEAD_ALIAS)]
+        if TABLE_HEAD_ALIAS in self.get_head() >= 0:
+            result = content[self.get_head().index(TABLE_HEAD_ALIAS)]
+        else:
+            result = content[self.get_head().index(TABLE_HEAD_METRIC_NAME)]
 
         if result == TABLE_HEAD_ALIAS:
             result = content[self.get_head().index(TABLE_HEAD_METRIC_NAME)]
