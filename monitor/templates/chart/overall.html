@@ -166,10 +166,41 @@ $(document).ready(function()
         })
     }
 
+    // setTimeout(load_mhd_data, 5000);
+    // setTimeout(load_bhd_data, 5000);
+    // setTimeout(load_cd_data, 5000);
 
-    load_mhd_data();
-    load_bhd_data();
-    load_cd_data();
+    
+
+    var load_count = 0;
+
+    var load_interval = setInterval(function()
+    {
+        switch(load_count){
+
+            case 0:
+                load_mhd_data();
+                break;
+
+            case 1:
+                load_bhd_data();
+                break;
+
+            case 2:
+                load_cd_data();
+                break;
+
+            default:
+                clearInterval(load_interval);
+                break;
+        }
+
+        load_count += 1;
+    }, 5000)
+
+    // load_mhd_data();
+    // load_bhd_data();
+    // load_cd_data();
 
 
     function load_mhd_data()
@@ -509,6 +540,9 @@ $(document).ready(function()
 
     network.on('hoverNode', function(properties)
     {
+
+
+
         var pos = network.canvasToDOM({x:network.nodes[properties.node].left, y:network.nodes[properties.node].top});
         hover_node_panel = $.jsPanel({
             selector: '#mynetwork',

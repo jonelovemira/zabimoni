@@ -135,6 +135,15 @@ class ByGroupRowContentGenerator(RowContentGenerator):
 
         return result
 
+    @function_input_checker(None)
+    def get_fake_row(self, groupname, metric_name):
+        
+        tmp_row = self.get_head()
+        tmp_row[self.get_head().index(TABLE_HEAD_GROUP_NAME)] = groupname
+        tmp_row[self.get_head().index(TABLE_HEAD_METRIC_NAME)] = metric_name
+
+        return tmp_row
+
 
 class PerInstanceRowContentGenerator(RowContentGenerator):
     """docstring for PerInstanceRowContentGenerator"""
@@ -211,6 +220,15 @@ class PerInstanceRowContentGenerator(RowContentGenerator):
 
         return result
 
+    @function_input_checker(None)
+    def get_fake_row(self, ip, metric_name):
+        
+        tmp_row = self.get_head()
+        tmp_row[self.get_head().index(TABLE_HEAD_IP)] = ip
+        tmp_row[self.get_head().index(TABLE_HEAD_METRIC_NAME)] = metric_name
+
+        return tmp_row
+
         
 
 class AwsFeeRowContentGenerator(RowContentGenerator):
@@ -252,8 +270,13 @@ class AwsFeeRowContentGenerator(RowContentGenerator):
 
         return item_list
 
-    # @function_input_checker(None)
-    # def get_series_name(self, content):
+    @function_input_checker(None)
+    def get_fake_row(self, metric_name):
+        
+        tmp_row = self.get_head()
+        tmp_row[self.get_head().index(TABLE_HEAD_METRIC_NAME)] = metric_name
+
+        return tmp_row
         
 
 class TdContentGeneratorFactory():
