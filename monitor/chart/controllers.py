@@ -641,6 +641,8 @@ def gets2s():
 			get_result_bool = True
 			info = 'success'
 		except Exception, e:
+			import sys, traceback
+			traceback.print_exc(file=sys.stdout)
 			info = str(e)
 			get_result_bool = False
 			get_result = None

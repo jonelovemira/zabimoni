@@ -27,8 +27,8 @@ class Overall():
         for s in Service.query.all():
             services_data.append(s.servicename)
 
-        metrics_data = [{'metricname':'system.cpu.util[,idle]'},\
-            {'metricname':'vm.memory.size[available]'},\
+        metrics_data = [{'metricname':'CPU idle time'},\
+            {'metricname':'Available memory'},\
             {'metricname':'net.if.in[eth0]'},\
             {'metricname':'net.if.out[eth0]'}]
 
@@ -165,7 +165,8 @@ class Overall():
             if group != None:
                 result[s] = {}
                 for h in group.hosts.all():
-                    zinterface = session.query(Zabbixinterface).filter_by(hostid=h.hostid).first()
+                    zinterface = session.query(Zabbixinterface).\
+                        filter_by(hostid=h.hostid).first()
                     zh = session.query(Zabbixhosts).get(h.hostid)
                     if zinterface is None or zh is None:
                         continue
@@ -179,11 +180,15 @@ class Overall():
                         # itemids = ItemSearch.find_item_list_for_table_row_instance([None,None,zinterface.ip,m['metricname'],None, None, None])
 
                         if len(itemids) > 0:
-                            v = Zabbixhistory.get_interval_history_no_ground(itemids,time_from,time_to)
-                            vuint = Zabbixhistoryuint.get_interval_history_no_ground(itemids,time_from,time_to)
+                            v = Zabbixhistory.get_interval_history_no_ground(\
+                                    itemids,time_from,time_to)
+                            vuint = Zabbixhistoryuint.\
+                                get_interval_history_no_ground(\
+                                itemids,time_from,time_to)
                             if vuint is  None and v is None:
                                 continue
-                            result[s][zinterface.ip][m['metricname']] = v if v is not None else vuint
+                            result[s][zinterface.ip][m['metricname']] = \
+                                v if v is not None else vuint
 
         session.close()
         return result
@@ -226,11 +231,13 @@ class Overall():
             itemids = row_content_generator.content_2_id(\
                 row_content_generator.get_fake_row(sm, metricname))
 
-            # itemids = ItemSearch.find_item_list_for_table_row_group([sm,metricname, None, None])
             if len(itemids) > 0:
 
-                history_data = Chart.item_list_2_history_data(itemids,ground,time_from,time_to)
-                series_data = Chart.item_history_data_2_chart_update_series_data(history_data,time_from,1)
+                history_data = Chart.item_list_2_history_data(itemids,\
+                    ground, time_from,time_to)
+                series_data = Chart.\
+                    item_history_data_2_chart_update_series_data(history_data,\
+                    time_from, 1)
                 last_sum = series_data[1]
 
                 tmp = {
@@ -278,14 +285,20 @@ class Overall():
                     itemids = row_content_generator.content_2_id(\
                         row_content_generator.get_fake_row(sm, metricname))
 
-                    # itemids = ItemSearch.find_item_list_for_table_row_group([sm,metricname,None, None])
-
                     if len(itemids) > 0:
-                        recordsuint = Zabbixhistoryuint.get_interval_condition_record(itemids,time_from,time_to,condition)
-                        records = Zabbixhistory.get_interval_condition_record(itemids,time_from,time_to,condition)
+                        recordsuint = Zabbixhistoryuint.\
+                            get_interval_condition_record(itemids,\
+                            time_from, time_to,condition)
+                        records = Zabbixhistory.\
+                            get_interval_condition_record(itemids,\
+                            time_from, time_to, condition)
+
                         if records is None and recordsuint is None:
                             continue
-                        tmp_records = recordsuint if recordsuint is not None else records
+
+                        tmp_records = recordsuint if recordsuint is not None \
+                            else records
+
                         for r in tmp_records:
                             itemid = r[0]
                             clock = r[1]
@@ -293,9 +306,11 @@ class Overall():
                             item = Item.query.get(itemid)
                             if item != None:
                                 host = item.host
-                                zinterface = session.query(Zabbixinterface).filter_by(hostid=host.hostid).first()
+                                zinterface = session.query(Zabbixinterface).\
+                                    filter_by(hostid=host.hostid).first()
                                 if zinterface != None:
-                                    result[sm].append([host.hostname,zinterface.ip,item.itemname,clock,value])
+                                    result[sm].append([host.hostname, \
+                                    zinterface.ip, item.itemname, clock, value])
 
 
         session.close()
@@ -333,18 +348,26 @@ class Overall():
                     # itemids = ItemSearch.find_item_list_for_table_row_group([sm,metric])
 
                     if len(itemids) > 0 :
-                        v = Zabbixhistory.get_interval_history_no_ground(itemids,time_from,time_to)
-                        vuint = Zabbixhistoryuint.get_interval_history_no_ground(itemids,time_from,time_to)
+                        v = Zabbixhistory.get_interval_history_no_ground(\
+                            itemids, time_from, time_to)
+                        vuint = Zabbixhistoryuint.\
+                            get_interval_history_no_ground(itemids, \
+                            time_from, time_to)
+
                         if vuint is  None and v is None:
                             continue
 
-                        result[sm][metric]['statics'] = v if v is not None else vuint
+                        result[sm][metric]['statics'] = v if v is not None \
+                            else vuint
 
                         time_from = time_to - ground
                         time_from = (time_from//ground) * ground
 
-                        history_data = Chart.item_list_2_history_data(itemids,ground,time_from,time_to)
-                        series_data = Chart.item_history_data_2_chart_update_series_data(history_data,time_from,1)
+                        history_data = Chart.item_list_2_history_data(itemids, \
+                            ground, time_from, time_to)
+                        series_data = Chart.\
+                            item_history_data_2_chart_update_series_data(\
+                            history_data, time_from, 1)
                         last_sum = series_data[1]
 
                         result[sm][metric]['last'] = last_sum
