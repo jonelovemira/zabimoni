@@ -6,6 +6,66 @@
 
 <script type="text/javascript" src="{{url_for('static',filename='js/vis.min.js')}}"></script>
 <style type="text/css" src="{{url_for('static',filename='css/vis.min.css')}}"></style>
+<style type="text/css">
+/* sidebar */
+.bs-docs-sidebar {
+    padding-left: 20px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* all links */
+.bs-docs-sidebar .nav>li>a {
+    color: #999;
+    border-left: 2px solid transparent;
+    padding: 4px 20px;
+    font-size: 13px;
+    font-weight: 400;
+}
+
+/* nested links */
+.bs-docs-sidebar .nav .nav>li>a {
+    padding-top: 1px;
+    padding-bottom: 1px;
+    padding-left: 30px;
+    font-size: 12px;
+}
+
+/* active & hover links */
+.bs-docs-sidebar .nav>.active>a, 
+.bs-docs-sidebar .nav>li>a:hover, 
+.bs-docs-sidebar .nav>li>a:focus {
+    color: #563d7c;                 
+    text-decoration: none;          
+    background-color: transparent;  
+    border-left-color: #563d7c; 
+}
+/* all active links */
+.bs-docs-sidebar .nav>.active>a, 
+.bs-docs-sidebar .nav>.active:hover>a,
+.bs-docs-sidebar .nav>.active:focus>a {
+    font-weight: 700;
+}
+/* nested active links */
+.bs-docs-sidebar .nav .nav>.active>a, 
+.bs-docs-sidebar .nav .nav>.active:hover>a,
+.bs-docs-sidebar .nav .nav>.active:focus>a {
+    font-weight: 500;
+}
+
+.page-header {
+    border-bottom: solid 1px #aaa; 
+}
+
+/* hide inactive nested list */
+.bs-docs-sidebar .nav ul.nav {
+    display: none;           
+}
+/* show active nested list */
+.bs-docs-sidebar .nav>.active>ul.nav {
+    display: block;           
+}
+</style>
 <script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
 <!-- loading Bootstrap javascript (required only when you intend to use option.bootstrap) -->
 <script type="text/javascript" src="{{url_for('static',filename='js/jquery.jspanel.min.js')}}"></script>
@@ -14,55 +74,72 @@ $(document).ready(function()
 {
     var nodes = [
             {id: 'web', label: 'web'
-            , x: 300, y: 100
+            ,value: 2
+            , x: 200, y: 200
         ,color: '#c9ffc7',title:'web'},
             {id: 'control', label: 'control'
-            , x: 100, y: 100
+            ,value: 2
+            , x: 0, y: 300
         ,color: '#c9ffc7'},
             {id: 'relay', label: 'relay'
-            , x: 700, y: 100
+            ,value: 2
+            , x: 400, y: 200
         ,color: '#c9ffc7'},
             {id: 'stun', label: 'stun'
-            , x: 1100, y: 100
+            ,value: 2
+            , x: 600, y: 300
         ,color: '#c9ffc7'},
             {id: 'cas', label: 'cas'
-            , x: 100, y: 400
+            ,value: 2
+            , x: 200, y: 400
         ,color: '#c9ffc7'},
             {id: 'dbs', label: 'dbs'
-            , x: 1100, y: 400
+            ,value: 2
+            , x: 400, y: 400
         ,color: '#c9ffc7'},
         {id: 'webpage', label: 'webpage'
-            , x: 100, y: 0
+            ,value: 1
+            , x: 0, y: 125
         },
         {id: 'android', label: 'android'
-            , x: 200, y: 0
+            ,value: 1
+            , x: 60, y: 100
         },
         {id: 'ios', label: 'ios'
-            , x: 275, y: 0
+            ,value: 1
+            , x: 120, y: 75
         },
         {id: 'mac', label: 'mac'
-            , x: 325, y: 0
+            ,value: 1
+            , x: 180, y: 50
         },
         {id: 'winie', label: 'winie'
-            , x: 400, y: 0
+            ,value: 1
+            , x: 240, y: 25
         },
         {id: 'winnonie', label: 'winnonie'
-            , x: 500, y: 0
+            ,value: 1
+            , x: 300, y: 0
         },
         {id: 'dut200', label: 'dut200'
-            , x: 600, y: 0
+            ,value: 1
+            , x: 360, y: 25
         },
         {id: 'dut220', label: 'dut220'
-            , x: 700, y: 0
+            ,value: 1
+            , x: 420, y: 50
         },
         {id: 'dut250', label: 'dut250'
-            , x: 800, y: 0
+            ,value: 1
+            , x: 480, y: 75
         },
         {id: 'dut350', label: 'dut350'
-            , x: 900, y: 0
+            ,value: 1
+            , x: 540, y: 100
         },
         {id: 'dut450', label: 'dut450'
-            , x: 1000, y: 0
+            ,value: 1
+            , x: 600, y: 125
         },
         // {id: 'client', label: 'client'
         //     , x: 1100, y: 0
@@ -93,6 +170,8 @@ $(document).ready(function()
         // {from: 'dut450', to: 'relay'},
         // {from: 'client', to: 'stun'},
     ];
+
+    var base_node = ['web', 'control', 'cas', 'stun', 'relay', 'dbs'];
 
     var default_edges = [
         {from: 'web', to: 'control', color: '#bbb', style:'dash'},
@@ -132,13 +211,15 @@ $(document).ready(function()
         edges: request_response_edges
     }
     var options = {
-        width: '1020px',
+        // width: '1020px',
         height: '600px',
         edges: {style:"arrow-center", widthSelectionMultiplier: 4, arrowScaleFactor: 1.2},
-        nodes: {shape:'box',radius: 5},
+        nodes: {shape:'box',radius: 5
+        },
         hover: true
     };
     var network = new vis.Network(container, request_response_data, options);
+    console.log(network.getScale());
 
     // console.log(network.nodes);
     // console.log(network.nodes['cas'].edges[0].options.color.color);
@@ -213,12 +294,46 @@ $(document).ready(function()
         });
     }
 
-    var node_table_dict = {};
+    var node_mhd_table_dict = {};
 
-    function get_node_table_from_data (s_data) {
+    function byte_2_str (bytes) {
+        // body...
+        if (bytes < 1024) {
+            return bytes;
+        }
+
+        if (bytes < 1048576) {
+            return parseFloat(bytes/1024).toFixed(2) + 'K';
+        }
+
+        if (bytes < 1073741824) {
+            return parseFloat(bytes/1024/1024).toFixed(2) + 'M';
+        };
+
+        return parseFloat(bytes/1024/1024/1024).toFixed(2) + 'G';
+
+
+    }
+
+    function parse_clock_2_str(UNIX_timestamp){
+        var a = new Date(UNIX_timestamp*1000);
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var year = a.getFullYear();
+        var month = months[a.getMonth()];
+        var date = a.getDate();
+        var hour = a.getHours();
+        var min = a.getMinutes();
+        var sec = a.getSeconds();
+        var time = date + ',' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
+        return time;
+    }
+
+    function get_node_mhd_table_from_data (s_data) {
         // body...
         var result_str = '';
-        result_str += '<table class="table">';
+
+        result_str += '<li>Instance mechine data are as follows:'
+        result_str += '<table class="table table-bordered" style="width: 95%;">';
         result_str += '<thead>';
         result_str += '<tr>';
         result_str += '<td>IP</td>';
@@ -232,8 +347,8 @@ $(document).ready(function()
         result_str += '<tbody>';
 
         var tmp_dict = {
-            'system.cpu.util[,idle]' : 0,
-            'vm.memory.size[available]' : 1,
+            'CPU idle time' : 0,
+            'Available memory' : 1,
             'net.if.in[eth0]': 2,
             'net.if.out[eth0]': 3,
             'available' : 4
@@ -243,31 +358,56 @@ $(document).ready(function()
             result_str += '<tr>';
             result_str += '<td>' + h + '</td>';
 
-            // var tmp_td_str_arr = [];
-            // for (var i = 0; i < tmp_dict.length; i++) {
-            //     tmp_td_str_arr.push('<td></td>');
-            // };
+
             var tmp_td_str_arr = ['<td></td>', '<td></td>', '<td></td>', '<td></td>', '<td></td>'];
 
             for(m in s_data[h])
             {
-                // console.log(s_data[h][m].length);
                 var tmp_str = '';
                 if (s_data[h][m].length != undefined) {
 
-                    tmp_str = '<td>' +  s_data[h][m][0][1] + '</td>';
+                    switch(m){
+                        case 'CPU idle time':
+                            tmp_str = '<td>' + parseFloat(100 - s_data[h][m][0][3]).toFixed(2) + '%</td>';
+                            break;
+
+                        case 'Available memory':
+                            tmp_str = '<td>' + byte_2_str(s_data[h][m][0][3]) + 'B</td>';
+                            break;
+
+                        case 'net.if.in[eth0]':
+                            tmp_str = '<td>' + byte_2_str(s_data[h][m][0][4] * 7.5) + 'B</td>';
+                            break;
+
+                        case 'net.if.out[eth0]':
+                            tmp_str = '<td>' + byte_2_str(s_data[h][m][0][4] * 7.5) + 'B</td>';
+                            break;
+
+                        default:
+                            tmp_str = '<td>' +  s_data[h][m][0][1] + '</td>';
+                            break;
+                    }
+
                 }
                 else
                 {
-                    tmp_str = '<td>' +  s_data[h][m] + '</td>';
+                    if (s_data[h][m] == 1) {
+                        tmp_str = '<td><span class="glyphicon glyphicon-ok-sign" aria-hidden="true" style="color:#3c763d"></span></td>';
+                    }
+                    else if(s_data[h][m] == 2)
+                    {
+                        tmp_str = '<td><span class="glyphicon glyphicon-exclamation-sign" aria-hidden="true" style="color:#a94442"></span></td>';
+                    }
+                    else
+                    {
+                        tmp_str = '<td><span class="glyphicon glyphicon-question-sign" aria-hidden="true" ></span></td>';
+                    }
                 }
 
-                // console.log(tmp_str, tmp_dict[m]);
 
                 tmp_td_str_arr[tmp_dict[m]] = tmp_str;
             }
 
-            // console.log(tmp_td_str_arr);
 
             var total_str = '';
             for (var i = 0; i < tmp_td_str_arr.length; i++) {
@@ -281,17 +421,52 @@ $(document).ready(function()
 
         result_str += '</tbody>';
         result_str += '</table>';
+        result_str += '</li>';
         return result_str;
     }
 
     function draw_mhd_data(mhd_data)
     {
-        node_table_dict = {};
+        node_mhd_table_dict = {};
         for(s in mhd_data)
         {
-            node_table_dict[s] = get_node_table_from_data(mhd_data[s]);
+            node_mhd_table_dict[s] = get_node_mhd_table_from_data(mhd_data[s]);
         }
 
+    }
+
+    var node_bhd_table_dict = {};
+
+    function get_node_bhd_table_from_data (s_data) {
+        // body...
+        var result_str = '';
+        result_str += '<li>Business Health Data are as follows:';
+        result_str += '<ul style="margin:0px;">';
+        // console.log(s_data);
+        if (s_data.length == 0) {
+            result_str += '<li>There is no business health data currently.</li>'
+        };
+
+        for (var i = 0; i < s_data.length; i++) {
+            result_str += '<li>' + parse_clock_2_str(s_data[i][3]) + s_data[i][0] + '(' + s_data[i][1] + ')' + ' with metric name: ' + s_data[i][2] + ' produced alarmed value:' + s_data[i][4] + '</li>'; 
+        };
+
+
+
+        result_str += '</ul>'
+
+        result_str += '</li>';
+
+        return result_str;
+    }
+
+    function draw_bhd_data (bhd_data) {
+        // body...
+        node_bhd_table_dict = {};
+        for(s in bhd_data)
+        {
+            node_bhd_table_dict[s] = get_node_bhd_table_from_data(bhd_data[s]);
+        }
     }
 
 
@@ -304,10 +479,45 @@ $(document).ready(function()
                 // current_s2s_data = data.get_result;
                 // draw_s2s_data(data.get_result, false);
                 console.log(data.get_result);
+                draw_bhd_data(data.get_result);
             } else{
                 add_message_2_page(data.info,'danger');
             };
         });
+    }
+
+    function draw_cd_data (cd_data) {
+        // body...
+        var result_str = '';
+
+        if ( cd_data['control']['OnlineDevice'] != undefined) {
+            var online_device = cd_data['control']['OnlineDevice']['statics'][0][2];
+        }
+
+        if (cd_data['relay']['net.if.in[eth0]'] != undefined) {
+
+            var relay_net_in = byte_2_str(cd_data['relay']['net.if.in[eth0]']['statics'][0][4] * 7.5) + 'B';
+        };
+
+        if (cd_data['relay']['net.if.out[eth0]'] != undefined) {
+            var relay_net_out = byte_2_str(cd_data['relay']['net.if.out[eth0]']['statics'][0][4] * 7.5) + 'B'; 
+        };
+
+        // console.log(online_device, relay_net_in, relay_net_out);
+        if (online_device != undefined) {
+
+            result_str += '<p> Online Device currently is :<span id="online-device">' +  online_device + '</span></p>';
+        }
+
+        if (relay_net_in != undefined) {
+            result_str += '<p> Relay Network In Bytes are: <span id="relay-net-in">' + relay_net_in + '</span></p>';
+        };
+
+        if (relay_net_out != undefined) {
+            result_str += '<p> Relay Network Out Bytes are: <span id="relay-net-in">' + relay_net_out + '</span></p>';
+        };
+
+        $('#core-data').append(result_str);
     }
 
 
@@ -317,9 +527,7 @@ $(document).ready(function()
         {
             // console.log(data);
             if (data.get_result_bool) {
-                // current_s2s_data = data.get_result;
-                // draw_s2s_data(data.get_result, false);
-                console.log(data.get_result);
+                draw_cd_data(data.get_result);
             } else{
                 add_message_2_page(data.info,'danger');
             };
@@ -537,18 +745,32 @@ $(document).ready(function()
 
     network.on('hoverNode', function(properties)
     {
+        if (base_node.indexOf(properties.node) >= 0) {
+            var pos = network.canvasToDOM({x:network.nodes[properties.node].left, y:network.nodes[properties.node].top});
+            hover_node_panel = $.jsPanel({
+                selector: '#mynetwork',
+                title:    "detail data in : " + properties.node,
+                position: {top: pos.y, left: pos.x},
+                theme:    "primary",
+                size : {width: 650, height: 300},
+                content : function () {
+                    // body...
+                    var result_str = '';
+                    result_str += '<ul>';
+                    if (node_mhd_table_dict[properties.node] != undefined) {
+                        result_str += node_mhd_table_dict[properties.node] ;
+                    }
 
+                    if (node_bhd_table_dict[properties.node] != undefined) {
+                        result_str += node_bhd_table_dict[properties.node];
+                    };
 
-
-        var pos = network.canvasToDOM({x:network.nodes[properties.node].left, y:network.nodes[properties.node].top});
-        hover_node_panel = $.jsPanel({
-            selector: '#mynetwork',
-            title:    "detail data in : " + properties.node,
-            position: {top: pos.y, left: pos.x},
-            theme:    "primary",
-            size : {width: 400,height: 400},
-            content : node_table_dict[properties.node],
-        });
+                    result_str += '</ul>';
+                    return result_str;
+                },
+            });
+        };
+        
     });
 
     network.on('blurNode', function(properties)
@@ -557,18 +779,66 @@ $(document).ready(function()
             hover_node_panel.close();
         };
     });
+
+    $('body').scrollspy({
+        target: '.bs-docs-sidebar',
+        offset: 40
+    });
+
+    
 })
 </script>
+
+
+
+
 <div class="row">
-    <div class="btn-group s2stype" role="group" data-toggle="buttons-radio">
-        <button type="button" class="btn btn-default current active">Request&Response</button>
-        <button type="button" class="btn btn-default current">Request Flow</button>
-        <button type="button" class="btn btn-default current">Response Flow</button>
+    <!--Nav Bar -->
+
+    <!--Main Content -->
+    <div class="col-xs-9">
+        <div class="bs-docs-section" >
+            <h1 id="cloud-network" class="page-header">Cloud Network
+                <a class="anchorjs-link" href="#cloud-network">
+                    <span class="anchorjs-icon"></span>
+                </a>
+            </h1>
+            <p class="lead">We build cloud network as follows based on the architecture of our cloud servers. Use Request & Response to indicate what happens during each input/output. We can easily acknowledge from the graph below if the servers working as our expected.</p>
+            <div style="border:1px solid #aaa">
+                <div class="row" style="margin:0px;">
+                    <div class="btn-group s2stype" role="group" data-toggle="buttons-radio">
+                        <button type="button" class="btn btn-default current active">Request&Response</button>
+                        <button type="button" class="btn btn-default current">Request Flow</button>
+                        <button type="button" class="btn btn-default current">Response Flow</button>
+                    </div>
+                    <button class="btn btn-default" disabled="true" style="float:right">next update time:<span id="span">60</span>s</button>
+                </div>
+                <div id="mynetwork" style="position:relative"></div>
+            </div>
+            
+        </div>
+        <div class="bs-docs-section" >
+            <h1 id="core-business-data" class="page-header">Core Business Data
+                <a class="anchorjs-link" href="#core-business-data">
+                    <span class="anchorjs-icon"></span>
+                </a>
+            </h1>
+            <p class="lead">Here displays Core Business Data which shows the main activities from different endpoints like dut200, dut250, smart phone apps and so on.</p>
+            <div id="core-data" style="border: solid 1px #aaa"></div>
+        </div>   
     </div>
-    <button class="btn btn-default" disabled="true" style="float:right">next update time:<span id="span">60</span>s</button>
+    <div class="col-xs-3">
+        <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix">
+            <ul class="nav bs-docs-sidenav">
+                <li class="active">
+                    <a href="#cloud-network">Cloud Network</a>
+                </li>
+                <li>
+                    <a href="#core-business-data">Core Business Data</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    
 </div>
-
-
-<div id="mynetwork" style="position:relative"></div>
-
 {% endblock %}
