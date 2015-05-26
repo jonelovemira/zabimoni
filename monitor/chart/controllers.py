@@ -666,7 +666,8 @@ def getbhd():
 		info = ''
 		try:
 			o = Overall(1)
-			bhd = o.gen_bhd_dict()
+			interval = request.args.get('interval', None)
+			bhd = o.gen_bhd_dict(interval)
 			get_result = o.business_health(bhd)
 			get_result_bool = True
 			info = 'success'

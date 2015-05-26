@@ -81,7 +81,7 @@ class Overall():
         
         return result
 
-    def gen_bhd_dict(self):
+    def gen_bhd_dict(self, interval=None):
         
         service_metrics = {}
 
@@ -94,7 +94,10 @@ class Overall():
                     service_metrics[s.servicename].append(tmp)
 
         time_to = int(time.time())
-        time_from = time_to - VALID_DAY_INTERVAL
+        if interval is None:
+            time_from = time_to - VALID_DAY_INTERVAL
+        else:
+            time_from = time_to - int(interval)
 
         result = {
             'service_metrics': service_metrics,

@@ -14,7 +14,10 @@ $(document).ready(function()
 {
 	var test = {
 		"command": "UPGRADE",
-		"content":"test"
+		"content":{
+			"width": "640",
+			"height": "480"
+		}
 	}
 	var str = JSON.stringify(test);
 	$.ajax({
@@ -30,21 +33,29 @@ $(document).ready(function()
 		},
 		success: function (response) {
 			// body...
-			console.log(this);
-			console.log(this.data);
+			// console.log(this);
+			// console.log(this.data);
+			document.write(this.data);
 		},
 		error: function(xhr){
 			console.log(this.data);
 		}
 	});
+	// var r_str = "RESOLUTION\n640\n480\n";
 
+	// x = r_str.split("\n");
+	// console.log(x[0]);
+	// console.log(x[1]);
+	// document.write(x[0]);
+	// document.write(x[1]);
+	// document.write(x[2]);
 
-	cu = {
-		local : []
-	}
+	// cu = {
+	// 	local : []
+	// }
 
-	cu.local.push(1);
-	console.log(cu.local);
+	// cu.local.push(1);
+	// console.log(cu.local);
 })
 </script>
 

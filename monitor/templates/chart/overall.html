@@ -65,42 +65,12 @@
 .bs-docs-sidebar .nav>.active>ul.nav {
     display: block;           
 }
-</style>
-<style type="text/css"> 
-.blink_text { 
 
-        -webkit-animation-name: blinker;
- -webkit-animation-duration: 1s;
- -webkit-animation-timing-function: linear;
- -webkit-animation-iteration-count: infinite;
-
- -moz-animation-name: blinker;
- -moz-animation-duration: 1s;
- -moz-animation-timing-function: linear;
- -moz-animation-iteration-count: infinite;
- animation-name: blinker;
- animation-duration: 1s;
- animation-timing-function: linear; 
-    animation-iteration-count: infinite; color: red; 
-} 
-
-@-moz-keyframes blinker {
-    0% { opacity: 1.0; }
-    50% { opacity: 0.0; }
-    100% { opacity: 1.0; } 
+.node-panel-content{
+    height: 100%;
+    overflow:scroll;
+    overflow-x:hidden;
 }
-
-@-webkit-keyframes blinker {  
-    0% { opacity: 1.0; }
-    50% { opacity: 0.0; }
-    100% { opacity: 1.0; } 
-} 
-
-@keyframes blinker {  
-    0% { opacity: 1.0; } 
-    50% { opacity: 0.0; }      
-    100% { opacity: 1.0; } 
-} 
 </style>
 <script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
 <!-- loading Bootstrap javascript (required only when you intend to use option.bootstrap) -->
@@ -109,7 +79,7 @@
 $(document).ready(function()
 {
     var nodes = [
-            {id: 'web', label: 'webnihao'
+            {id: 'web', label: 'web'
             ,value: 2
             , x: 200, y: 200
         ,color: '#c9ffc7',title:'web'},
@@ -472,15 +442,15 @@ $(document).ready(function()
 
     var node_bhd_table_dict = {};
 
-    function get_node_bhd_table_from_data (s_data) {
+    function get_node_bhd_table_from_data (s_data, s) {
         // body...
         var result_str = '';
-        result_str += '<li>Business Health Data are as follows:';
-        result_str += '<ul style="margin:0px;">';
+        // result_str += '<li>Business Health Data are as follows:';
+        // result_str += '<ul style="margin:0px;">';
         // console.log(s_data);
-        if (s_data.length == 0) {
-            result_str += '<li>There is no business health data currently.</li>';
-        };
+        if (s_data.length > 0) {
+            blink_node(s, 10, 500);
+        }
 
         for (var i = 0; i < s_data.length; i++) {
             result_str += '<li>' + parse_clock_2_str(s_data[i][3]) + s_data[i][0] + '(' + s_data[i][1] + ')' + ' with metric name: <strong>' + s_data[i][2] + '</strong> produced alarmed value:<font color="red"><b>' + s_data[i][4] + '</b></font></li>'; 
@@ -488,26 +458,34 @@ $(document).ready(function()
 
 
 
-        result_str += '</ul>'
+        // result_str += '</ul>'
 
-        result_str += '</li>';
+        // result_str += '</li>';
 
         return result_str;
     }
 
     function draw_bhd_data (bhd_data) {
         // body...
-        node_bhd_table_dict = {};
+        // node_bhd_table_dict = {};
         for(s in bhd_data)
         {
-            node_bhd_table_dict[s] = get_node_bhd_table_from_data(bhd_data[s]);
+            if (node_bhd_table_dict[s] == undefined) {
+                node_bhd_table_dict[s] = '';
+            };
+            node_bhd_table_dict[s] += get_node_bhd_table_from_data(bhd_data[s], s);
         }
     }
 
 
-    function load_bhd_data()
+    function load_bhd_data(interval)
     {
-        $.getJSON('/chart/overall/bhd', function(data)
+        var arg = {};
+        if (interval != undefined) {
+            arg["interval"] = interval;
+        };
+
+        $.getJSON('/chart/overall/bhd',arg, function(data)
         {
             // console.log(data);
             if (data.get_result_bool) {
@@ -830,13 +808,21 @@ $(document).ready(function()
                 content : function () {
                     // body...
                     var result_str = '';
-                    result_str += '<ul>';
+                    result_str += '<ul class="node-panel-content">';
                     if (node_mhd_table_dict[properties.node] != undefined) {
                         result_str += node_mhd_table_dict[properties.node] ;
                     }
 
                     if (node_bhd_table_dict[properties.node] != undefined) {
-                        result_str += node_bhd_table_dict[properties.node];
+                        result_str += '<li>Business Health Data are as follows:';
+                        result_str += '<ul style="margin:0px;">';
+                        if (node_bhd_table_dict[properties.node] != '') {
+                            result_str += node_bhd_table_dict[properties.node];
+                        } else{
+                            result_str += '<li>There is no business health data currently.</li>';
+                        };
+                        result_str += '</ul>';
+                        result_str += '</li>';
                     };
 
                     result_str += '</ul>';
@@ -859,10 +845,51 @@ $(document).ready(function()
         offset: 40
     });
 
+    function blink_node (node_label, total_blink_times, blink_interval) {
+        // body...
+        var local_blink_count = 0;
+
+        var load_blink_interval = setInterval(function()
+        {
+            if (local_blink_count < total_blink_times) {
+                network.nodes[node_label].options.color.background = (network.nodes[node_label].options.color.background == "#c9ffc7" ? 'red': "#c9ffc7");
+                console.log(network.nodes[node_label].options.color.background);
+                network.redraw();
+            }
+            else
+            {
+                network.redraw();
+                clearInterval(load_blink_interval);
+            }
+            local_blink_count += 1;
+        }, blink_interval);
+    }
+
+
+    setInterval(function () {
+        // body...
+        load_bhd_data(60);
+    }, 60000);
+
     // network.nodes['web'].options.color.background = "#689966";
 
     // console.log(network.nodes['web'].options.color.background);
 
+    // blink_node ('web', 10, 500);
+
+    // setTimeout(function () {
+    //     // body...
+    //     network.nodes['web'].options.color.background = '#689966';
+    //     // console.log(network.nodes['web'].options.color.background);
+    //     // console.log("changed1");
+    //     network.redraw();
+    // }, 2000);
+
+    // setTimeout(function () {
+    //     // body...
+    //     network.nodes['web'].options.color.background = 'green';
+    //     console.log("changed2");
+    // }, 2000);
     
 })
 </script>
@@ -902,8 +929,8 @@ $(document).ready(function()
                 </a>
             </h1>
             <p class="lead">Here displays Core Business Data which shows the main activities from different endpoints like dut200, dut250, smart phone apps and so on.</p>
-            <div id="core-data" style="border: solid 1px #aaa">
-                '<span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+            <div id="core-data" style="border: solid 1px #aaa; position: relative">
+                <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
             </div>
             
         </div>   
