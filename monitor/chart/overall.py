@@ -133,11 +133,11 @@ class Overall():
             'frequency': 60
         }
 
-        result['web']['INTERNAL_SUM_QCODESCANNED'] = {
-            'time_from': 0,
-            'time_to': time_to,
-            'frequency': 60
-        }
+        # result['web']['INTERNAL_SUM_QCODESCANNED'] = {
+        #     'time_from': 0,
+        #     'time_to': time_to,
+        #     'frequency': 60
+        # }
 
         return result
 

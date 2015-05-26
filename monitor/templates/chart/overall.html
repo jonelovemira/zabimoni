@@ -66,6 +66,42 @@
     display: block;           
 }
 </style>
+<style type="text/css"> 
+.blink_text { 
+
+        -webkit-animation-name: blinker;
+ -webkit-animation-duration: 1s;
+ -webkit-animation-timing-function: linear;
+ -webkit-animation-iteration-count: infinite;
+
+ -moz-animation-name: blinker;
+ -moz-animation-duration: 1s;
+ -moz-animation-timing-function: linear;
+ -moz-animation-iteration-count: infinite;
+ animation-name: blinker;
+ animation-duration: 1s;
+ animation-timing-function: linear; 
+    animation-iteration-count: infinite; color: red; 
+} 
+
+@-moz-keyframes blinker {
+    0% { opacity: 1.0; }
+    50% { opacity: 0.0; }
+    100% { opacity: 1.0; } 
+}
+
+@-webkit-keyframes blinker {  
+    0% { opacity: 1.0; }
+    50% { opacity: 0.0; }
+    100% { opacity: 1.0; } 
+} 
+
+@keyframes blinker {  
+    0% { opacity: 1.0; } 
+    50% { opacity: 0.0; }      
+    100% { opacity: 1.0; } 
+} 
+</style>
 <script type="text/javascript" src="{{url_for('static',filename='js/jquery-ui.min.js')}}"></script>
 <!-- loading Bootstrap javascript (required only when you intend to use option.bootstrap) -->
 <script type="text/javascript" src="{{url_for('static',filename='js/jquery.jspanel.min.js')}}"></script>
@@ -73,7 +109,7 @@
 $(document).ready(function()
 {
     var nodes = [
-            {id: 'web', label: 'web'
+            {id: 'web', label: 'webnihao'
             ,value: 2
             , x: 200, y: 200
         ,color: '#c9ffc7',title:'web'},
@@ -91,7 +127,7 @@ $(document).ready(function()
         ,color: '#c9ffc7'},
             {id: 'cas', label: 'cas'
             ,value: 2
-            , x: 200, y: 400
+            , x: 100, y: 400
         ,color: '#c9ffc7'},
             {id: 'dbs', label: 'dbs'
             ,value: 2
@@ -219,7 +255,6 @@ $(document).ready(function()
         hover: true
     };
     var network = new vis.Network(container, request_response_data, options);
-    console.log(network.getScale());
 
     // console.log(network.nodes);
     // console.log(network.nodes['cas'].edges[0].options.color.color);
@@ -444,11 +479,11 @@ $(document).ready(function()
         result_str += '<ul style="margin:0px;">';
         // console.log(s_data);
         if (s_data.length == 0) {
-            result_str += '<li>There is no business health data currently.</li>'
+            result_str += '<li>There is no business health data currently.</li>';
         };
 
         for (var i = 0; i < s_data.length; i++) {
-            result_str += '<li>' + parse_clock_2_str(s_data[i][3]) + s_data[i][0] + '(' + s_data[i][1] + ')' + ' with metric name: ' + s_data[i][2] + ' produced alarmed value:' + s_data[i][4] + '</li>'; 
+            result_str += '<li>' + parse_clock_2_str(s_data[i][3]) + s_data[i][0] + '(' + s_data[i][1] + ')' + ' with metric name: <strong>' + s_data[i][2] + '</strong> produced alarmed value:<font color="red"><b>' + s_data[i][4] + '</b></font></li>'; 
         };
 
 
@@ -487,11 +522,13 @@ $(document).ready(function()
     }
 
     function draw_cd_data (cd_data) {
+
+        $('#core-data').empty();
         // body...
         var result_str = '';
 
         if ( cd_data['control']['OnlineDevice'] != undefined) {
-            var online_device = cd_data['control']['OnlineDevice']['statics'][0][2];
+            var online_device = cd_data['control']['OnlineDevice']['last'];
         }
 
         if (cd_data['relay']['net.if.in[eth0]'] != undefined) {
@@ -503,11 +540,46 @@ $(document).ready(function()
             var relay_net_out = byte_2_str(cd_data['relay']['net.if.out[eth0]']['statics'][0][4] * 7.5) + 'B'; 
         };
 
+        if (cd_data['control']['CloudRequest'] != undefined) {
+            var cloud_request = cd_data['control']['CloudRequest']['last'];
+        };
+
+        if (cd_data['web']['FROM-ANDROID_SUM_REQUEST'] != undefined) {
+            var android_app_view = cd_data['web']['FROM-ANDROID_SUM_REQUEST']['last'];
+        };
+
+        if (cd_data['web']['FROM-IOS_SUM_REQUEST'] != undefined) {
+            var ios_app_view = cd_data['web']['FROM-IOS_SUM_REQUEST']['last'];
+        };
+
+        if (cd_data['web']['FROM-WEB_SUM_REQUEST'] != undefined) {
+            var webpage_view = cd_data['web']['FROM-WEB_SUM_REQUEST']['last'];
+        };
+
+
+
         // console.log(online_device, relay_net_in, relay_net_out);
         if (online_device != undefined) {
 
             result_str += '<p> Online Device currently is :<span id="online-device">' +  online_device + '</span></p>';
         }
+
+        if (cloud_request != undefined) {
+            result_str += '<p> Cloud Request currently is :<span id="cloud-request">' +  cloud_request + '</span></p>';
+        }
+
+        if (android_app_view != undefined) {
+            result_str += '<p> User from ANDROID currently is :<span id="android-app-view">' +  android_app_view + '</span></p>';
+        }
+
+        if (ios_app_view != undefined) {
+            result_str += '<p> User from IOS currently is :<span id="ios-app-view">' +  ios_app_view + '</span></p>';
+        }
+
+        if (webpage_view != undefined) {
+            result_str += '<p> User from WEB currently is :<span id="webpage-view">' +  webpage_view + '</span></p>';
+        }
+
 
         if (relay_net_in != undefined) {
             result_str += '<p> Relay Network In Bytes are: <span id="relay-net-in">' + relay_net_in + '</span></p>';
@@ -516,6 +588,8 @@ $(document).ready(function()
         if (relay_net_out != undefined) {
             result_str += '<p> Relay Network Out Bytes are: <span id="relay-net-in">' + relay_net_out + '</span></p>';
         };
+
+
 
         $('#core-data').append(result_str);
     }
@@ -785,6 +859,10 @@ $(document).ready(function()
         offset: 40
     });
 
+    // network.nodes['web'].options.color.background = "#689966";
+
+    // console.log(network.nodes['web'].options.color.background);
+
     
 })
 </script>
@@ -824,7 +902,10 @@ $(document).ready(function()
                 </a>
             </h1>
             <p class="lead">Here displays Core Business Data which shows the main activities from different endpoints like dut200, dut250, smart phone apps and so on.</p>
-            <div id="core-data" style="border: solid 1px #aaa"></div>
+            <div id="core-data" style="border: solid 1px #aaa">
+                '<span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+            </div>
+            
         </div>   
     </div>
     <div class="col-xs-3">
