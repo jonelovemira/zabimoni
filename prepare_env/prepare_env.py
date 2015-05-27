@@ -38,7 +38,7 @@ except ImportError:
 from monitor.functions import get_zabbix_server_ip
 
 
-def init_aws_update_crontab(command,crontab_time):
+def create_crontab(command,crontab_time):
 	try:
 		cron = CronTab()
 		iter_cron = cron.find_command(command)
@@ -751,13 +751,15 @@ if __name__ == '__main__':
 	else:
 		aws_cron_time = os.environ['aws_cron_time']
 
-	init_aws_update_crontab(aws_cron_command,aws_cron_time)
+	create_crontab(aws_cron_command,aws_cron_time)
 
-	init_aws_update_crontab(AWS_BILLING_GET_S3_FILE_C, '0 0 */1 * *')
+	create_crontab(AWS_BILLING_GET_S3_FILE_C, '0 0 */1 * *')
 
-	init_aws_update_crontab('find ' + AWS_BILLING_CSV_FOLDER + \
+	create_crontab('find ' + AWS_BILLING_CSV_FOLDER + \
 		' -type f -mtime -1 -exec ' + AWS_BILLING_PARSE_FILE_C + ' {} \\;',\
 		'0 1 */1 * *')
+
+	create_crontab(UPDATE_ASG_COUNT, '*/5 * * * *')
 
 	print 'process aws'
 	init_aws_item()

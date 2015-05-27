@@ -199,4 +199,5 @@ CORE_BCD_TYPE = 1
 ERROR_BCD_TYPE = 2
 GET_BCD_SPLITER = '@@@'
 
-CLEAR_UNREACHABLE_HOST = '/home/ec2-user/monitor/command/clear_old_host.py --instanceip={HOST.NAME}'
+CLEAR_UNREACHABLE_HOST = basedir + '/command/clear_old_host.py --instanceip={HOST.NAME}'
+UPDATE_ASG_COUNT = basedir + '/command/asg_instance_count_update.py'
