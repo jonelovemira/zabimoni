@@ -343,7 +343,7 @@ $(document).ready(function()
         result_str += '<tr>';
         result_str += '<td>IP</td>';
         result_str += '<td>Max Cpu Used</td>';
-        result_str += '<td>Min Available Used</td>';
+        result_str += '<td>Min Available Memory</td>';
         result_str += '<td>Net in</td>';
         result_str += '<td>Net out</td>';
         result_str += '<td>Available</td>';
@@ -501,7 +501,7 @@ $(document).ready(function()
 
     function draw_cd_data (cd_data) {
 
-        $('#core-data').empty();
+        // $('#core-data').empty();
         // body...
         var result_str = '';
 
@@ -535,41 +535,115 @@ $(document).ready(function()
         };
 
 
+        if (cd_data['relay']['FROM-CLIENT_SUM_GET'] != undefined) {
+            var relay_get = cd_data['relay']['FROM-CLIENT_SUM_GET']['last'];
+        };
 
-        // console.log(online_device, relay_net_in, relay_net_out);
+        if (cd_data['relay']['FROM-CLIENT_SUM_POST'] != undefined) {
+            var relay_post = cd_data['relay']['FROM-CLIENT_SUM_POST']['last'];
+        };
+
+
+
         if (online_device != undefined) {
 
-            result_str += '<p> Online Device currently is :<span id="online-device">' +  online_device + '</span></p>';
+            $('.online-device > .panel-content').empty();
+
+            var online_device_str = '';
+            online_device_str += '<div class="row" style="margin-top:10px;">';
+            online_device_str += '<div class="col-md-3 col-md-offset-1">'
+            online_device_str += '<p>Online Device:<span id="online-device">' +  online_device + '</span></p></div>';
+            online_device_str += '<div class="col-md-3">';
+            online_device_str += '<button class="btn btn-default online-device-btn">Detail</button>';
+            online_device_str += '</div></div>';
+            $('.online-device > .panel-content').append(online_device_str);
+
         }
 
-        if (cloud_request != undefined) {
-            result_str += '<p> Cloud Request currently is :<span id="cloud-request">' +  cloud_request + '</span></p>';
-        }
-
+        
+        var current_user_str = '';
+        current_user_str += '<div class="row" style="margin-top:10px;">';
         if (android_app_view != undefined) {
-            result_str += '<p> User from ANDROID currently is :<span id="android-app-view">' +  android_app_view + '</span></p>';
+            current_user_str += '<div class="col-md-3 col-md-offset-1">'
+            current_user_str += '<p>ANDROID: <span id="android-app-view">' +  android_app_view + '</span></p>';
+            current_user_str += '</div>';
         }
 
         if (ios_app_view != undefined) {
-            result_str += '<p> User from IOS currently is :<span id="ios-app-view">' +  ios_app_view + '</span></p>';
+
+            current_user_str += '<div class="col-md-2">'
+            current_user_str += '<p>IOS: <span id="ios-app-view">' +  ios_app_view + '</span></p>';
+            current_user_str += '</div>';
+
+            // result_str += '<p> User from IOS currently is :<span id="ios-app-view">' +  ios_app_view + '</span></p>';
         }
 
         if (webpage_view != undefined) {
-            result_str += '<p> User from WEB currently is :<span id="webpage-view">' +  webpage_view + '</span></p>';
+
+            current_user_str += '<div class="col-md-3">'
+            current_user_str += '<p>WEB:<span id="webpage-view">' +  webpage_view + '</span></p>';
+            current_user_str += '</div>';
+
+            // result_str += '<p> User from WEB currently is :<span id="webpage-view">' +  webpage_view + '</span></p>';
+        }
+        if (current_user_str != '<div class="row" style="margin-top:10px;">') {
+            current_user_str += '<div class="col-md-3"><button class="btn btn-default web-user-btn">Detail</button></div>';
+            current_user_str += '</div>';
+            $('.web-user > .panel-content').empty();
+            $('.web-user > .panel-content').append(current_user_str);
         }
 
 
+        var relay_post_get_str = '';
+        relay_post_get_str += '<div class="row" style="margin-top:10px;">';
+        if (relay_post != undefined) {
+            relay_post_get_str += '<div class="col-md-3 col-md-offset-1">'
+            relay_post_get_str += '<p>POST: <span id="relay-post">' +  relay_post + '</span></p>';
+            relay_post_get_str += '</div>';
+        }
+
+        if (relay_get != undefined) {
+
+            relay_post_get_str += '<div class="col-md-3">'
+            relay_post_get_str += '<p>GET: <span id="relay-get">' +  relay_get + '</span></p>';
+            relay_post_get_str += '</div>';
+
+            // result_str += '<p> User from IOS currently is :<span id="ios-app-view">' +  ios_app_view + '</span></p>';
+        }
+
+        if (relay_post_get_str != '<div class="row" style="margin-top:10px;">') {
+            relay_post_get_str += '<div class="col-md-3"><button class="btn btn-default relay-post-get-btn">Detail</button></div>';
+            relay_post_get_str += '</div>';
+            $('.relay-post-get > .panel-content').empty();
+            $('.relay-post-get > .panel-content').append(relay_post_get_str);
+        }
+        
+        var relay_net_str = '';
+        relay_net_str += '<div class="row" style="margin-top:10px;">';
         if (relay_net_in != undefined) {
-            result_str += '<p> Relay Network In Bytes are: <span id="relay-net-in">' + relay_net_in + '</span></p>';
+            relay_net_str += '<div class="col-md-3 col-md-offset-1">'
+            relay_net_str += '<p>Network In: <span id="relay-net-in">' + relay_net_in + '</span></p>';
+            relay_net_str += '</div>';
         };
 
         if (relay_net_out != undefined) {
-            result_str += '<p> Relay Network Out Bytes are: <span id="relay-net-in">' + relay_net_out + '</span></p>';
+
+            relay_net_str += '<div class="col-md-3">'
+            relay_net_str += '<p>Network Out: <span id="relay-net-out">' + relay_net_out + '</span></p>';
+            relay_net_str += '</div>';
+
         };
+        if(relay_net_str != '<div class="row" style="margin-top:10px;">')
+        {
+            relay_net_str += '</div>';
+            $('.relay-net > .panel-content').empty();
+            $('.relay-net > .panel-content').append(relay_net_str);
+        }
+        
 
 
 
-        $('#core-data').append(result_str);
+        // $('#core-data').append(result_str);
     }
 
 
@@ -762,7 +836,7 @@ $(document).ready(function()
         });
     }
 
-    $('button').click(function(){
+    $('button.flow-control').click(function(){
         $(this).addClass("current").siblings().removeClass("active");
         current_s2s_type = $(this).text();
         // console.log(last_s2s_type, current_s2s_type);
@@ -853,7 +927,6 @@ $(document).ready(function()
         {
             if (local_blink_count < total_blink_times) {
                 network.nodes[node_label].options.color.background = (network.nodes[node_label].options.color.background == "#c9ffc7" ? 'red': "#c9ffc7");
-                console.log(network.nodes[node_label].options.color.background);
                 network.redraw();
             }
             else
@@ -871,25 +944,123 @@ $(document).ready(function()
         load_bhd_data(60);
     }, 60000);
 
-    // network.nodes['web'].options.color.background = "#689966";
+    
+    var sortId_chart_map = {};
+    function load_panel_chart (arg_dict) {
 
-    // console.log(network.nodes['web'].options.color.background);
+        var panel_object = arg_dict['panel'];
+        var chart_object = arg_dict['chart'];
+        var panel_selector = arg_dict['panel_selector'];
+        var panel_title = arg_dict['panel_title'];
+        var chart_container = arg_dict['chart_container'];
+        var sm_cc_str = arg_dict['sm_cc_str'];
+        var sortId = arg_dict['sortId'];
 
-    // blink_node ('web', 10, 500);
 
-    // setTimeout(function () {
-    //     // body...
-    //     network.nodes['web'].options.color.background = '#689966';
-    //     // console.log(network.nodes['web'].options.color.background);
-    //     // console.log("changed1");
-    //     network.redraw();
-    // }, 2000);
+        if (panel_object != undefined) {
+            if (chart_object != undefined) {
+                chart_object.clear_chart();
+            };
+            panel_object.close();
+        };
 
-    // setTimeout(function () {
-    //     // body...
-    //     network.nodes['web'].options.color.background = 'green';
-    //     console.log("changed2");
-    // }, 2000);
+        panel_object = $.jsPanel({
+                        selector: panel_selector,
+                        theme:     'info',
+                        title:      panel_title,
+                        content:   chart_container
+        });
+
+        panel_object.on( "resizestop", panel_resize_callback );
+        panel_object.on( "jspanelmaximized", panel_resize_callback );
+        panel_object.on( "jspanelnormalized", panel_resize_callback );
+
+        // '<div id="online-device-chart" class="online-device-chart"></div>'
+
+        // body...
+
+        // var online_device_str = '{"selected_metrics":{"control":{"by_group_result":{"metric_count":1,"metric_result":[["control","OnlineDevice","INTERNAL_SUM_ONLINEDEVICE","Online device"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Average","container_class":"online-device-chart","container_selector":"#online-device-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"online"}';
+
+        var obj = JSON.parse(sm_cc_str);
+        var refresh_smr = obj.selected_metrics;
+        var refresh_cc = obj.chart_config;
+
+        // console.log(obj);
+        chart_object = new chart();
+        chart_object.set_selected_metrics(refresh_smr);
+        chart_object.set_chart_config(refresh_cc);
+        chart_object.clear_chart();
+        chart_object.set_highchart();
+        chart_object.create_chart();
+        sortId_chart_map[sortId] = chart_object;
+    }
+
+    var online_device_panel;
+    var online_device_chart;
+    $(document).on('click', 'button.online-device-btn', function()
+    {
+        var arg_dict = {};
+        arg_dict['panel'] = online_device_panel;
+        arg_dict['chart'] = online_device_chart;
+        arg_dict['panel_selector'] = '#core-data';
+        arg_dict['panel_title'] = 'Dynamic Update Online Device Chart';
+        arg_dict['chart_container'] = '<div id="online-device-chart" class="online-device-chart  chart" sortId="0" style="width: 100%; height: 100%;"></div>';
+        arg_dict['sm_cc_str'] = '{"selected_metrics":{"control":{"by_group_result":{"metric_count":1,"metric_result":[["control","OnlineDevice","INTERNAL_SUM_ONLINEDEVICE","Online device"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"online-device-chart","container_selector":"#online-device-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"online"}';
+        arg_dict['sortId'] = 0;
+        load_panel_chart(arg_dict);
+    });
+
+
+
+    var relay_post_get_panel;
+    var relay_post_get_chart;
+    $(document).on('click', 'button.relay-post-get-btn', function()
+    {
+        var arg_dict = {};
+        arg_dict['panel'] = relay_post_get_panel;
+        arg_dict['chart'] = relay_post_get_chart;
+        arg_dict['panel_selector'] = '#core-data';
+        arg_dict['panel_title'] = 'Dynamic Update Relay POST & GET';
+        arg_dict['chart_container'] = '<div id="relay-post-get-chart" class="relay-post-get-chart  chart" sortId="1" style="width: 100%; height: 100%;"></div>';
+        arg_dict['sm_cc_str'] = '{"selected_metrics":{"relay":{"by_group_result":{"metric_count":2,"metric_result":[["relay","FROM-CLIENT_SUM_POST","FROM@CLIENT_SUM_POST","Count of \'POST\' request from client"],["relay","FROM-CLIENT_SUM_GET","FROM@CLIENT_SUM_GET","Count of \'GET\' requests from client"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"relay-post-get-chart","container_selector":"#relay-post-get-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"POST GET"}';
+        arg_dict['sortId'] = 1;
+        load_panel_chart(arg_dict);
+    });
+
+
+    var web_user_panel;
+    var web_user_chart;
+    $(document).on('click', 'button.web-user-btn', function()
+    {
+        var arg_dict = {};
+        arg_dict['panel'] = web_user_panel;
+        arg_dict['chart'] = web_user_chart;
+        arg_dict['panel_selector'] = '#core-data';
+        arg_dict['panel_title'] = 'Dynamic Update Web User use IOS, ANDROID and WEBPAGE';
+        arg_dict['chart_container'] = '<div id="web-user-chart" class="web-user-chart chart" sortId="2" style="width: 100%; height: 100%;"></div>';
+        arg_dict['sm_cc_str'] = '{"selected_metrics":{"web":{"by_group_result":{"metric_count":3,"metric_result":[["web","FROM-ANDROID_SUM_REQUEST","FROM@ANDROID_SUM_REQCOUNT","Count of actions request from Android APP"],["web","FROM-IOS_SUM_REQUEST","FROM@IOS_SUM_REQCOUNT","Count of action request from IOS"],["web","FROM-WEB_SUM_REQUEST","FROM@WEBPAGE_SUM_REQCOUNT","Count of action requests from webpage"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"web-user-chart","container_selector":"#web-user-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"web user"}';
+        arg_dict['sortId'] = 2;
+        load_panel_chart(arg_dict);
+    });
+
+    
+    var default_panel_header_height = 29;
+    var default_panel_footer_height = 0;
+    function panel_resize_callback (event,ui)
+    {
+        var tmp_height = $(this).height() - default_panel_footer_height - default_panel_header_height;
+        var tmp_width = $(this).width();
+        // console.log(tmp_height,tmp_width);
+        var chart_container = $(this).find('div.chart').first();
+        chart_container.height(tmp_height);
+        chart_container.width(tmp_width);
+        var sortId = parseInt(chart_container.attr("sortId"));
+        if (sortId_chart_map[sortId] != undefined) {
+            sortId_chart_map[sortId].get_chart().setSize(tmp_width,tmp_height,false);
+        };
+        event.stopPropagation();
+    }
+
     
 })
 </script>
@@ -908,13 +1079,13 @@ $(document).ready(function()
                     <span class="anchorjs-icon"></span>
                 </a>
             </h1>
-            <p class="lead">We build cloud network as follows based on the architecture of our cloud servers. Use Request & Response to indicate what happens during each input/output. We can easily acknowledge from the graph below if the servers working as our expected.</p>
+            <div style="margin-bottom:20px;">We build cloud network as follows based on the architecture of our cloud servers. Use Request & Response to indicate what happens during each input/output. We can easily acknowledge from the graph below if the servers working as our expected.</div>
             <div style="border:1px solid #aaa">
                 <div class="row" style="margin:0px;">
                     <div class="btn-group s2stype" role="group" data-toggle="buttons-radio">
-                        <button type="button" class="btn btn-default current active">Request&Response</button>
-                        <button type="button" class="btn btn-default current">Request Flow</button>
-                        <button type="button" class="btn btn-default current">Response Flow</button>
+                        <button type="button" class="btn btn-default current active flow-control">Request&Response</button>
+                        <button type="button" class="btn btn-default current flow-control">Request Flow</button>
+                        <button type="button" class="btn btn-default current flow-control">Response Flow</button>
                     </div>
                     <button class="btn btn-default" disabled="true" style="float:right">next update time:<span id="span">60</span>s</button>
                 </div>
@@ -928,9 +1099,32 @@ $(document).ready(function()
                     <span class="anchorjs-icon"></span>
                 </a>
             </h1>
-            <p class="lead">Here displays Core Business Data which shows the main activities from different endpoints like dut200, dut250, smart phone apps and so on.</p>
-            <div id="core-data" style="border: solid 1px #aaa; position: relative">
-                <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+            <div style="margin-bottom:20px;">Here displays Core Business Data which shows the main activities from different endpoints like dut200, dut250, smart phone apps and so on.</div>
+            <div id="core-data" style="padding: 10px; position: relative;">
+                <div class="panel panel-default online-device">
+                    <div class="panel-heading">1. Currently Online Device Data.</div>
+                    <div class="panel-content" style="/*height:150px;*/">
+                        <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+                    </div>
+                </div>
+                <div class="panel panel-default relay-net">
+                    <div class="panel-heading">2. Relay Network In & Out Bytes of <b>LAST 24 HOURS</b>.</div>
+                    <div class="panel-content">
+                        <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+                    </div>
+                </div>
+                <div class="panel panel-default relay-post-get">
+                    <div class="panel-heading">3. Relay POST & GET.</div>
+                    <div class="panel-content" style="/*height:150px;*/">
+                        <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+                    </div>
+                </div>
+                <div class="panel panel-default web-user">
+                    <div class="panel-heading">4. Online User who uses different interface.</div>
+                    <div class="panel-content" style="/*height:150px;*/">
+                        <span class="glyphicon glyphicon-refresh glyphicon-refresh-animate"></span>
+                    </div>
+                </div>
             </div>
             
         </div>   
@@ -949,4 +1143,7 @@ $(document).ready(function()
     </div>
     
 </div>
+
+<script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
 {% endblock %}
