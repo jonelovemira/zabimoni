@@ -453,14 +453,9 @@ $(document).ready(function()
         }
 
         for (var i = 0; i < s_data.length; i++) {
-            result_str += '<li>' + parse_clock_2_str(s_data[i][3]) + s_data[i][0] + '(' + s_data[i][1] + ')' + ' with metric name: <strong>' + s_data[i][2] + '</strong> produced alarmed value:<font color="red"><b>' + s_data[i][4] + '</b></font></li>'; 
+
+            result_str += '<li>' + moment.unix(s_data[i][3]).format('YYYY-MM-DD HH:mm Z') + ' ' + s_data[i][0] + '(' + s_data[i][1] + ')' + ' with metric name: <strong>' + s_data[i][2] + '</strong> produced alarmed value:<font color="red"><b>' + s_data[i][4] + '</b></font></li>'; 
         };
-
-
-
-        // result_str += '</ul>'
-
-        // result_str += '</li>';
 
         return result_str;
     }
@@ -491,7 +486,7 @@ $(document).ready(function()
             if (data.get_result_bool) {
                 // current_s2s_data = data.get_result;
                 // draw_s2s_data(data.get_result, false);
-                console.log(data.get_result);
+                // console.log(data.get_result);
                 draw_bhd_data(data.get_result);
             } else{
                 add_message_2_page(data.info,'danger');
@@ -693,7 +688,7 @@ $(document).ready(function()
 
                 if (value != null && value != undefined) {
                     var label_str  = '(' + value + ')';
-                    console.log(value);
+                    // console.log(value);
                     tmp_edges.push({from: from_node, to: to_node, label: label_str, width: 2, title: edge_label});
                 }
             }
@@ -858,7 +853,7 @@ $(document).ready(function()
 
 
     network.on('doubleClick', function (properties) {
-        console.log(properties.nodes, properties.edges);
+        // console.log(properties.nodes, properties.edges);
         if (properties.nodes != undefined && properties.nodes != '' && properties.nodes.length > 0) {
             alert(properties.nodes);
         }
@@ -1146,4 +1141,5 @@ $(document).ready(function()
 
 <script type="text/javascript" src="{{url_for('static',filename='js/highstock.js')}}"></script>
 <script type="text/javascript" src="{{url_for('static',filename='js/chart.js')}}"></script>
+<script type="text/javascript" src="{{url_for('static',filename='js/moment.js')}}"></script>
 {% endblock %}
