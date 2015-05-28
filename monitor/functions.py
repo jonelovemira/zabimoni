@@ -19,15 +19,19 @@ def construct_random_str(size=6, chars=string.ascii_uppercase + string.digits):
 
 def log_for_callback_command(args):
 	# WRITE LOG 
-	time_format = '%Y-%m-%d %H:%M:%S %Z'
-	current_time = time.strftime(time_format,time.gmtime(time.time()))
-	output = open(REMOTE_COMMAND_LOG,'a')
-	output.write( '\n' + current_time + ' ')
+	try:
+		time_format = '%Y-%m-%d %H:%M:%S %Z'
+		current_time = time.strftime(time_format,time.gmtime(time.time()))
+		output = open(REMOTE_COMMAND_LOG,'a')
+		output.write( '\n' + current_time + ' ')
 
-	for a in args:
-		output.write(a + ' ')
+		for a in args:
+			output.write(a + ' ')
 
-	output.close()
+		output.close()
+	except Exception, e:
+		pass
+	
 
 def str_2_clock(time_str, format):
 	if time_str is None or format is None:
