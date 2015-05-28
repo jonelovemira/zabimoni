@@ -398,7 +398,7 @@ def add_itemtype_functions(i, target = None):
 		condition = tmp_d_arr[2]
 
 	if ittmp == None:
-		ittmp = Itemtype(itemtypename, itemkey_, uniqueindexname, None, itemdatatype, itemunit, \
+		ittmp = Itemtype(itemtypename, itemkey_, itemkey_, None, itemdatatype, itemunit, \
 			zabbixvaluetype, update_frequency, function_type, description, \
 			bcd_type, condition)
 	else:
