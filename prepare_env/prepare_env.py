@@ -729,15 +729,17 @@ if __name__ == '__main__':
 		h = session.query(Zabbixhosts).filter_by(name=get_zabbix_server_ip()).first()
 		session.close()
 		if h == None:
-			result = zabbix.host_create(get_zabbix_server_ip() , '127.0.0.1' , [HOST_GROUP_NAME], [])
+			result = zabbix.host_create(get_zabbix_server_ip() , '127.0.0.1' , [HOST_GROUP_NAME], [TEMPLATE_NAME])
 		else:
+			zabbix.host_update(h.hostid)
 			result = h.hostid
 	
-		area = Area.query.filter_by(areaname=AREA).first()
-		service = Service.query.filter_by(servicename=SERVICE).first()
-		h = Host(result,get_zabbix_server_ip(),area,service)
+		# area = Area.query.filter_by(areaname=AREA).first()
+		# service = Service.query.filter_by(servicename=SERVICE).first()
+		# h = Host(result,get_zabbix_server_ip(),area,service)
+		add_update_host(get_zabbix_server_ip(), SERVICE, get_zabbix_server_ip(), AREA)
 		print "hostid",result
-		db.session.add(h)
+		# db.session.add(h)
 		db.session.commit()
 	except Exception, e:
 		db.session.rollback()
