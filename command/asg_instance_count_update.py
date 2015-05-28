@@ -11,6 +11,18 @@ from config import AREA
 from zabbix_send import ZabbixSender
 from monitor.functions import get_zabbix_server_ip
 
+
+group_metric_map = {
+	'monitor': 'INTERNAL_ASG_MONITOR',
+	'dbs': 'INTERNAL_ASG_DBS',
+	'gdbs': 'INTERNAL_ASG_GDBS',
+	'relay': 'INTERNAL_ASG_RELAY',
+	'stun': 'INTERNAL_ASG_STUN',
+	'control': 'INTERNAL_ASG_CONTROL',
+	'web': 'INTERNAL_ASG_WEB',
+	'cas': 'INTERNAL_ASG_CAS',
+}
+
 def send_update_data():
 
 	try:
