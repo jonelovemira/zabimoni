@@ -178,7 +178,7 @@ def add_update_host(hostname, servicename,host_ip,areaname):
 		session = loadSession()
 		for it in allitemtype:
 			
-			addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+			addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.uniqueindexname).first()
 			
 			itemid = None
 			if addbytem == None and it.zabbixvaluetype == None:
@@ -266,7 +266,7 @@ def add_host(hostname, servicename,host_ip,areaname):
 		session = loadSession()
 		for it in allitemtype:
 			
-			addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+			addbytem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.uniqueindexname).first()
 			itemid = None
 
 			if addbytem == None and it.zabbixvaluetype == None:
@@ -343,7 +343,7 @@ def update_host(hostid,hostname,areaid,serviceid,host_ip=None):
 		for it in allitemtype:
 			item = it.items.filter_by(host_id=hostid).first()
 			
-			zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+			zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.uniqueindexname).first()
 			
 			if item == None:
 				# create item in zabbix database if it not exists
@@ -408,7 +408,7 @@ def add_itkey_to_host(hostid,it,zabbix):
 
 
 	session = loadSession()
-	zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.itemkey).first()
+	zitem = session.query(Zabbixitems).filter_by(hostid=hostid,key_=it.uniqueindexname).first()
 	session.close()
 
 	itemid = None
@@ -434,7 +434,7 @@ def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix=None):
 	#it_test(key)
 	it = Itemtype.query.filter_by(itemtypename=key).first()
 	if it == None:
-		it = Itemtype(key,key,None,idt,unitname,zabbixvaluetype)
+		it = Itemtype(key,key,key,None,idt,unitname,zabbixvaluetype)
 		db.session.add(it)
 
 	if isinstance(o, Service ):

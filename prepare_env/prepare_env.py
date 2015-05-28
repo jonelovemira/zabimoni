@@ -109,7 +109,7 @@ def init_aws_itemtype(dimension,idt,hostid,area,zabbix):
 
 		it_tmp = Itemtype.query.filter_by(itemtypename=itname).first()
 		if it_tmp == None:
-			it_tmp = Itemtype(itemtypename=itname,itemkey=itkey,aws=aws,itemdatatype=idt,itemunit='USD',zabbixvaluetype=NUMERIC_FLOAT)
+			it_tmp = Itemtype(itemtypename=itname,itemkey=itkey, uniqueindexname=uniqueindexname,aws=aws,itemdatatype=idt,itemunit='USD',zabbixvaluetype=NUMERIC_FLOAT)
 			db.session.add(it_tmp)
 		
 		itkey = area.areaname + '_' + itkey
@@ -346,13 +346,14 @@ def add_zit_functions(i, target = None):
 		condition = tmp_d_arr[2]
 
 	if ittmp == None:
-		ittmp = Itemtype(itemtypename, itemtypename, None, itemdatatype, itemunit, \
+		ittmp = Itemtype(itemtypename, itemtypename, itemkey_, None, itemdatatype, itemunit, \
 			zabbixvaluetype, update_frequency, function_type, description, \
 			bcd_type, condition)
 	else:
 		ittmp.itemtypename = itemtypename
 		ittmp.itemkey = itemtypename
 		ittmp.itemdatatype = itemdatatype
+		ittmp.uniqueindexname = itemkey_
 		ittmp.itemunit = itemunit
 		ittmp.zabbixvaluetype =zabbixvaluetype
 		ittmp.time_frequency = update_frequency
@@ -397,13 +398,14 @@ def add_itemtype_functions(i, target = None):
 		condition = tmp_d_arr[2]
 
 	if ittmp == None:
-		ittmp = Itemtype(itemtypename, itemkey_, None, itemdatatype, itemunit, \
+		ittmp = Itemtype(itemtypename, itemkey_, uniqueindexname, None, itemdatatype, itemunit, \
 			zabbixvaluetype, update_frequency, function_type, description, \
 			bcd_type, condition)
 	else:
 		ittmp.itemtypename = itemtypename
 		ittmp.itemkey = itemkey_
 		ittmp.itemdatatype = itemdatatype
+		ittmp.uniqueindexname = itemkey_
 		ittmp.itemunit = itemunit
 		ittmp.zabbixvaluetype =zabbixvaluetype
 		ittmp.time_frequency = update_frequency

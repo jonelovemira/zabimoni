@@ -20,13 +20,15 @@ class Itemtype(db.Model):
 	description = db.Column(db.String(256))
 	bcd_type = db.Column(db.Integer)
 	condition = db.Column(db.String(64))
+	uniqueindexname = db.Column(db.String(80))
 	# detailitemtypes = db.relationship('Detailitemtype',backref='itemtype',lazy='dynamic')
 
-	def	__init__(self, itemtypename, itemkey, aws=None, itemdatatype=None, \
+	def	__init__(self, itemtypename, itemkey, uniqueindexname, aws=None, itemdatatype=None, \
 		itemunit=None, zabbixvaluetype=None, time_frequency=60, \
 		function_type=0, description=None, bcd_type=0, condition=None):
 		self.itemtypename = itemtypename
 		self.itemkey = itemkey
+		self.uniqueindexname = uniqueindexname
 		self.aws = aws
 		self.itemdatatype = itemdatatype
 		self.itemunit = itemunit
