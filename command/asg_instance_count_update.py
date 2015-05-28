@@ -1,7 +1,4 @@
-#!/home/monitor/project/monitor-0.3.7/flask/bin/python
-
-
-
+#! /home/monitor/project/monitor-0.3.7/flask/bin/python
 
 import inspect,os
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
