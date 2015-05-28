@@ -109,7 +109,7 @@ def init_aws_itemtype(dimension,idt,hostid,area,zabbix):
 
 		it_tmp = Itemtype.query.filter_by(itemtypename=itname).first()
 		if it_tmp == None:
-			it_tmp = Itemtype(itemtypename=itname,itemkey=itkey, uniqueindexname=uniqueindexname,aws=aws,itemdatatype=idt,itemunit='USD',zabbixvaluetype=NUMERIC_FLOAT)
+			it_tmp = Itemtype(itemtypename=itname,itemkey=itkey, uniqueindexname=itkey,aws=aws,itemdatatype=idt,itemunit='USD',zabbixvaluetype=NUMERIC_FLOAT)
 			db.session.add(it_tmp)
 		
 		itkey = area.areaname + '_' + itkey
