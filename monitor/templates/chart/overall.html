@@ -969,6 +969,9 @@ $(document).ready(function()
         panel_object.on( "resizestop", panel_resize_callback );
         panel_object.on( "jspanelmaximized", panel_resize_callback );
         panel_object.on( "jspanelnormalized", panel_resize_callback );
+        panel_object.on( "jspanelclosed", panel_closed );
+
+        arg_dict['panel'] = panel_object;
 
         // '<div id="online-device-chart" class="online-device-chart"></div>'
 
@@ -994,6 +997,9 @@ $(document).ready(function()
     var online_device_chart;
     $(document).on('click', 'button.online-device-btn', function()
     {
+
+        // console.log(online_device_panel);
+
         var arg_dict = {};
         arg_dict['panel'] = online_device_panel;
         arg_dict['chart'] = online_device_chart;
@@ -1003,6 +1009,7 @@ $(document).ready(function()
         arg_dict['sm_cc_str'] = '{"selected_metrics":{"control":{"by_group_result":{"metric_count":1,"metric_result":[["control","OnlineDevice","INTERNAL_SUM_ONLINEDEVICE","Online device"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"online-device-chart","container_selector":"#online-device-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"online"}';
         arg_dict['sortId'] = 0;
         load_panel_chart(arg_dict);
+        online_device_panel = arg_dict['panel'];
     });
 
 
@@ -1020,6 +1027,7 @@ $(document).ready(function()
         arg_dict['sm_cc_str'] = '{"selected_metrics":{"relay":{"by_group_result":{"metric_count":2,"metric_result":[["relay","FROM-CLIENT_SUM_POST","FROM@CLIENT_SUM_POST","Count of \'POST\' request from client"],["relay","FROM-CLIENT_SUM_GET","FROM@CLIENT_SUM_GET","Count of \'GET\' requests from client"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"relay-post-get-chart","container_selector":"#relay-post-get-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"POST GET"}';
         arg_dict['sortId'] = 1;
         load_panel_chart(arg_dict);
+        relay_post_get_panel = arg_dict['panel'];
     });
 
 
@@ -1036,6 +1044,7 @@ $(document).ready(function()
         arg_dict['sm_cc_str'] = '{"selected_metrics":{"web":{"by_group_result":{"metric_count":3,"metric_result":[["web","FROM-ANDROID_SUM_REQUEST","FROM@ANDROID_SUM_REQCOUNT","Count of actions request from Android APP"],["web","FROM-IOS_SUM_REQUEST","FROM@IOS_SUM_REQCOUNT","Count of action request from IOS"],["web","FROM-WEB_SUM_REQUEST","FROM@WEBPAGE_SUM_REQCOUNT","Count of action requests from webpage"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"web-user-chart","container_selector":"#web-user-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"web user"}';
         arg_dict['sortId'] = 2;
         load_panel_chart(arg_dict);
+        web_user_panel = arg_dict['panel'];
     });
 
     
@@ -1052,6 +1061,19 @@ $(document).ready(function()
         var sortId = parseInt(chart_container.attr("sortId"));
         if (sortId_chart_map[sortId] != undefined) {
             sortId_chart_map[sortId].get_chart().setSize(tmp_width,tmp_height,false);
+        };
+        event.stopPropagation();
+    }
+
+
+    function panel_closed (event, ui) {
+        // body...
+        var chart_container = $(this).find('div.chart').first();
+        chart_container.height(tmp_height);
+        chart_container.width(tmp_width);
+        var sortId = parseInt(chart_container.attr("sortId"));
+        if (sortId_chart_map[sortId] != undefined) {
+            sortId_chart_map[sortId].clear_chart();
         };
         event.stopPropagation();
     }
