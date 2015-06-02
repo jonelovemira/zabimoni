@@ -8,6 +8,8 @@ function chart()
 
     this.callback = null;
 
+    this.hidden_status_prefix = "h_status--";
+
     this.get_selected_metrics = function()
     {
         return this.selected_metrics;
@@ -114,6 +116,16 @@ function chart()
                                         this.legend.allItems[i].update({name:tmp_chart_config['series-name___' + i]});
                                     };
                                 };
+
+                                // console.log(tmp_chart_config);
+
+                                for (var i = 0; i < this.series.length; i++) {
+                                    // if () {};
+                                    if (tmp_chart_config[tmp_current_class.hidden_status_prefix + this.series[i].name] != undefined &&
+                                        tmp_chart_config[tmp_current_class.hidden_status_prefix + this.series[i].name]) {
+                                        this.series[i].hide();
+                                    };
+                                };
                             }
                         },
                         zoomType:'x',
@@ -157,7 +169,25 @@ function chart()
                             {
                                 enabled:false
                             },
-                            stickyTracking: false
+                            stickyTracking: false,
+                            events:{
+                                legendItemClick: function(event){
+                                    // console.log(this);
+                                    // console.log(tmp_current_class);
+                                    var hidden_series_name = tmp_current_class.hidden_status_prefix + this.name;
+                                    // console.log(hidden_series_name, this.visible);
+                                    if ( this.visible ) {
+                                        tmp_current_class.chart_config[hidden_series_name] = true;
+                                    }
+                                    else
+                                    {
+                                        if (tmp_current_class.chart_config[hidden_series_name] != undefined) {
+                                            tmp_current_class.chart_config[hidden_series_name] = false;
+                                        };
+                                    }
+                                    // console.log(tmp_chart_config);
+                                }
+                            },
                         },
                         series:{
                             stickyTracking: false,
@@ -277,7 +307,7 @@ function chart()
         		}
         		else
         		{
-                    console.log(data.info);
+                    // console.log(data.info);
         			var current_series_data = data.init_result;
 
                     var unitname_format_map = {};
