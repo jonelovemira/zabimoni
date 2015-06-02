@@ -105,6 +105,7 @@ function chart()
 
                                 };
 
+
                                 // console.log(tmp_current_class.callback);
                                 if (tmp_current_class.callback != null) {
                                     tmp_current_class.callback.fire();
