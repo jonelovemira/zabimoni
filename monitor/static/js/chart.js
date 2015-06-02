@@ -104,8 +104,6 @@ function chart()
                                     tmp_current_class.set_interval_num(tmp_interval_num);
 
                                 };
-
-
                                 // console.log(tmp_current_class.callback);
                                 if (tmp_current_class.callback != null) {
                                     tmp_current_class.callback.fire();
