@@ -36,12 +36,10 @@ def send_update_data():
 		for asg in autoscalegroups:
 			for key in group_metric_map:
 				if key in asg.name:
-					print group_metric_map[key], asg.desired_capacity
 					zs.AddData(host_name, unicode(group_metric_map[key]), str(asg.desired_capacity))
 					break
 		
 		res = zs.Send()
-		print res
 		zs.ClearData()
 	except Exception, e:
 		import sys, traceback
