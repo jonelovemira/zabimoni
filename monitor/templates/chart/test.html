@@ -12,54 +12,29 @@
 <script type="text/javascript">
 $(document).ready(function()
 {
-	var test = {
-		"command": "UPGRADE",
-		"content":{
-			"width": "640",
-			"height": "480"
-		}
+	function Parenizor(value) {
+	    this.setValue(value);
 	}
-	var str = JSON.stringify(test);
-	$.ajax({
-		url: '/chart/overall/cd',
-		dataType: 'json',
-		type: 'post',
-		data: {
-			"REQUEST": "FIRMWAREUPGRADE",
-			"DATA": {
-			    "command": test,
-			    "deviceId": 'AB:CD:EF:HI:JK'
-			}
-		},
-		success: function (response) {
-			// body...
-			// console.log(this);
-			// console.log(this.data);
-			document.write(this.data);
-		},
-		error: function(xhr){
-			console.log(this.data);
-		}
+	 
+	Parenizor.method('setValue', function (value) {
+	    this.value = value;
+	    return this;
 	});
-	// var r_str = "RESOLUTION\n640\n480\n";
+	 
+	Parenizor.method('getValue', function () {
+	    return this.value;
+	});
+	 
+	Parenizor.method('toString', function () {
+	    return '(' + this.getValue() + ')';
+	});
 
-	// x = r_str.split("\n");
-	// console.log(x[0]);
-	// console.log(x[1]);
-	// document.write(x[0]);
-	// document.write(x[1]);
-	// document.write(x[2]);
-
-	// cu = {
-	// 	local : []
-	// }
-
-	// cu.local.push(1);
-	// console.log(cu.local);
-})
+	myParenizor = new Parenizor(0);
+	myString = myParenizor.toString();
+});
 </script>
 
-
+<span id="account-title" class="content-title-font account-ctrl" style="cursor: pointer;" href="">Already have a account?</span>
 
 </body>
 </html>

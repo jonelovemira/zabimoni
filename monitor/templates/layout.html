@@ -32,8 +32,8 @@
                     <li><a href="{{url_for('chart.mainboard')}}">Chart </a></li>
                     {% if g.user.is_admin() %}
                     <li><a href="{{url_for('billing.billing_main')}}">Billing </a></li>
-                    <li><a href="{{url_for('auth.config')}}">Auth </a></li>
-                    <li><a href="{{url_for('item.mainboard')}}">Item </a></li>
+                    <li><a href="{{url_for('odata.odata_main')}}">Daily </a></li>
+                    <li><a href="{{url_for('item.mainboard')}}">Metrics </a></li>
                     {% endif %}
                 </ul>
                 <ul class="nav navbar-nav navbar-right">

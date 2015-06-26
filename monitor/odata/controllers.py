@@ -16,7 +16,6 @@ from monitor.functions import gen_operational_itemtype, str_2_clock
 
 @mod_odata.route('/')
 @login_required
-@admin_permission.require(http_exception=403)
 def odata_main():
     oit = gen_operational_itemtype()
     monthes = odmonth.get_all_timestr()
@@ -25,7 +24,6 @@ def odata_main():
 
 @mod_odata.route('/monthdata', methods=['POST', 'GET'])
 @login_required
-@admin_permission.require(http_exception=403)
 def monthdata():
     result = {}
     load_result_bool = False
