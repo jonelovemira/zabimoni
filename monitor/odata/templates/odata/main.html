@@ -7,11 +7,11 @@ $(document).ready(function () {
     // load_or_draw_month_data('June 2015');
     var theaders = {};
     find_headers();
+    var time_select_selector = "select.time-select";
     var local_time;
     load_first();
 
     // $("select.time-select").
-    var time_select_selector = "select.time-select";
     $(document).on('change',time_select_selector,function()
     {
         // console.log($(this).val());
