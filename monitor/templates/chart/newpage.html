@@ -658,12 +658,12 @@
 
                 $(window).resize(function(e)
                 {
-                    console.log("resize");
                     if (e.target == window) {
                         modal_height = $(window).height()*0.9 - 56 - 65;
                         modal_width = $(window).width()*0.8 - 30 - 30 ;
                         $(modal_content_selector).height(modal_height);
                         $(modal_content_selector).width(modal_width);
+                        console.log("resize",modal_height);
                         f.resize_caller(modal_height);
                     };
                 });

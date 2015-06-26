@@ -64,11 +64,13 @@ from monitor.chart.controllers import mod_chart as chart_module
 from monitor.item.controllers import mod_item as item_module
 from monitor.zabbix.controllers import mod_zabbix as zabbix_module
 from monitor.billing.controllers import mod_billing as billing_module
+from monitor.odata.controllers import mod_odata as odata_module
 app.register_blueprint(auth_module)
 app.register_blueprint(chart_module)
 app.register_blueprint(item_module)
 app.register_blueprint(zabbix_module)
 app.register_blueprint(billing_module)
+app.register_blueprint(odata_module)
 
 from monitor import views,models
 # db.create_all()

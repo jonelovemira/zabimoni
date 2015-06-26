@@ -22,7 +22,7 @@ from monitor.item.functions import add_update_host,find_hosts_and_add_key
 
 import os,StringIO,ConfigParser,traceback,sys
 
-from config import AREA,SERVICE
+# from config import AREA,SERVICE
 from boto.exception import BotoServerError
 
 from crontab import CronTab
@@ -764,6 +764,7 @@ if __name__ == '__main__':
 		'0 1 */1 * *')
 
 	create_crontab(UPDATE_ASG_COUNT, '*/5 * * * *')
+	create_crontab(UPDATE_O_DATA_PATH, '0 16 * * *')
 
 	print 'process aws'
 	init_aws_item()

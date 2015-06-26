@@ -69,4 +69,24 @@ def function_input_checker(*invalid_values):
 		return new_f
 	return check_accepts
 
+def gen_operational_itemtype():
+    result = []
+
+    # test in local
+    # result.append({"groupname": "monitor", "itemkey": "net.if.in[eth1]",\
+    #     "displayname" : "relay net in (Bytes)"})
+
+    result.append({"groupname": "relay", "itemkey": "net.if.in[eth0]",\
+        "displayname" : "relay net in (Bytes)"})
+    result.append({"groupname": "relay", "itemkey": "net.if.out[eth0]",\
+        "displayname" : "relay net out (Bytes)"})
+    result.append({"groupname": "relay", "itemkey": "FROM-CLIENT_SUM_POST",\
+        "displayname" : "relay post"})
+    result.append({"groupname": "relay", "itemkey": "FROM-CLIENT_SUM_GET",\
+        "displayname" : "relay get"})
+    result.append({"groupname": "web", "itemkey": "FROM-WEB_SUM_REQUEST",\
+        "displayname" : "Request from webpage"})
+
+    return result
+
 

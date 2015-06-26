@@ -201,3 +201,4 @@ GET_BCD_SPLITER = '@@@'
 
 CLEAR_UNREACHABLE_HOST = basedir + '/command/clear_old_host.py --instanceip={HOST.NAME}'
 UPDATE_ASG_COUNT = basedir + '/command/asg_instance_count_update.py'
+UPDATE_O_DATA_PATH = basedir + '/command/update_operational_data.py'
