@@ -63,6 +63,7 @@ $(document).ready(function () {
 
     }
 
+
     function draw_month_data (data) {
         // body...
         console.log(data);
@@ -83,7 +84,7 @@ $(document).ready(function () {
             }
             // console.log(td_content);
             result_str += '<td>' + dd + '</td>';
-            for (var i = 0; i < td_content.length; i++) {
+            for (var i = 1; i < td_content.length; i++) {
                 result_str += '<td>' + td_content[i] + '</td>';
             };
             result_str += '</tr>';

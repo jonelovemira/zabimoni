@@ -18,7 +18,6 @@ DAY_INTERVAL = 86400
 SUM_INDEX = 5
 
 
-
 def update():
     itindex = gen_operational_itemtype()
     now = int(time.time())
@@ -31,11 +30,13 @@ def update():
         om = odmonth(beginclock)
         db.session.add(om)
 
+    m_index = 0
+
     for itobj in itindex:
         history = intervaldata.query.filter_by(timefrom=timefrom, \
             timeto=timeto,groupname=itobj["groupname"], \
             itemkey=itobj["itemkey"]).all()
-        print history
+        # print history
         for h in history:
             db.session.delete(h)
 
@@ -50,9 +51,14 @@ def update():
 
         if len(vals) > 0:
             # print itobj["groupname"], itobj["itemkey"]
+            default_v = vals[0][SUM_INDEX]
+            if m_index == 0 or m_index == 1:
+                default_v = vals[0][SUM_INDEX] * 7.5
             itvd = intervaldata(timefrom, timeto, itobj["groupname"], \
-                itobj["itemkey"], itobj["displayname"], vals[0][SUM_INDEX], om)
+                itobj["itemkey"], itobj["displayname"], default_v, om)
             db.session.add(itvd)
+
+        m_index += 1
 
     db.session.commit()
 
