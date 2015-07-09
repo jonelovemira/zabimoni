@@ -48,11 +48,16 @@ Principal(app)
 # Session = None
 
 if not app.debug:
-    import logging
+    import logging, os
     from logging.handlers import RotatingFileHandler
     #tmp_file = '/home/monitor/project/monitor-0.3.7/tmp/monitor.log'
     tmp_file = TMP_FILE
-    file_handler = RotatingFileHandler(tmp_file, 'a', 1 * 1024 * 1024, 10)
+    file_handler = RotatingFileHandler(tmp_file, 'a', 10 * 1024 * 1024, 10)
+    stat_info = os.stat(basedir)
+    uid = stat_info.st_uid
+    gid = stat_info.st_gid
+    os.chown(tmp_file, uid, gid)
+
     file_handler.setFormatter(logging.Formatter('[%(asctime)s %(levelname)s]: %(message)s [in %(pathname)s:%(lineno)d]'))
     app.logger.setLevel(logging.INFO)
     file_handler.setLevel(logging.INFO)
