@@ -11,6 +11,7 @@ from monitor.functions import log_for_callback_command
 from monitor.zabbix.models import loadSession, Zabbixinterface
 from monitor import db
 from monitor.item.models import Host
+from monitor.zabbix.zabbix_api import zabbix_api
 
 import getopt, sys
 
@@ -35,6 +36,8 @@ def clear_host(instanceip):
         db.session.delete(host)
 
     db.session.commit()
+    z = zabbix_api()
+    z.host_delete([hostid])
 
 
 def usage():

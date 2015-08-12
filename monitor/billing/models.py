@@ -147,10 +147,11 @@ class billingtime(db.Model):
         result = []
         for bt in billingtime.query.order_by(cls.billingperiodstartdate.desc())\
             .all():
-            clock = bt.billingperiodstartdate
-            time_str = clock_2_str(clock, TO_TIME_FORMAT)
-            if time_str is not None:
-                result.append(time_str)
+            if bt.billingrows.count() > 0:
+                clock = bt.billingperiodstartdate
+                time_str = clock_2_str(clock, TO_TIME_FORMAT)
+                if time_str is not None:
+                    result.append(time_str)
 
         return result
 
