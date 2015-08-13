@@ -36,7 +36,7 @@ class RowContentGeneratorFactory():
 class RowContentGenerator():
     """docstring for RowContentGenerator"""
     def __init__(self):
-        pass
+        self.defaults = {}
 
     @function_input_checker(None)
     def id_2_content(self, item, head):
@@ -44,9 +44,19 @@ class RowContentGenerator():
         arr = []
 
         for tdtype in head:
-            td_generator = TdContentGeneratorFactory().\
-                produce_generator(tdtype)
-            td_result = td_generator.id_2_content(item)
+            if item.host != None and item.host.hostid != None and \
+                self.defaults.has_key(item.host.hostid) and \
+                self.defaults[item.host.hostid] != None and \
+                self.defaults[item.host.hostid].has_key(tdtype):
+                td_result = self.defaults[item.host.hostid][tdtype]
+            else:
+                td_generator = TdContentGeneratorFactory().\
+                    produce_generator(tdtype)
+                td_result = td_generator.id_2_content(item)
+                if td_generator.can_be_default:
+                    if not self.defaults.has_key(item.host.hostid):
+                        self.defaults[item.host.hostid] = {}
+                    self.defaults[item.host.hostid][tdtype] = td_result
             arr.append(td_result)
 
         assert len(arr) == len(head)
@@ -80,6 +90,7 @@ class RowContentGenerator():
 class ByGroupRowContentGenerator(RowContentGenerator):
     """docstring for ByGroupRowContentGenerator"""
     def __init__(self):
+        RowContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
@@ -148,14 +159,16 @@ class ByGroupRowContentGenerator(RowContentGenerator):
 class PerInstanceRowContentGenerator(RowContentGenerator):
     """docstring for PerInstanceRowContentGenerator"""
     def __init__(self):
+        RowContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
     def id_2_content(self, item):
 
         head = self.get_head()
+        content = RowContentGenerator.id_2_content(self, item, head)
 
-        return RowContentGenerator.id_2_content(self, item, head)
+        return content
 
     @function_input_checker(None)
     def get_head(self):
@@ -234,6 +247,7 @@ class PerInstanceRowContentGenerator(RowContentGenerator):
 class AwsFeeRowContentGenerator(RowContentGenerator):
     """docstring for AwsFeeRowContentGenerator"""
     def __init__(self):
+        RowContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
@@ -304,10 +318,18 @@ class TdContentGeneratorFactory():
 
         return result
 
+class TdContentGenerator():
+    """docstring for TdContentGenerator"""
+    def __init__(self):
+        self.can_be_default = False
+        
 
-class GroupNameTdGenerator():
+
+
+class GroupNameTdGenerator(TdContentGenerator):
     """docstring for GroupNameTdGenerator"""
     def __init__(self):
+        TdContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
@@ -316,7 +338,7 @@ class GroupNameTdGenerator():
         assert item.host is not None, 'item input: %s in '\
             'GroupNameTdGenerator does not belong to any host.' % (item)
 
-        assert item.host.service is not None, 'Host holding this item %s in' + \
+        assert item.host.service is not None, 'Host holding self item %s in' + \
             'GroupNameTdGenerator does not belong to any service.' % (item)
 
         result = item.host.service.servicename
@@ -329,9 +351,10 @@ class GroupNameTdGenerator():
     def content_2_id(self, content):
         pass
 
-class MetricNameTdGenerator():
+class MetricNameTdGenerator(TdContentGenerator):
     """docstring for MetricNameTdGenerator"""
     def __init__(self):
+        TdContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
@@ -351,9 +374,10 @@ class MetricNameTdGenerator():
     def content_2_id(self, content):
         pass
 
-class AlaisTdGenerator():
+class AlaisTdGenerator(TdContentGenerator):
     """docstring for AlaisTdGenerator"""
     def __init__(self):
+        TdContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
@@ -372,9 +396,10 @@ class AlaisTdGenerator():
     def content_2_id(self, content):
         pass
         
-class DescriptionTdGenerator():
+class DescriptionTdGenerator(TdContentGenerator):
     """docstring for DescriptionTdGenerator"""
     def __init__(self):
+        TdContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
@@ -393,9 +418,10 @@ class DescriptionTdGenerator():
     def content_2_id(self, content):
         pass
         
-class InstanceNameTdGenerator():
+class InstanceNameTdGenerator(TdContentGenerator):
     """docstring for InstanceNameTdGenerator"""
     def __init__(self):
+        TdContentGenerator.__init__(self)
         pass
 
     @function_input_checker(None)
@@ -414,10 +440,11 @@ class InstanceNameTdGenerator():
     def content_2_id(self, content):
         pass
         
-class IpTdGenerator():
+class IpTdGenerator(TdContentGenerator):
     """docstring for IpTdGenerator"""
     def __init__(self):
-        pass
+        TdContentGenerator.__init__(self)
+        self.can_be_default = True
 
     @function_input_checker(None)
     def id_2_content(self, item):
@@ -430,10 +457,11 @@ class IpTdGenerator():
     def content_2_id(self, content):
         pass
         
-class AvailablityTdGenerator():
+class AvailablityTdGenerator(TdContentGenerator):
     """docstring for AvailablityTdGenerator"""
     def __init__(self):
-        pass
+        TdContentGenerator.__init__(self)
+        self.can_be_default = True
 
     @function_input_checker(None)
     def id_2_content(self, item):

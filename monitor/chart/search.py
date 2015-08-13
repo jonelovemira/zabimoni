@@ -271,6 +271,16 @@ class ItemSearchValue2Filter():
 
 		return filter_result
 
+	@classmethod
+	def host_filter(cls, hosts):
+		filter_result = None
+		if hosts == None or len(hosts) == 0:
+			filter_result = True
+		else:
+			filter_result = Item.host_id.in_(hosts)
+
+		return filter_result
+
 
 
 class SearchWithBasicMetrics(BaseSearch):
@@ -345,7 +355,7 @@ class SearchInASGGroup():
 		search_value = None
 		desire_result_set=NO_FEE_RESULT_SET
 
-		filter_boolean = ItemSearchValue2Filter.parse(search_value)
+		# filter_boolean = ItemSearchValue2Filter.parse(search_value)
 
 		asg_group = Service.query.filter_by(servicename=asg_name).first()
 		
@@ -353,12 +363,15 @@ class SearchInASGGroup():
 			item_search_result = []
 
 			##### contains all basic metrics  ####
+			hosts = []
 			for h in asg_group.hosts.all():
-				item_search_result += BaseSearch.search(h.items,filter_boolean)
+				hosts.append(h.hostid)
+				#item_search_result += BaseSearch.search(h.items,filter_boolean)
 
+			filter_boolean = ItemSearchValue2Filter.host_filter(hosts)
 			# only for group-specific metrics
 			# for it in asg_group.itemtypes.all():
-			# 	item_search_result += BaseSearch.search(it.items,filter_boolean)			
+			item_search_result = ItemSearch.search(filter_boolean)			
 
 			by_group_result = ItemSearch.generate_by_group_result_no_fee(item_search_result,asg_name)
 			
