@@ -71,21 +71,22 @@ $(document).ready(function () {
         var date_data = data['data'];
         var result_str = '';
 
-        for (var dd in date_data) {
+        for (var i = 0; i < date_data.length; i++) {
+            // date_data[i]
             result_str += '<tr>';
             var td_content = [];
             for (var th in theaders) {
                 td_content.push('');
                 // console.log(theaders);
             };
-            for (var dn in date_data[dd])
+            for (var it in date_data[i]["data"])
             {
-                td_content[theaders[dn]] = date_data[dd][dn];
+                td_content[theaders[it]] = date_data[i]["data"][it];
             }
             // console.log(td_content);
-            result_str += '<td>' + dd + '</td>';
-            for (var i = 1; i < td_content.length; i++) {
-                result_str += '<td>' + td_content[i] + '</td>';
+            result_str += '<td>' + date_data[i]["date"] + '</td>';
+            for (var j = 1; j < td_content.length; j++) {
+                result_str += '<td>' + td_content[j] + '</td>';
             };
             result_str += '</tr>';
         };

@@ -16,28 +16,29 @@ from monitor.zabbix.zabbix_api import zabbix_api
 import getopt, sys
 
 def clear_host(instanceip):
-    if instanceip is None:
-        raise Exception('instanceip is None')
+    # if instanceip is None:
+    #     raise Exception('instanceip is None')
 
-    session = loadSession()
-    i = session.query(Zabbixinterface).filter_by(ip=instanceip).first()
-    session.close()
+    # session = loadSession()
+    # i = session.query(Zabbixinterface).filter_by(ip=instanceip).first()
+    # session.close()
 
-    if i == None:
-        raise Exception('interface for this ip do not exist')
+    # if i == None:
+    #     raise Exception('interface for this ip do not exist')
 
-    hostid = i.hostid
+    # hostid = i.hostid
 
-    host = Host.query.filter_by(hostid=hostid).first()
-    if host != None:
-        for i in host.items.all():
-            db.session.delete(i)
+    # host = Host.query.filter_by(hostid=hostid).first()
+    # if host != None:
+    #     for i in host.items.all():
+    #         db.session.delete(i)
         
-        db.session.delete(host)
+    #     db.session.delete(host)
 
-    db.session.commit()
-    z = zabbix_api()
-    z.host_delete([hostid])
+    # db.session.commit()
+    # z = zabbix_api()
+    # z.host_delete([hostid])
+    pass
 
 
 def usage():

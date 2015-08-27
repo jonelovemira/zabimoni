@@ -52,14 +52,23 @@ class odmonth(db.Model):
 
     def gen_table_content(self):
         result = {}
-
-        for itvd in self.intervaldatas.all():
+        index_date_map = []
+        index = 0
+        for itvd in self.intervaldatas.order_by(intervaldata.timefrom).all():
             date = clock_2_str(itvd.timefrom, DATE_FORMAT)
             if not result.has_key(date):
                 result[date] = {}
+                index_date_map.append(date)
 
             result[date][itvd.displayname] = itvd.sumv
 
-        return result
+        order_result = []
+        for di in xrange(len(index_date_map)):
+            tmp = {
+                "date" : index_date_map[di],
+                "data" : result[index_date_map[di]]
+            }
+            order_result.append(tmp)
+        return order_result
             
         

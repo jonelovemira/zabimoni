@@ -23,7 +23,7 @@ def update():
     now = int(time.time())
     timeto = now // DAY_INTERVAL * DAY_INTERVAL
     timefrom = timeto - DAY_INTERVAL
-    beginclock = timeto - ((time.gmtime(timeto).tm_mday - 1) * DAY_INTERVAL)
+    beginclock = timefrom - ((time.gmtime(timefrom).tm_mday - 1) * DAY_INTERVAL)
 
     om = odmonth.query.filter_by(beginclock=beginclock).first()
     if om is None:
