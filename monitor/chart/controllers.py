@@ -587,15 +587,10 @@ def newpage():
 	aws_itemtypenames = json.dumps(aws_tmp_arr)
 	return render_template("chart/newpage.html",title='Page',services=services,pages=pages,windows=windows,itemtypenames=itemtypenames,aws_itemtypenames=aws_itemtypenames)
 
-@mod_chart.route('/test')
-def test():
-	return render_template('chart/test.html')
-
 @mod_chart.route('/overall')
 @login_required
 def overall():
 	return render_template('chart/overall.html', title='Overall')
-
 
 @mod_chart.route('/overall/mhd', methods=['POST', 'GET'])
 @login_required
@@ -713,7 +708,5 @@ def getcd():
 		o = Overall(1)
 		return o.core_data_test()
 
-@mod_chart.route('/test')
-def test_test(esid):
-	return render_template('chart/test.html')
+
 

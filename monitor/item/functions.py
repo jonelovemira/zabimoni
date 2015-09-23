@@ -427,14 +427,18 @@ def add_itkey_to_host(hostid,it,zabbix):
 	db.session.add(item)
 
 
-def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix=None):
+def add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix=None,key_display_name=None):
 	idt = Itemdatatype.query.filter_by(itemdatatypeid=itemdatatypeid).first()
 	if idt == None:
 		raise MonitorException('data type do not exists')
 	#it_test(key)
 	it = Itemtype.query.filter_by(itemtypename=key).first()
 	if it == None:
-		it = Itemtype(key,key,key,None,idt,unitname,zabbixvaluetype)
+		if key_display_name != None:
+			it = Itemtype(key_display_name,key,key,None,idt,unitname,zabbixvaluetype)
+		else:
+			it = Itemtype(key,key,key,None,idt,unitname,zabbixvaluetype)
+		
 		db.session.add(it)
 
 	if isinstance(o, Service ):
@@ -484,13 +488,13 @@ def find_object_2_action(kinds,indexid):
 	o = arr[0].query.filter(arr[1] + '=' + str(indexid)).first()
 	return o
 
-def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix):
+def add_key(kinds,indexid,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix, key_display_name=None):
 	kinds = int(kinds)
 	if indexid == None:
 		indexid = 1
 	o = find_object_2_action(kinds,indexid)
 	# print o
-	it = add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix)
+	it = add_it(o,key,itemdatatypeid,unitname,zabbixvaluetype,zabbix,key_display_name)
 
 	find_hosts_and_add_key(kinds,o,it,zabbix)
 

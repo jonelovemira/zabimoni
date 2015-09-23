@@ -271,7 +271,7 @@ def init_service():
 
 def init_itemdatatype():
 
-	names = ["Application data","CPU data","Memory data","Connections","AWS fee data","Counting","Other"]
+	names = ["Application data","CPU data","Memory data","Connections","AWS fee data","Counting","Other", "Filesystems"]
 
 	for n in names:
 		i = Itemdatatype.query.filter_by(itemdatatypename=n).first()
