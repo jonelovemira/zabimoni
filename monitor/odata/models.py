@@ -70,5 +70,46 @@ class odmonth(db.Model):
             }
             order_result.append(tmp)
         return order_result
+
+class region(db.Model):
+    """docstring for region"""
+    regionid = db.Column(db.Integer, primary_key=True)
+    regionshort = db.Column(db.String(128), nullable=False)
+    regionlong = db.Column(db.String(128), nullable=False)
+    counts = db.relationship("count", backref="region", \
+        lazy="dynamic")
+    def __init__(self, regionshort, regionlong):
+        self.regionshort = regionshort
+        self.regionlong = regionlong
+
+
+class counttype(db.Model):
+    """docstring for counttype """
+    counttypeid = db.Column(db.Integer, primary_key=True)
+    counttypename = db.Column(db.String(128), nullable=False)
+    counts = db.relationship("count", backref="counttype", \
+        lazy="dynamic")
+    def __init__(self, counttypename):
+        self.counttypename = counttypename
+
+class count(db.Model):
+    """docstring for count"""
+    countid = db.Column(db.Integer, primary_key=True)
+    value = db.Column(db.Integer, nullable=False)
+    clock = db.Column(db.BigInteger, nullable=False)
+    region_id = db.Column(db.Integer, db.ForeignKey("region.regionid"))
+    counttype_id = db.Column(db.Integer, db.ForeignKey("counttype.counttypeid"))
+
+    def __init__(self, value, clock, region, counttype):
+        self.value = value
+        self.clock = clock
+        self.region = region
+        self.counttype = counttype
+
+
+
+        
+
+        
             
         
