@@ -76,15 +76,15 @@ def update_counts():
     table_account = '{0}.sso_account'.format(TABLE_PREFIXS[MONITOR_TYPE])
 
 
-    for sr, lr in REGIONS:
+    for sr, lr in REGIONS.items():
         r = region.query.filter_by(regionshort=sr).first()
         if r == None:
             r = region(sr, lr)
             db.session.add(r)
         try:
-            dynamodb = boto.dynamodb2.connect_to_region(REGIONS[region])
+            dynamodb = boto.dynamodb2.connect_to_region(REGIONS[sr])
         except Exception, e:
-            break
+            continue
 
         # user devices counting
         try:
@@ -100,7 +100,7 @@ def update_counts():
                 device_users[devices] += 1
 
             for item in device_users.items():
-                udtypename = 'User has ' +  item[0] + ' device(s)'
+                udtypename = 'User has ' +  str(item[0]) + ' device(s)'
                 udct = counttype.query.\
                     filter_by(counttypename=udtypename).first()
                 if udct == None:
@@ -150,8 +150,13 @@ def update_counts():
             if tct == None:
                 tct = counttype(ttypename)
                 db.session.add(tct)
-             t_count_record = count(total_device_count, timefrom, r, tct)
-             db.session.add(t_count_record)
+            t_count_record = count.query.filter_by(clock=timefrom, \
+                region=r, counttype=tct).first()
+            if t_count_record != None:
+                t_count_record.value = total_device_count
+            else:
+                t_count_record = count(total_device_count, timefrom, r, tct)
+            db.session.add(t_count_record)
         except Exception, e:
             pass
 
@@ -161,7 +166,7 @@ def update_counts():
             tutypename = 'Total user count'
             tuct = counttype.query.filter_by(counttypename=tutypename).first()
             if tuct == None:
-                tuct = counttype(ttypename)
+                tuct = counttype(tutypename)
                 db.session.add(tuct)
             tu_count_record = count.query.filter_by(clock=timefrom, \
                 region=r, counttype=tuct).first()
@@ -171,7 +176,7 @@ def update_counts():
                 tu_count_record = count(total_user_count, timefrom, r, tuct)
             db.session.add(tu_count_record)
         except Exception, e:
-            raise e
+            pass
 
 
         db.session.commit()
@@ -185,6 +190,7 @@ if __name__ == '__main__':
 
 
                 
+
 
 
 
