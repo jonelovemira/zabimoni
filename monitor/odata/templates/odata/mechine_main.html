@@ -1,0 +1,132 @@
+{% extends "layout.html" %}
+{% block body %}
+<script type="text/javascript">
+$(document).ready(function () {
+    // body...
+    var month_data_cache = {};
+    // load_or_draw_month_data('June 2015');
+    var theaders = {};
+    find_headers();
+    var time_select_selector = "select.time-select";
+    var local_time;
+    load_first();
+
+    // $("select.time-select").
+    $(document).on('change',time_select_selector,function()
+    {
+        // console.log($(this).val());
+        local_time = $(this).val();
+        load_or_draw_month_data(local_time);
+    });
+
+    function load_first () {
+        // body...
+        // console.log($(time_select_selector).val());
+        var first_load = $(time_select_selector).val();
+        local_time = first_load;
+        if (first_load != '') {
+            load_or_draw_month_data(first_load);
+        };
+    }
+
+
+    function find_headers () {
+        $('table.monthdata').find('th').each(function(i,d)
+        {
+            theaders[$(this).text()] = i;
+        });
+    }
+
+    function load_or_draw_month_data(month_str){
+        if (month_data_cache[month_str] != undefined) {
+            draw_month_data(month_data_cache[month_str]);
+        }
+        else
+        {
+            load_month_data (month_str)
+        }
+    }
+
+    function load_month_data (month_str) {
+        // body...
+
+        $.getJSON('/odata/monthdata', {month:month_str}, function(data){
+            if (data.load_result_bool) {
+                month_data_cache[data.load_result['month']] = data.load_result;
+                draw_month_data(data.load_result);
+            }
+            else
+            {
+                console.log(data.info);
+            }
+        });
+
+    }
+
+
+    function draw_month_data (data) {
+        // body...
+        console.log(data);
+        $('table.monthdata > tbody').empty();
+        var date_data = data['data'];
+        var result_str = '';
+
+        for (var i = 0; i < date_data.length; i++) {
+            // date_data[i]
+            result_str += '<tr>';
+            var td_content = [];
+            for (var th in theaders) {
+                td_content.push('');
+                // console.log(theaders);
+            };
+            for (var it in date_data[i]["data"])
+            {
+                td_content[theaders[it]] = date_data[i]["data"][it];
+            }
+            // console.log(td_content);
+            result_str += '<td>' + date_data[i]["date"] + '</td>';
+            for (var j = 1; j < td_content.length; j++) {
+                result_str += '<td>' + td_content[j] + '</td>';
+            };
+            result_str += '</tr>';
+        };
+
+        $('table.monthdata > tbody').append(result_str);
+
+    }
+
+});
+    
+    
+
+</script>
+
+
+<div class="row" style="margin-bottom:20px;">
+    <div class="form-horizontal">
+        <label class="control-label" style="float:left;">Date:</label>
+        <div class="col-sm-5">
+            <select class="form-control time-select">
+            {% for t in monthes %}
+                <option>{{t}}</option>
+            {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <table class="table table-default monthdata" style="background-color: #fff;">
+        <thead>
+            <tr>
+                <th>Day</th>
+                {% for o in oit %}
+                    <th>{{o.displayname}}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

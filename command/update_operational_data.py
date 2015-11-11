@@ -128,7 +128,7 @@ def update_counts():
             
             total_device_count = 0
             for item in devices.items():
-                mtypename = item[0]
+                mtypename = 'Model ' + str(item[0])
                 mct = counttype.query.\
                     filter_by(counttypename=mtypename).first()
                 if mct == None:

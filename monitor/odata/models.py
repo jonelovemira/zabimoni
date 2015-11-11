@@ -106,6 +106,16 @@ class count(db.Model):
         self.region = region
         self.counttype = counttype
 
+    @classmethod
+    def get_all_month_str(cls):
+        result = []
+        for c in cls.query.order_by(count.clock).all():
+            month_str = clock_2_str(int(c.clock), MONTH_FORMAT)
+            if month_str not in result:
+                result.append(month_str)
+        return result
+
+
 
 
         
