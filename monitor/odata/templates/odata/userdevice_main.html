@@ -1,0 +1,341 @@
+{% extends "layout.html" %}
+{% block body %}
+
+<div class="row msg-container" style="margin-bottom:20px; display: none;">
+    
+</div>
+
+<div class="row" style="margin-bottom:20px;">
+    <div class="form-inline">
+        <div class="form-group">
+            <label for="region-select">Region:</label>
+            <select class="form-control" id="region-select">
+                {% for rs,rl in region_data.iteritems() %}
+                    <option>{{rs}}</option>              
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="month-select">Month:</label>
+            <select class="form-control" id="month-select">
+                {% for m in month_data %}
+                    <option>{{m}}</option>              
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+
+
+
+<div class="row user-has-device">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            Count of user who has specific number of devices.
+        </div>
+        <table class="table table-striped">
+            <thead>
+                
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row model">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            Device count of specific model.
+        </div>
+        <table class="table table-striped">
+            <thead>
+                
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row total-count">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            Total count of this region
+        </div>
+        <table class="table table-striped">
+            <thead>
+                <th>Date</th>
+                <th>User</th>
+                <th>Device</th>
+            </thead>
+            <tbody>
+                
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+
+<script type="text/javascript">
+    $(document).ready(function(){
+        
+        var currentRegion = $("#region-select").val();
+        var currentMonth = $("#month-select").val();
+        var cache = {};
+
+        $("#region-select").change(function(){
+            currentRegion = $(this).val();
+            updateCurrentData(currentRegion, currentMonth);
+        });
+
+        $("#month-select").change(function(){
+            currentMonth = $(this).val();
+            updateCurrentData(currentRegion, currentMonth);
+        });
+
+        updateCurrentData(currentRegion, currentMonth);
+
+        function checkCache(region, month){
+            if (cache[region] != undefined) {
+                if (cache[region][month] != undefined) {
+                    return true;
+                };
+            };
+
+            return false;
+        }
+
+        function updateCurrentData(region, month){
+            var isInCache = checkCache(region, month);
+            if (isInCache) {
+                renderRegionMonthData(cache[region][month]);
+            } else {
+                var successCallback = function(){
+                    renderRegionMonthData(cache[region][month]);
+                }
+
+                loadRegionMonthData(region, month, successCallback);
+            }
+        }
+
+        function loadRegionMonthData(region, month, successCallback){
+            
+            if (undefined == region || undefined == month) {
+                throw "region or month is undefined when load regionMonth data";
+            };
+
+            $.ajax({
+                url: "/odata/r_m_uddata",
+                type: "post",
+                data:{"region":region, "month": month},
+                dataType: "json",
+                success: function (response) {
+                    // body..
+                    if (response.load_result_bool) {
+                        if (cache[region] == undefined) {
+                            cache[region] = {};
+                        };
+
+                        cache[region][month] = response.load_result;
+                        successCallback();
+                    };
+                },
+                error: function (xhr) {
+                    // body...
+                    console.log(xhr);
+                }
+
+            })
+        }
+
+        function addMessage(message, type, selector){
+            selector = selector || ".msg-container";
+            var result_str = '';
+            result_str += '<div class="alert alert-' + type + '">';
+            result_str += '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+            result_str += message;
+            result_str += '</div>';
+            
+            $(selector).append(result_str);
+            $(selector).show();
+        }
+
+        function removeMessage(selector){
+            selector = selector || ".msg-container";
+            $(selector).empty();
+            $(selector).hide();
+        }
+
+        function timestampToStr(UNIX_timestamp){
+            var a = new Date(UNIX_timestamp*1000);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            var year = a.getFullYear();
+            var month = months[a.getMonth()];
+            var date = a.getDate();
+            var time = date + '/' + month + '/' + year;
+            return time;
+        }
+
+        function sortNumber(a,b) {
+            return a - b;
+        }
+
+        function renderRegionMonthData(data){
+            var operationalData = data.data;
+            if (Object.keys(operationalData).length <= 0) {
+                addMessage("Operational data for this region and this month is empty", "danger");
+                emptyUserHasDeviceTable();
+                emptyModelNumTable();
+                emptyTotalNum();
+            } else {
+                removeMessage();
+            }
+            
+            var modelNumTableHeadArr = [];
+            var userHasDeviceNumTableHeadArr = [];
+            var displayData = {};
+            for(var day in operationalData){
+                var dateStr = timestampToStr(day);
+                displayData[dateStr] = {};
+                var modelNum = {};
+                var totalDeviceCount = operationalData[day]["Total device count"];
+                var totalUserCount = operationalData[day]["Total user count"];
+                var userHasDeviceNumMap = {}
+                for (var key in operationalData[day]) {
+                    if (key.indexOf("Model") >= 0) {
+                        var modelName = key.split(" ")[1];
+                        modelNum[modelName] = operationalData[day][key];
+                        if (modelNumTableHeadArr.indexOf(modelName) < 0) {
+                            modelNumTableHeadArr.push(modelName);
+                        };
+                    };
+                    
+                    if (key.indexOf("User has") >= 0) {
+                        var num = key.split(" ")[2];
+                        userHasDeviceNumMap[num] = operationalData[day][key];
+                        if (userHasDeviceNumTableHeadArr.indexOf(num) < 0) {
+                            userHasDeviceNumTableHeadArr.push(num);
+                        };
+                    };
+                     
+                };
+                displayData[dateStr]["modelNum"] = modelNum;
+                displayData[dateStr]["userHasDeviceNumMap"] = userHasDeviceNumMap;
+                displayData[dateStr]["total"] = {
+                    "totalUserCount": totalUserCount,
+                    "totalDeviceCount": totalDeviceCount
+                }
+                // drawUserHasDeviceTable(dateStr, userHasDeviceNumMap);
+                // drawModelNumTable(dateStr, modelNum);
+                // drawTotalNum(dateStr, totalUserCount, totalDeviceCount);
+                // console.log(modelNum, totalDeviceCount, totalUserCount, userHasDeviceNumMap);
+            }
+
+            modelNumTableHeadArr.sort();
+            userHasDeviceNumTableHeadArr.sort(sortNumber);
+
+            var inputArgs = {
+                "modelNumTableHeadArr": modelNumTableHeadArr,
+                "userHasDeviceNumTableHeadArr": userHasDeviceNumTableHeadArr,
+                "displayData": displayData
+            };
+
+            drawData(inputArgs);
+        };
+
+        function drawData (inputArgs) {
+            emptyUserHasDeviceTable();
+            emptyModelNumTable();
+            emptyTotalNum();
+
+            var modelNumTableHeadArr = inputArgs["modelNumTableHeadArr"];
+            var userHasDeviceNumTableHeadArr = inputArgs["userHasDeviceNumTableHeadArr"];
+
+            var modelNumTableHeadStr = "<tr><th>Date</th>";
+            for (var i = 0; i < modelNumTableHeadArr.length; i++) {
+                modelNumTableHeadStr += "<th>" + modelNumTableHeadArr[i] + "</th>";
+            };
+            modelNumTableHeadStr += "</tr>";
+            $(".model table > thead").append(modelNumTableHeadStr);
+
+
+            var userHasDeviceNumTableHeadStr = "<tr><th>Date</th>";
+            for (var i = 0; i < userHasDeviceNumTableHeadArr.length; i++) {
+                userHasDeviceNumTableHeadStr += "<th>" + userHasDeviceNumTableHeadArr[i] + "</th>";
+            };
+            userHasDeviceNumTableHeadStr += "</tr>";
+            $(".user-has-device table > thead").append(userHasDeviceNumTableHeadStr);
+
+            for (var day in inputArgs["displayData"]) {
+                drawUserHasDeviceTable(day, inputArgs["displayData"][day]["userHasDeviceNumMap"], userHasDeviceNumTableHeadArr);
+                drawModelNumTable(day, inputArgs["displayData"][day]["modelNum"], modelNumTableHeadArr);
+                drawTotalNum(day, inputArgs["displayData"][day]["total"]["totalUserCount"], inputArgs["displayData"][day]["total"]["totalDeviceCount"]);
+            }
+        };
+
+        function emptyUserHasDeviceTable () {
+            $(".user-has-device table > thead").empty();
+            $(".user-has-device table > tbody").empty();
+        };
+
+        function emptyModelNumTable () {
+            $(".model table > thead").empty();
+            $(".model table > tbody").empty();
+        };
+
+        function emptyTotalNum () {
+            $(".total-count table > tbody").empty();
+        };
+
+        function drawUserHasDeviceTable (date, data, thead) {
+
+            var tbodyStr = "<tr><td>" + date + "</td>";
+            for (var i = 0; i < thead.length; i++) {
+                if (data[thead[i]]) {
+                    tbodyStr += "<td>" + data[thead[i]] + "</td>";
+                } else {
+                    tbodyStr += "<td>-</td>";
+                }
+            };
+            tbodyStr += "</tr>";
+
+            $(".user-has-device table > tbody").append(tbodyStr);
+        };
+
+        function drawModelNumTable (date, data, thead) {
+
+
+            var tbodyStr = "<tr><td>" + date + "</td>";
+            for (var i = 0; i < thead.length; i++) {
+                if (data[thead[i]]) {
+                    tbodyStr += "<td>" + data[thead[i]] + "</td>";
+                } else {
+                    tbodyStr += "<td>-</td>";
+                }
+            };
+
+            tbodyStr += "</tr>";
+            
+            $(".model table > tbody").append(tbodyStr);
+        };
+
+        function drawTotalNum (date, userCount, deviceCount) {
+            
+            var countRowStr = "<tr><td>" + date + "</td>";
+            countRowStr += "<td>" + userCount + "</td>";
+            countRowStr += "<td>" + deviceCount + "</td>";
+            countRowStr += "</tr>";
+            $(".total-count table > tbody").append(countRowStr);
+        };
+
+
+        
+
+        
+    });
+</script>
+
+{% endblock %}
