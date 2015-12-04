@@ -408,9 +408,7 @@ class DescriptionTdGenerator(TdContentGenerator):
         assert item.itemtype is not None, 'item input: in '\
             'DescriptionTdGenerator does not belong to any itemtype.' % (item)
 
-        result = item.itemtype.description
-
-        assert result is not None, 'DescriptionTdGenerator returns empty'
+        result = item.itemtype.description or ""
 
         return result
 
