@@ -420,303 +420,78 @@ def add_itemtype_functions(i, target = None):
 
 def init_itemtype(it_keys=[]):
 
-	if False:
-	# if len(it_keys) == 0:
-		idtnames = ["Application data","CPU data","Memory data","Connections","AWS fee data","Counting","Other"]
-		idt = []
-		for n in idtnames:
-			i = Itemdatatype.query.filter_by(itemdatatypename=n).first()
-			if i == None:
-				tmp = Itemdatatype(itemdatatypename=n)
-				db.session.add(tmp)
-				idt.append(tmp)
-			else:
-				idt.append(i)
+	zabbix = zabbix_api()
+	session = loadSession()
 
-		servicenames = ['nat','web','relay','control','database']
-		svs = []
-		for sn in servicenames:
-			stmp = Service.query.filter_by(servicename=sn).first()
-			if stmp == None:
-				stmp = Service(servicename=sn)
-				db.session.add(stmp)
-			svs.append(stmp)
-
-		nit = Normalitemtype.query.first()
-		if nit == None:
-			init_normalitemtype()
-			nit = Normalitemtype.query.first()
-
+	try:
 		zit = Zbxitemtype.query.first()
-		if zit == None:
-			init_zbxitemtype()
-			zit = Zbxitemtype.query.first()
+		nit = Normalitemtype.query.first()
+
+		# add zabbix items
+		tid = session.query(Zabbixhosts).filter_by(host=TEMPLATE_NAME).first().hostid
+		titems = session.query(Zabbixitems).filter_by(hostid=tid).all()
+
+		for i in titems:
+			zittmp = add_zit_functions(i)
+			if zittmp != None:
+				zittmp.zit = zit
+				try:
+					find_hosts_and_add_key(BY_ALL,zit,zittmp,zabbix)
+				except Exception, e:
+					pass
+				db.session.add(zittmp)
 
 
-		# for x in xrange(1,35):
+		# add normal items
 
-		normalitems = {'InstanceType':[idt[5],None,TEXT],'Count':[idt[5],'Counts',NUMERIC_UNSIGNED],'ELB':[idt[6],None,TEXT],'LVS':[idt[6],None,TEXT]}
+		ntid = session.query(Zabbixhosts).filter_by(host=NORMAL_TEMPLATE_NAME).first().hostid
+		ntitems = session.query(Zabbixitems).filter_by(hostid=ntid).all()
 
-		serviceitems ={'PV':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[1]],'UV':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[1]], \
-					'OnlineDevice':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[3]],'Throughput':[idt[0],'Byte',NUMERIC_FLOAT,svs[2]], \
-					'POSTGET':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[2]],'Sum[Success:Failed]':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[0]],\
-					'NATTypes':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[0]],'IOPS':[idt[0],'Counts',NUMERIC_UNSIGNED,svs[4]]}
+		for i in ntitems:
+			nittmp = add_itemtype_functions(i)
+			if nittmp != None:
+				nittmp.nit = nit
+				find_hosts_and_add_key(BY_ALL,nit,nittmp,zabbix)
+				db.session.add(nittmp)
 
-		zabbixitems = { 'system.cpu.intr': ['Interrupts per second' ,idt[1],'Counts'],\
-					'system.cpu.load[percpu,avg15]':['Processor load (15 min average per core)',idt[1],'Process Counts'],\
-					'system.cpu.load[percpu,avg1]':['Processor load (1 min average per core)',idt[1],'Process Counts'],\
-					'system.cpu.load[percpu,avg5]':['Processor load (5 min average per core)',idt[1],'Process Counts'],\
-					'system.cpu.switches':['Context switches per second',idt[1],'Counts'],\
-					'system.cpu.util[,idle]':['CPU idle time',idt[1],'Percent'],\
-					'system.cpu.util[,interrupt]':['CPU interrupt time',idt[1],'Percent'],\
-					'system.cpu.util[,iowait]':['CPU iowait time',idt[1],'Percent'],\
-					'system.cpu.util[,nice]':['CPU nice time',idt[1],'Percent'],\
-					'system.cpu.util[,softirq]':['CPU softirq time',idt[1],'Percent'],\
-					'system.cpu.util[,steal]':['CPU steal time',idt[1],'Percent'],\
-					'system.cpu.util[,system]':['CPU system time',idt[1],'Percent'],\
-					'system.cpu.util[,user]':['CPU user time',idt[1],'Percent'],\
-					'system.swap.size[,free]':['Free swap space',idt[2],'Byte'],\
-					'system.swap.size[,pfree]':['Free swap space in %',idt[2],'Byte'],\
-					'system.swap.size[,total]':['Total swap space',idt[2],'Byte'],\
-					'vm.memory.size[available]':['Available memory',idt[2],'Byte'],\
-					'vm.memory.size[total]':['Total memory',idt[2],'Byte']}
+		services_template = session.query(Zabbixhosts).filter(Zabbixhosts.name.ilike('%' + TEMPLATE_GROUP_SPLITER + '%')).all()
+		for st in services_template:
+			sitems = session.query(Zabbixitems).filter_by(hostid=st.hostid).all()
+			service = Service.query.filter_by(servicename=st.name.split(TEMPLATE_GROUP_SPLITER)[1]).first()
+			tmp_arr = []
+			for i in sitems:
+				ittmp = add_itemtype_functions(i, service.itemtypes)
+				if ittmp != None:
+					db.session.add(ittmp)
+				tmp_arr.append(ittmp.itemkey)
+				
+				stmp = service.add_itemtype(ittmp)
+				if stmp != None:
+					db.session.add(stmp)
+				try:
+					find_hosts_and_add_key(BY_SERVICE,service,ittmp,zabbix)
+				except Exception, e:
+					continue
 
-		for ni in normalitems:
-			nitmp = Itemtype.query.filter_by(itemtypename=ni).first()
-			if nitmp == None:
-				nitmp = Itemtype(ni,ni,None,normalitems[ni][0],normalitems[ni][1],normalitems[ni][2])
-				nitmp.nit = nit
-			else:
-				nitmp.itemtypename = ni
-				nitmp.itemkey = ni
-				nitmp.aws = None
-				nitmp.itemdatatype = normalitems[ni][0]
-				nitmp.itemunit = normalitems[ni][1]
-				nitmp.zabbixvaluetype = normalitems[ni][2]
-				nitmp.nit = nit
-			db.session.add(nitmp)
-
-		for si in serviceitems:
-			sitmp = Itemtype.query.filter_by(itemtypename=si).first()
-			if sitmp == None:
-				sitmp = Itemtype(si,si,None,serviceitems[si][0],serviceitems[si][1],serviceitems[si][2])
-				db.session.add(sitmp)
-			else:
-				sitmp.itemtypename = si
-				sitmp.itemkey = si
-				sitmp.aws = None
-				sitmp.itemdatatype = serviceitems[si][0]
-				sitmp.itemunit = serviceitems[si][1]
-				sitmp.zabbixvaluetype = serviceitems[si][2]
-				db.session.add(sitmp)
-
-			addittmp = serviceitems[si][3].add_itemtype(sitmp)
-			if addittmp != None:
-				db.session.add(addittmp)
-
-		for zi in zabbixitems:
-			zitmp = Itemtype.query.filter_by(itemtypename=zabbixitems[zi][0]).first()
-			if zitmp == None:
-				zitmp = Itemtype(zabbixitems[zi][0],zi,None,zabbixitems[zi][1],zabbixitems[zi][2])
-				zitmp.zit = zit
-			else:
-				zitmp.itemtypename = zabbixitems[zi][0]
-				zitmp.itemkey = zi
-				zitmp.aws = None
-				zitmp.itemdatatype = zabbixitems[zi][1]
-				zitmp.itemunit = zabbixitems[zi][2]
-				zitmp.zit = zit
-			db.session.add(zitmp)
+			for x in service.itemtypes.all():
+				if not x.itemkey in tmp_arr :
+					for i in x.items.all():
+						db.session.delete(i)
+					db.session.delete(x)
+					# if not DEPRECATE_TAG in x.itemtypename: 
+					# 	x.itemtypename = x.itemtypename + DEPRECATE_TAG
+					# 	db.session.add(x)
+			#db.session.commit()
 
 		db.session.commit()
-	else:
-
-		zabbix = zabbix_api()
-		session = loadSession()
-
-		try:
-			zit = Zbxitemtype.query.first()
-			nit = Normalitemtype.query.first()
-
-			# add zabbix items
-			tid = session.query(Zabbixhosts).filter_by(host=TEMPLATE_NAME).first().hostid
-			titems = session.query(Zabbixitems).filter_by(hostid=tid).all()
-
-			for i in titems:
-				zittmp = add_zit_functions(i)
-				if zittmp != None:
-					zittmp.zit = zit
-					try:
-						find_hosts_and_add_key(BY_ALL,zit,zittmp,zabbix)
-					except Exception, e:
-						pass
-					db.session.add(zittmp)
-
-
-			# add normal items
-
-			ntid = session.query(Zabbixhosts).filter_by(host=NORMAL_TEMPLATE_NAME).first().hostid
-			ntitems = session.query(Zabbixitems).filter_by(hostid=ntid).all()
-
-			for i in ntitems:
-				nittmp = add_itemtype_functions(i)
-				if nittmp != None:
-					nittmp.nit = nit
-					find_hosts_and_add_key(BY_ALL,nit,nittmp,zabbix)
-					db.session.add(nittmp)
-
-			services_template = session.query(Zabbixhosts).filter(Zabbixhosts.name.ilike('%' + TEMPLATE_GROUP_SPLITER + '%')).all()
-			for st in services_template:
-				sitems = session.query(Zabbixitems).filter_by(hostid=st.hostid).all()
-				service = Service.query.filter_by(servicename=st.name.split(TEMPLATE_GROUP_SPLITER)[1]).first()
-				tmp_arr = []
-				for i in sitems:
-					ittmp = add_itemtype_functions(i, service.itemtypes)
-					if ittmp != None:
-						db.session.add(ittmp)
-					tmp_arr.append(ittmp.itemkey)
-					
-					stmp = service.add_itemtype(ittmp)
-					if stmp != None:
-						db.session.add(stmp)
-					try:
-						find_hosts_and_add_key(BY_SERVICE,service,ittmp,zabbix)
-					except Exception, e:
-						continue
-
-				for x in service.itemtypes.all():
-					if not x.itemkey in tmp_arr :
-						for i in x.items.all():
-							db.session.delete(i)
-						db.session.delete(x)
-						# if not DEPRECATE_TAG in x.itemtypename: 
-						# 	x.itemtypename = x.itemtypename + DEPRECATE_TAG
-						# 	db.session.add(x)
-				#db.session.commit()
-
-			db.session.commit()
-			session.close()
-		except Exception, e:
-			db.session.rollback()
-			zabbix.rollback()
-			traceback.print_exc(file=sys.stdout)
-			# raise e
-
-		# zabbix = zabbix_api()
-		# session = loadSession()
-		# try:
-		# 	zit = Zbxitemtype.query.first()
-		# 	nit = Normalitemtype.query.first()
-		# 	for it in it_keys:
-		# 		ittmp = Itemtype.query.filter_by(itemtypename=it['itemtypename']).first()
-		# 		itemunit = None
-		# 		if it.has_key('itemunit'):
-		# 			itemunit = it['itemunit']
-		# 		zabbixvaluetype = None
-		# 		if it.has_key('zabbixvaluetype'):
-		# 			zabbixvaluetype = it['zabbixvaluetype']
-		# 		itemdatatype = Itemdatatype.query.filter_by(itemdatatypename=it['itemdatatypename']).first()
-		# 		function_type = 0
-		# 		if it['function_type'] != "None":
-		# 			function_type = int(it['function_type'])
-		# 		if ittmp == None:
-		# 			ittmp = Itemtype(it['itemtypename'],it['itemkey'],None,itemdatatype,itemunit,zabbixvaluetype,it['time_frequency'],function_type)
-		# 		else:
-		# 			ittmp.itemtypename = it['itemtypename']
-		# 			ittmp.itemkey = it['itemkey']
-		# 			ittmp.itemdatatype = itemdatatype
-		# 			ittmp.itemunit = itemunit
-		# 			ittmp.zabbixvaluetype =zabbixvaluetype
-		# 			ittmp.time_frequency = it['time_frequency']
-		# 			ittmp.function_type = function_type
-
-		# 		if len(it['services']) == 0:
-		# 			if zabbixvaluetype != None:
-		# 				ittmp.nit = nit
-		# 		else:
-		# 			for servicename in it['services']:
-		# 				s = Service.query.filter_by(servicename=servicename).first()
-		# 				t = session.query(Zabbixhosts).query.filter_by(name= ZABBIX_TEMPLATE_PREFIX + TEMPLATE_GROUP_SPLITER + servicename).first()
-		# 				if t == None:
-		# 					aws_host_group = session.query(Zabbixhostgroup).filter_by(name=HOST_GROUP_NAME).first()
-		# 					if aws_host_group == None:
-		# 						raise Exception('host group :' + HOST_GROUP_NAME + 'do not exist')
-
-		# 					group = {'groupid':aws_host_group.groupid}
-		# 					zabbix.template_create(ZABBIX_TEMPLATE_PREFIX + TEMPLATE_GROUP_SPLITER + servicename , group)
-							
-		# 				tmp_hostid = t.hostid
-		# 				stmp = s.add_itemtype(ittmp)
-		# 				if stmp != None:
-		# 					zabbix.item_create(ittmp.itemtypename,tmp_hostid,None,None,2,ittmp.zabbixvaluetype)
-		# 					db.session.add(stmp)
-
-		# 		if zabbixvaluetype == None:
-		# 			ittmp.zit = zit
-
-		# 		db.session.add(ittmp)
-
-		# 	db.session.commit()
-		# 	session.close()
-		# except Exception, e:
-		# 	db.session.rollback()
-		# 	zabbix.rollback()
-		# 	traceback.print_exc(file=sys.stdout)
-		# 	raise e
+		session.close()
+	except Exception, e:
+		db.session.rollback()
+		zabbix.rollback()
+		traceback.print_exc(file=sys.stdout)
 		
 if __name__ == '__main__':
 
-	# u = User.query.filter_by(username='root').first()
-	# if u == None:
-	# 	u = User('root','root',0,1,'root@localhost')
-	# 	db.session.add(u)
-	# 	db.session.commit()
-	
-
-	
-	# key = None
-	# try:
-	# 	con = S3Connection()
-	# 	bucket = con.get_bucket(S3_BUCKET_NAME)
-	# 	key = bucket.get_key(XML_EXPORT_PATH)
-	# except Exception, e:
-	# 	key = None
-
-	# tree = None
-	# if key == None:
-	# 	tree = ET.ElementTree(file=LOCAL_XML_EXPORT_PATH)
-	# else:
-	# 	print "get contents from s3"
-	# 	f = NamedTemporaryFile(delete=False)
-	# 	key.get_contents_to_filename(f.name)
-	# 	print f.name
-	# 	tree = ET.ElementTree(file=f.name)
-
-	# if tree == None:
-	# 	raise Exception('Cannot open xml config file')
-
-	# root = tree.getroot()
-	# services = root.findall('service')
-	# names = []
-	# for s in services:
-	# 	names.append(s.attrib['servicename'])
-
-	# itemtypes = root.findall('itemtype')
-	# it_keys = []
-	# for it in itemtypes:
-	# 	it_services = it.findall('itservice')
-	# 	it_s = []
-	# 	for i_s in it_services:
-	# 		it_s.append(i_s.attrib['servicename'])
-
-	# 	it.attrib['services'] = it_s
-	# 	it_keys.append(it.attrib)
-	
-	# if key != None:
-	# 	os.unlink(f.name)
-
-
-		
 	print 'process area'
 	init_area()
 	print 'process service'

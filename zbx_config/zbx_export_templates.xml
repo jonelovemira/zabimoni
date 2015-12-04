@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <zabbix_export>
     <version>2.0</version>
-    <date>2015-09-23T00:41:18Z</date>
+    <date>2015-12-04T06:05:44Z</date>
     <groups>
         <group>
             <name>AWS servers</name>
@@ -3628,7 +3628,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_GET_Android</key>
+                    <key>GET_Android</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -3666,7 +3666,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_Conn</key>
+                    <key>Conn</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -3704,7 +3704,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_GET</key>
+                    <key>GET</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -3742,7 +3742,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>TO-CLIENT_SUM_INVALID401</key>
+                    <key>INVALID401</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -3780,7 +3780,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>TO-CLIENT_SUM_INVALID404</key>
+                    <key>INVALID404</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -3813,50 +3813,12 @@
                     <valuemap/>
                 </item>
                 <item>
-                    <name>FROM@CLIENT_SUM_INVALID503</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>TO-CLIENT_SUM_INVALID503</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>Count of 'invalid503' returned to client</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
                     <name>FROM@CLIENT_SUM_INVALIDHTTP</name>
                     <type>2</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_INVALIDHTTP</key>
+                    <key>INVALIDHTTP</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -3894,7 +3856,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST</key>
+                    <key>POST</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -3927,88 +3889,12 @@
                     <valuemap/>
                 </item>
                 <item>
-                    <name>FROM@DT_SUM_GET</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_DTGET</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>'GET' count of double talk</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
-                    <name>FROM@DT_SUM_POST</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_DTPOST</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>post count of double talk</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
                     <name>FROM@DUT200_SUM_POST</name>
                     <type>2</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST_DUT200</key>
+                    <key>POST_DUT200</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4046,7 +3932,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST_DUT220</key>
+                    <key>POST_DUT220</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4084,7 +3970,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST_DUT250</key>
+                    <key>POST_DUT250</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4122,7 +4008,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST_DUT350</key>
+                    <key>POST_DUT350</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4160,7 +4046,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST_DUT450</key>
+                    <key>POST_DUT450</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4193,88 +4079,12 @@
                     <valuemap/>
                 </item>
                 <item>
-                    <name>FROM@DUTSC1_SUM_POST</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST_DUT_SC1</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>post count from dut tl-sc1</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
-                    <name>FROM@DUTSC2_SUM_POST</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_POST_DUT_SC2</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>post count from dut tl-sc2</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
                     <name>FROM@IOS_SUM_GET</name>
                     <type>2</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_GET_IOS</key>
+                    <key>GET_IOS</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4312,7 +4122,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_GET_MAC</key>
+                    <key>GET_MAC</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4345,88 +4155,12 @@
                     <valuemap/>
                 </item>
                 <item>
-                    <name>FROM@SD_SUM_GET</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_SDGET</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>'GET' count of sd</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
-                    <name>FROM@SD_SUM_POST</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_SDPOST</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>'POST' count from sd</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
                     <name>FROM@WINIE_SUM_GET</name>
                     <type>2</type>
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_GET_WINIE</key>
+                    <key>GET_WINIE</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4464,7 +4198,7 @@
                     <snmp_community/>
                     <multiplier>0</multiplier>
                     <snmp_oid/>
-                    <key>FROM-CLIENT_SUM_GET_WINNONIE</key>
+                    <key>GET_WINNONIE</key>
                     <delay>0</delay>
                     <history>90</history>
                     <trends>365</trends>
@@ -4492,120 +4226,6 @@
                     <privatekey/>
                     <port/>
                     <description>Count of requests from windows non-IE</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
-                    <name>INTERNAL_SUM_HASHFAIL</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>INTERNAL_SUM_HASHFAIL</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>Count of 'add hash fail' during internal process@@2@@&gt;0</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
-                    <name>TO@CAS_SUM_REQUEST</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>TO-CAS_SUM_REQUEST</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>Count of requests to CAS service</description>
-                    <inventory_link>0</inventory_link>
-                    <applications/>
-                    <valuemap/>
-                </item>
-                <item>
-                    <name>TO@CAS_SUM_REQUESTERROR</name>
-                    <type>2</type>
-                    <snmp_community/>
-                    <multiplier>0</multiplier>
-                    <snmp_oid/>
-                    <key>FROM-CAS_SUM_REQUESTERROR</key>
-                    <delay>0</delay>
-                    <history>90</history>
-                    <trends>365</trends>
-                    <status>0</status>
-                    <value_type>3</value_type>
-                    <allowed_hosts/>
-                    <units>Count</units>
-                    <delta>0</delta>
-                    <snmpv3_contextname/>
-                    <snmpv3_securityname/>
-                    <snmpv3_securitylevel>0</snmpv3_securitylevel>
-                    <snmpv3_authprotocol>0</snmpv3_authprotocol>
-                    <snmpv3_authpassphrase/>
-                    <snmpv3_privprotocol>0</snmpv3_privprotocol>
-                    <snmpv3_privpassphrase/>
-                    <formula>1</formula>
-                    <delay_flex/>
-                    <params/>
-                    <ipmi_sensor/>
-                    <data_type>0</data_type>
-                    <authtype>0</authtype>
-                    <username/>
-                    <password/>
-                    <publickey/>
-                    <privatekey/>
-                    <port/>
-                    <description>Count of errors returned from CAS@@@2@@@&gt;20</description>
                     <inventory_link>0</inventory_link>
                     <applications/>
                     <valuemap/>
