@@ -530,12 +530,12 @@ $(document).ready(function()
         };
 
 
-        if (cd_data['relay']['FROM-CLIENT_SUM_GET'] != undefined) {
-            var relay_get = cd_data['relay']['FROM-CLIENT_SUM_GET']['last'];
+        if (cd_data['relay']['GET'] != undefined) {
+            var relay_get = cd_data['relay']['GET']['last'];
         };
 
-        if (cd_data['relay']['FROM-CLIENT_SUM_POST'] != undefined) {
-            var relay_post = cd_data['relay']['FROM-CLIENT_SUM_POST']['last'];
+        if (cd_data['relay']['POST'] != undefined) {
+            var relay_post = cd_data['relay']['POST']['last'];
         };
 
 
@@ -1024,7 +1024,7 @@ $(document).ready(function()
         arg_dict['panel_selector'] = '#core-data';
         arg_dict['panel_title'] = 'Dynamic Update Relay POST & GET';
         arg_dict['chart_container'] = '<div id="relay-post-get-chart" class="relay-post-get-chart  chart" sortId="1" style="width: 100%; height: 100%;"></div>';
-        arg_dict['sm_cc_str'] = '{"selected_metrics":{"relay":{"by_group_result":{"metric_count":2,"metric_result":[["relay","FROM-CLIENT_SUM_POST","FROM@CLIENT_SUM_POST","Count of \'POST\' request from client"],["relay","FROM-CLIENT_SUM_GET","FROM@CLIENT_SUM_GET","Count of \'GET\' requests from client"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"relay-post-get-chart","container_selector":"#relay-post-get-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"POST GET"}';
+        arg_dict['sm_cc_str'] = '{"selected_metrics":{"relay":{"by_group_result":{"metric_count":2,"metric_result":[["relay","POST","FROM@CLIENT_SUM_POST","Count of \'POST\' request from client"],["relay","GET","FROM@CLIENT_SUM_GET","Count of \'GET\' requests from client"]],"table_head":["Group Name","Metric Name","Alias","Description"]}}},"chart_config":{"frequency":60,"function_type":"Sum","container_class":"relay-post-get-chart","container_selector":"#relay-post-get-chart","use_utc":false,"init_time_length":3600,"update_flag":true,"shared_yaxis":true},"windowname":"POST GET"}';
         arg_dict['sortId'] = 1;
         load_panel_chart(arg_dict);
         relay_post_get_panel = arg_dict['panel'];
