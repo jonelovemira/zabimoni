@@ -117,7 +117,7 @@ class Overall():
         for s in Service.query.all():
             result[s.servicename] = {}
             for it in s.itemtypes.all():
-                if int(it.bcd_type) == CORE_BCD_TYPE:
+                if it.bcd_type is not None and int(it.bcd_type) == CORE_BCD_TYPE:
                     result[s.servicename][it.itemkey] = {
                         'time_from': time_from,
                         'time_to': time_to,
