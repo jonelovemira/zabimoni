@@ -49,6 +49,17 @@ def create_crontab(command,crontab_time):
 			cron.write()
 	except Exception, e:
 		raise e
+
+def delete_crontab(command):
+	try:
+		cron = CronTab()
+		iter_cron = cron.find_command(command)
+		res = next(iter_cron,None)
+		if res is not None:
+			cron.remove(res)
+			cron.write()
+	except Exception, e:
+		raise e
 	
 
 
@@ -397,10 +408,13 @@ def add_itemtype_functions(i, target = None):
 		bcd_type = ERROR_BCD_TYPE
 		condition = tmp_d_arr[2]
 
+	exist = True
+
 	if ittmp == None:
 		ittmp = Itemtype(itemtypename, itemkey_, itemkey_, None, itemdatatype, itemunit, \
 			zabbixvaluetype, update_frequency, function_type, description, \
 			bcd_type, condition)
+		exist = False
 	else:
 		ittmp.itemtypename = itemtypename
 		ittmp.itemkey = itemkey_
@@ -416,7 +430,7 @@ def add_itemtype_functions(i, target = None):
 
 	print 'processed itemtype :' + itemtypename
 
-	return ittmp
+	return {'ittmp': ittmp, 'exist': exist}
 
 def init_itemtype(it_keys=[]):
 
@@ -448,11 +462,14 @@ def init_itemtype(it_keys=[]):
 		ntitems = session.query(Zabbixitems).filter_by(hostid=ntid).all()
 
 		for i in ntitems:
-			nittmp = add_itemtype_functions(i)
+			anif_result = add_itemtype_functions(i)
+			nittmp = anif_result['ittmp']
 			if nittmp != None:
 				nittmp.nit = nit
-				find_hosts_and_add_key(BY_ALL,nit,nittmp,zabbix)
 				db.session.add(nittmp)
+			if not anif_result['exist']:
+				find_hosts_and_add_key(BY_ALL,nit,nittmp,zabbix)
+				
 
 		services_template = session.query(Zabbixhosts).filter(Zabbixhosts.name.ilike('%' + TEMPLATE_GROUP_SPLITER + '%')).all()
 		for st in services_template:
@@ -460,7 +477,8 @@ def init_itemtype(it_keys=[]):
 			service = Service.query.filter_by(servicename=st.name.split(TEMPLATE_GROUP_SPLITER)[1]).first()
 			tmp_arr = []
 			for i in sitems:
-				ittmp = add_itemtype_functions(i, service.itemtypes)
+				asif_result = add_itemtype_functions(i, service.itemtypes)
+				ittmp = asif_result['ittmp']
 				if ittmp != None:
 					db.session.add(ittmp)
 				tmp_arr.append(ittmp.itemkey)
@@ -468,10 +486,12 @@ def init_itemtype(it_keys=[]):
 				stmp = service.add_itemtype(ittmp)
 				if stmp != None:
 					db.session.add(stmp)
-				try:
-					find_hosts_and_add_key(BY_SERVICE,service,ittmp,zabbix)
-				except Exception, e:
-					continue
+				if not asif_result['exist']:
+					try:
+						find_hosts_and_add_key(BY_SERVICE,service,ittmp,zabbix)
+					except Exception, e:
+						continue
+					
 
 			for x in service.itemtypes.all():
 				if not x.itemkey in tmp_arr :
@@ -539,7 +559,8 @@ if __name__ == '__main__':
 		'0 1 */1 * *')
 
 	create_crontab(UPDATE_ASG_COUNT, '*/5 * * * *')
-	create_crontab(UPDATE_O_DATA_PATH, '0 16 * * *')
+	delete_crontab(UPDATE_O_DATA_PATH)
+	# create_crontab(UPDATE_O_DATA_PATH, '0 16 * * *')
 
 	print 'process aws'
 	init_aws_item()

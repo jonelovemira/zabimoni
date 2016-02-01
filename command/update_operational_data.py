@@ -15,6 +15,7 @@ from monitor.functions import gen_operational_itemtype
 import time
 
 import boto.dynamodb2
+import boto.dynamodb2.table
 import collections
 
 DAY_INTERVAL = 86400
@@ -66,6 +67,20 @@ def update():
 
     db.session.commit()
 
+def scan_table_items(db, table):
+    total_item_result = []
+    exclusive_start_key = None
+    while True:
+        result = db.scan(table, exclusive_start_key=exclusive_start_key)
+        total_item_result.extend(result.get('Items',[]))
+        if 'LastEvaluatedKey' in result:
+            exclusive_start_key = result['LastEvaluatedKey']
+        else:
+            exclusive_start_key = None
+        if exclusive_start_key is None:
+            break
+    return total_item_result
+
 def update_counts():
     REGIONS = dict(sg='ap-southeast-1', us='us-east-1', ie='eu-west-1',
                    jp='ap-northeast-1')
@@ -88,10 +103,10 @@ def update_counts():
 
         # user devices counting
         try:
-            table_user_result = dynamodb.scan(table_user_devices)
+            table_user_result = scan_table_items(dynamodb, table_user_devices)
             
             user_devices = collections.defaultdict(int)
-            for ownership in table_user_result.get('Items'):
+            for ownership in table_user_result:
                 user_id = ownership['user_id']['S']
                 user_devices[user_id] += 1
 
@@ -119,9 +134,9 @@ def update_counts():
             pass
 
         try:
-            dev_model_result = dynamodb.scan(table_devices)
+            dev_model_result = scan_table_items(dynamodb, table_devices)
             devices = collections.defaultdict(int)
-            for device in dev_model_result.get('Items'):
+            for device in dev_model_result:
                 if 'model' in device:
                     model = device['model']['S'].split()[0]
                     devices[model] += 1
@@ -161,8 +176,8 @@ def update_counts():
             pass
 
         try:
-            reg_user_result = dynamodb.scan(table_account)
-            total_user_count = len(reg_user_result.get('Items'))
+            user_table = boto.dynamodb2.table.Table(table_account)
+            total_user_count = user_table.describe()['Table']['ItemCount']
             tutypename = 'Total user count'
             tuct = counttype.query.filter_by(counttypename=tutypename).first()
             if tuct == None:
